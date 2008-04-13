@@ -99,10 +99,10 @@ sub _set {
 
       if (($lock = $lock_ref->{ $key })
           && ($now > $lock->{stime} + $lock->{timeout})) {
-         $me->log->error( $me->_timeout_error( $key,
-                                               $lock->{spid   },
-                                               $lock->{stime  },
-                                               $lock->{timeout} ) );
+         $me->log->error( $me->timeout_error( $key,
+                                              $lock->{spid   },
+                                              $lock->{stime  },
+                                              $lock->{timeout} ) );
          delete $lock_ref->{ $key };
          $lock = 0;
       }

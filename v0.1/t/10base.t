@@ -8,7 +8,7 @@ use English qw(-no_match_vars);
 use FindBin qw($Bin);
 use List::Util qw(first);
 use lib qq($Bin/../lib);
-use Test::More tests => 5;
+use Test::More tests => 7;
 
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 62 $ =~ /\d+/gmx );
 
@@ -28,7 +28,7 @@ $app->config( { lock => { type => q(fcntl) } } );
 
 my $lock = IPC::SRLock->new( $app );
 
-$lock->set(   k => $PROGRAM_NAME );
+$lock->set( k => $PROGRAM_NAME );
 
 ok( (first { $_ eq $PROGRAM_NAME }
      map   { $_->{key} } @{ $lock->list() }), q(lock set fcntl) );
@@ -38,16 +38,17 @@ $lock->reset( k => $PROGRAM_NAME );
 ok( !(first { $_ eq $PROGRAM_NAME }
       map   { $_->{key} } @{ $lock->list() }), q(lock reset fcntl) );
 
-unlink q(/tmp/ipc_srlock.lck);
-unlink q(/tmp/ipc_srlock.shm);
+ok( unlink q(/tmp/ipc_srlock.lck), q(unlink lock file) );
 
-$lock->_clear_lock_obj;
+ok( unlink q(/tmp/ipc_srlock.shm), q(unlink shared file) );
+
+$lock->clear_lock_obj;
 
 $app->config( { lock => { type => q(sysv) } } );
 
 $lock = IPC::SRLock->new( $app );
 
-$lock->set(   k => $PROGRAM_NAME );
+$lock->set( k => $PROGRAM_NAME );
 
 ok( (first { $_ eq $PROGRAM_NAME }
      map   { $_->{key} } @{ $lock->list() }), q(lock set ipc) );

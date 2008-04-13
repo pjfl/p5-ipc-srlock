@@ -13,7 +13,6 @@ use IPC::SRLock::Errs;
 use NEXT;
 use Time::Elapsed qw(elapsed);
 use Readonly;
-use XML::Simple;
 
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
@@ -61,6 +60,11 @@ sub new {
 
 sub catch {
    my ($me, @rest) = @_; return IPC::SRLock::Errs->catch( @rest );
+}
+
+sub clear_lock_obj {
+   # Only for the test suite to re-initialise the lock instance
+   $_lock_obj = 0; return;
 }
 
 sub get_table {
@@ -132,17 +136,21 @@ sub throw {
    my ($me, @rest) = @_; return IPC::SRLock::Errs->throw( @rest );
 }
 
+sub timeout_error {
+   my ($me, $key, $pid, $when, $after) = @_; my $text;
+
+   $text  = 'Timed out '.$key.' set by '.$pid;
+   $text .= ' on '.time2str( q(%Y-%m-%d at %H:%M), $when );
+   $text .= ' after '.$after.' seconds';
+   return $text;
+}
+
 # Private methods
 
 sub _arg_list {
    my ($me, @rest) = @_;
 
    return $rest[0] && ref $rest[0] ? $rest[0] : { @rest };
-}
-
-sub _clear_lock_obj {
-   # Only for the test suite to re-initialise the lock instance
-   $_lock_obj = 0; return;
 }
 
 sub _ensure_class_loaded {
@@ -193,15 +201,6 @@ sub _set {
    return;
 }
 
-sub _timeout_error {
-   my ($me, $key, $pid, $when, $after) = @_; my $text;
-
-   $text  = 'Timed out '.$key.' set by '.$pid;
-   $text .= ' on '.time2str( q(%Y-%m-%d at %H:%M), $when );
-   $text .= ' after '.$after.' seconds';
-   return $text;
-}
-
 1;
 
 __END__
@@ -220,7 +219,7 @@ IPC::SRLock - Set/reset locking semantics to single thread processes
 
    use IPC::SRLock;
 
-   $app->config( tempdir => q(path_to_tmp_directory) );
+   $app->config( tempdir => q(path_to_tmp_directory), type => q(fcntl) );
 
    my $lock_obj = IPC::SRLock->new( $app );
 
@@ -239,7 +238,28 @@ of code to run single threaded
 
 =head2 new
 
-Implements the singleton pattern. Construction is done by C<_init_singleton>.
+Implements the singleton pattern. The B<type> attribute determines
+which factory subclass is loaded. This package contains two
+subclasses; B<fcntl> and B<sysv>
+
+=head3 fcntl
+
+Uses L<Fcntl> to lock access to a disk based file which is
+read/written by L<XML::Simple>. This is the default type
+
+=head3 sysv
+
+Uses System V semaphores to lock access to a shared memory file
+
+=head2 catch
+
+Expose the C<catch> method in L<IPC::SRLock::Errs>
+
+=head2 clear_lock_obj
+
+Sets the internal variable that holds the self referential object to
+false. This lets the test script create multiple lock objects with
+different factory subclasses
 
 =head2 get_table
 
@@ -253,36 +273,75 @@ Returns an array of hash refs that represent the current lock table
 
 =head2 reset
 
+Resets the lock referenced by the B<k> attribute.
+
 =head2 set
+
+Sets the specified lock. Attributes are:
+
+=over 3
+
+=item B<k>
+
+Unique key to identify the lock. Mandatory no default
+
+=item B<p>
+
+Explicitely set the process id associated with the lock. Defaults to
+the current process id
+
+=item B<t>
+
+Set the time to live for this lock. Defaults to five minutes. Setting
+it to zero makes the lock last indefinitely
+
+=back
 
 =head2 table_view
 
-=head2 _clear_lock_obj
+   $lock_obj->table_view( $stash, $model );
 
-=head2 _get_semid
+The C<$model> object's methods store the result of calling
+C<$lock_obj-E<gt>get_table> on the C<$stash> hash ref
 
-=head2 _get_shmid
+=head2 throw
 
-=head2 _init_singleton
+Expose the C<throw> method in C<IPC::SRLock::Errs>
 
-=head2 _list_fcntl
+=head2 timeout_error
 
-=head2 _list_ipc
+Return the text of the the timeout message
 
-=head2 _read_shmfile
+=head2 _arg_list
 
-=head2 _release
+   my $args = $me->_arg_list( @rest );
 
-=head2 _reset_fcntl
+Returns a hash ref containing the passed parameter list. Enables
+methods to be called with either a list or a hash ref as it's input
+parameters
 
-=head2 _reset_ipc
+=head2 _ensure_class_loaded
 
-=head2 _set_fcntl
+   $me->_ensure_class_loaded( $some_class );
 
-=head2 _set_ipc
+Require the requested class, throw an error if it doesn't load
 
-=head2 _write_shmfile
+=head2 _hash_merge
 
+   my $hash = $me->_hash_merge( { key1 => val1 }, { key2 => val2 } );
+
+Simplistic merging of two hashes
+
+=head2 _init
+
+Called by the constructor. Optionally overridden in the factory
+subclass. This allows subclass specific initialisation
+
+=head2 _list
+
+=head2 _reset
+
+=head2 _set
 
 =head1 Diagnostics
 
@@ -294,25 +353,31 @@ None
 
 =head1 Dependencies
 
-=over 4
+=over 3
 
 =item L<Class::Accessor::Fast>
 
-=item L<CatalystX::Usul::Class::Time>
-
-=item L<CatalystX::Usul::Class::Utils>
+=item L<Class::Inspector>
 
 =item L<Class::Null>
 
+=item L<Date::Format>
+
 =item L<IO::AtomicFile>
+
+=item L<IO::File>
+
+=item L<IPC::SRLock::Errs>
 
 =item L<IPC::SysV>
 
-=item L<Next>
+=item L<NEXT>
+
+=item L<Readonly>
 
 =item L<Time::Elapsed>
 
-=item L<Readonly>
+=item L<Time::HiRes>
 
 =item L<XML::Simple>
 
