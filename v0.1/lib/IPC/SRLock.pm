@@ -339,9 +339,15 @@ subclass. This allows subclass specific initialisation
 
 =head2 _list
 
+Should be overridden in the factory subclass
+
 =head2 _reset
 
+Should be overridden in the factory subclass
+
 =head2 _set
+
+Should be overridden in the factory subclass
 
 =head1 Diagnostics
 
