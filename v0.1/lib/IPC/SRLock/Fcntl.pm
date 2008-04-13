@@ -1,6 +1,6 @@
 package IPC::SRLock::Fcntl;
 
-# @(#)$Id: Lock.pm 66 2008-04-13 02:42:19Z pjf $
+# @(#)$Id$
 
 use strict;
 use warnings;
@@ -13,7 +13,7 @@ use NEXT;
 use Time::HiRes qw(usleep);
 use XML::Simple;
 
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 66 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 # Private methods
 
