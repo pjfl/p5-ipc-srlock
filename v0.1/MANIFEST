@@ -2,8 +2,8 @@ lib/IPC/SRLock.pm
 lib/IPC/SRLock/Errs.pm
 lib/IPC/SRLock/Fcntl.pm
 lib/IPC/SRLock/Sysv.pm
-MANIFEST			This list of files
-t/10base.t
 Makefile.PL
-README
+MANIFEST			This list of files
 META.yml
+README
+t/10base.t
