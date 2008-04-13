@@ -39,9 +39,22 @@ __PACKAGE__->mk_accessors( keys %ATTRS );
 my $_lock_obj;
 
 sub new {
-   my ($me, @rest) = @_;
+   my ($me, $app) = @_;
 
-   $_lock_obj = $me->_init( @rest ) unless ($_lock_obj);
+   unless ($_lock_obj) {
+      $app ||= Class::Null->new();
+      my $config = $app->config || {};
+      my $attrs  = $me->_hash_merge( \%ATTRS, $config->{lock} );
+      my $class  = __PACKAGE__.q(::).(ucfirst $attrs->{type});
+
+      $me->_ensure_class_loaded( $class );
+
+      $_lock_obj = bless $attrs, $class;
+      $_lock_obj->debug( $app->debug || $_lock_obj->debug );
+      $_lock_obj->log(   $app->log || Class::Null->new() );
+      $_lock_obj->pid(   $PID );
+      $_lock_obj->_init( $app, $config );
+   }
 
    return $_lock_obj;
 }
@@ -132,10 +145,6 @@ sub _clear_lock_obj {
    $_lock_obj = 0; return;
 }
 
-sub _config_merge {
-   my ($me, $l, $r) = @_; return { %{ $l }, %{ $r || {} } };
-}
-
 sub _ensure_class_loaded {
    my ($me, $class) = @_; my $error;
 
@@ -155,20 +164,12 @@ sub _ensure_class_loaded {
    return;
 }
 
+sub _hash_merge {
+   my ($me, $l, $r) = @_; return { %{ $l }, %{ $r || {} } };
+}
+
 sub _init {
-   my ($me, $app) = @_; $app ||= Class::Null->new();
-   my $config     = $app->config || {};
-   my $attrs      = $me->_config_merge( \%ATTRS, $config->{lock} );
-   my $class      = __PACKAGE__.q(::).(ucfirst $attrs->{type});
-
-   $me->_ensure_class_loaded( $class );
-
-   my $self       = bless $attrs, $class;
-
-   $self->debug( $app->debug || $self->debug );
-   $self->log(   $app->log || Class::Null->new() );
-   $self->pid(   $PID );
-   return $self;
+   return;
 }
 
 sub _list {
@@ -190,6 +191,15 @@ sub _set {
 
    $me->throw( error => q(eNotOverridden), arg1 => q(set) );
    return;
+}
+
+sub _timeout_error {
+   my ($me, $key, $pid, $when, $after) = @_; my $text;
+
+   $text  = 'Timed out '.$key.' set by '.$pid;
+   $text .= ' on '.time2str( q(%Y-%m-%d at %H:%M), $when );
+   $text .= ' after '.$after.' seconds';
+   return $text;
 }
 
 1;
