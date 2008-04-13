@@ -144,7 +144,7 @@ sub _set {
          if (time < $ltime + $ltimeout) { $found = 1; last }
 
          shmwrite $shmid, $rec, $me->size * $lock_no, $me->size;
-         $text = $me->_timeout_error( $key, $lpid, $ltime, $ltimeout );
+         $text = $me->timeout_error( $key, $lpid, $ltime, $ltimeout );
          $me->log->error( $text );
          $lock_set = 1;
       }
