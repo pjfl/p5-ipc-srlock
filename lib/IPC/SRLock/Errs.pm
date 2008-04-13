@@ -1,6 +1,6 @@
 package IPC:SRLock::Errs;
 
-# @(#)$Id: Errs.pm 62 2008-04-11 01:20:52Z pjf $
+# @(#)$Id$
 
 use strict;
 use warnings;
@@ -11,7 +11,7 @@ use English    qw(-no_match_vars);
 use List::Util qw(first);
 use Readonly;
 
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 62 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 Readonly my $NUL => q();
 
@@ -79,7 +79,7 @@ IPC::SRLock::Errs - Exception base class
 
 =head1 Version
 
-0.1.$Revision: 62 $
+0.1.$Revision$
 
 =head1 Synopsis
 

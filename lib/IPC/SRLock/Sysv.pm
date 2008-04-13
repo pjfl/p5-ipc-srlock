@@ -1,6 +1,6 @@
 package IPC::SRLock::Sysv;
 
-# @(#)$Id: Lock.pm 66 2008-04-13 02:42:19Z pjf $
+# @(#)$Id$
 
 use strict;
 use warnings;
@@ -9,7 +9,7 @@ use Date::Format;
 use IPC::SysV qw(IPC_CREAT);
 use Time::HiRes qw(usleep);
 
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 66 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 # Private methods
 
