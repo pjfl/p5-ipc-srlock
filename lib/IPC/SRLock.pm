@@ -9,7 +9,6 @@ use Class::Inspector;
 use Class::Null;
 use Date::Format;
 use English qw(-no_match_vars);
-use File::Spec::Functions;
 use IPC::SRLock::Errs;
 use NEXT;
 use Time::Elapsed qw(elapsed);
@@ -42,7 +41,7 @@ my $_lock_obj;
 sub new {
    my ($me, @rest) = @_;
 
-   $_lock_obj = $me->_init_singleton( @rest ) unless ($_lock_obj);
+   $_lock_obj = $me->_init( @rest ) unless ($_lock_obj);
 
    return $_lock_obj;
 }
@@ -156,7 +155,7 @@ sub _ensure_class_loaded {
    return;
 }
 
-sub _init_singleton {
+sub _init {
    my ($me, $app) = @_; $app ||= Class::Null->new();
    my $config     = $app->config || {};
    my $attrs      = $me->_config_merge( \%ATTRS, $config->{lock} );

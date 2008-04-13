@@ -41,9 +41,4 @@
 TAGS
 Thumbs.db
 # Avoid archives of this distribution
-\bCatalystX-Usul-[\d\.\_]+
-
-# Not ready for ditribution
-bin/munchies_pmon
-lib/CatalystX/Usul/Progs/Pmon.pm
-lib/CatalystX/Usul/Progs/Data.pm
+\bIPC-SRLock-[\d\.\_]+

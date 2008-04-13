@@ -6,9 +6,10 @@ use strict;
 use warnings;
 use base qw(IPC::SRLock);
 use Date::Format;
+use File::Spec::Functions;
 use Fcntl qw(:flock);
-use IO::File;
 use IO::AtomicFile;
+use IO::File;
 use NEXT;
 use Time::HiRes qw(usleep);
 use XML::Simple;
@@ -17,9 +18,9 @@ use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 # Private methods
 
-sub _init_singleton {
+sub _init {
    my ($me, $app) = @_; $app ||= Class::Null->new();
-   my $self       = $me->NEXT::_init_singleton( $app );
+   my $self       = $me->NEXT::_init( $app );
    my $config     = $app->config || {};
    my $path;
 
