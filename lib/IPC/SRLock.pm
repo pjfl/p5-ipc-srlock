@@ -9,14 +9,10 @@ use Class::Inspector;
 use Class::Null;
 use Date::Format;
 use English qw(-no_match_vars);
-use Fcntl qw(:flock);
 use File::Spec::Functions;
-use IO::File;
-use IO::AtomicFile;
 use IPC::SRLock::Errs;
-use IPC::SysV qw(IPC_CREAT);
+use NEXT;
 use Time::Elapsed qw(elapsed);
-use Time::HiRes qw(usleep);
 use Readonly;
 use XML::Simple;
 
@@ -89,11 +85,7 @@ sub get_table {
 }
 
 sub list {
-   my $me = shift;
-
-   return $me->_list_ipc if ($me->type eq q(ipc));
-
-   return $me->_list_fcntl;
+   my $me = shift; return $me->_list;
 }
 
 sub reset {
@@ -101,22 +93,16 @@ sub reset {
 
    $me->throw( q(eNoKey) ) unless (my $key = $args->{k});
 
-   return $me->_reset_ipc( $key ) if ($me->type eq q(ipc));
-
-   return $me->_reset_fcntl( $key );
+   return $me->_reset( $key );
 }
 
 sub set {
-   my ($me, @rest) = @_; my $args = $me->_arg_list( @rest ); my ($key, $pid);
+   my ($me, @rest) = @_; my $args = $me->_arg_list( @rest );
 
-   $me->throw( q(eNoKey) )       unless ($key = $args->{k});
-   $me->throw( q(eNoProcessId) ) unless ($pid = $args->{p} || $me->pid);
+   $me->throw( q(eNoKey) )       unless (my $key = $args->{k});
+   $me->throw( q(eNoProcessId) ) unless (my $pid = $args->{p} || $me->pid);
 
-   if ($me->type eq q(ipc)) {
-      return $me->_set_ipc( $key, $pid, $args->{t} || $me->time_out );
-   }
-
-   return $me->_set_fcntl( $key, $pid, $args->{t} || $me->time_out );
+   return $me->_set( $key, $pid, $args->{t} || $me->time_out );
 }
 
 sub table_view {
@@ -170,299 +156,40 @@ sub _ensure_class_loaded {
    return;
 }
 
-sub _get_semid {
-   my $me = shift; my $semid = semget $me->lockfile, 1, 0;
-
-   return $semid if (defined $semid);
-
-   $semid = semget $me->lockfile, 1, IPC_CREAT | $me->mode;
-
-   unless (defined $semid) {
-      $me->throw( error => q(eCannotCreateSemaphore), arg1 => $me->lockfile );
-   }
-
-   unless (semop $semid, pack q(s!s!s!), 0, 1, 0) {
-      $me->throw( error => q(eCannotPrimeSemaphore), arg1 => $me->lockfile );
-   }
-
-   return $semid;
-}
-
-sub _get_shmid {
-   my $me = shift; my ($shmid, $size);
-
-   $size  = $me->size * $me->num_locks;
-   $shmid = shmget $me->shmfile, $size, 0;
-
-   return $shmid if (defined $shmid);
-
-   $shmid = shmget $me->shmfile, $size, IPC_CREAT | $me->mode;
-
-   unless (defined $shmid) {
-      $me->throw( error => q(eCannotCreateMemorySegment),
-                  arg1  => $me->shmfile );
-   }
-
-   shmwrite $shmid, q(EOF,), 0, $me->size;
-   return $shmid;
-}
-
 sub _init_singleton {
-   my ($me, $app) = @_;
+   my ($me, $app) = @_; $app ||= Class::Null->new();
+   my $config     = $app->config || {};
+   my $attrs      = $me->_config_merge( \%ATTRS, $config->{lock} );
+   my $class      = __PACKAGE__.q(::).(ucfirst $attrs->{type});
 
-   $app ||= Class::Null->new();
+   $me->_ensure_class_loaded( $class );
 
-   my $config = $app->config || {};
-   my $attrs  = $me->_config_merge( \%ATTRS, $config->{lock} );
-   my $self   = bless $attrs, ref $me || $me;
-   my $path;
+   my $self       = bless $attrs, $class;
 
-   $self->debug(   $app->debug || $self->debug );
-   $self->log(     $app->log || Class::Null->new() );
-   $self->pid(     $PID );
-   $self->tempdir( $config->{tempdir} || $self->tempdir );
-
-   if ($self->type eq q(fcntl)) {
-      $path = catfile( $self->tempdir, $self->name.q(.lck) );
-      $self->lockfile( $path =~ m{ \A ([ -\.\/\w.]+) \z }mx ? $1 : q() );
-      $path = catfile( $self->tempdir, $self->name.q(.shm) );
-      $self->shmfile(  $path =~ m{ \A ([ -\.\/\w.]+) \z }mx ? $1 : q() );
-   }
-
+   $self->debug( $app->debug || $self->debug );
+   $self->log(   $app->log || Class::Null->new() );
+   $self->pid(   $PID );
    return $self;
 }
 
-sub _list_fcntl {
+sub _list {
    my $me = shift;
-   my ($lock_file, $table) = $me->_read_shmfile();
-   my $lock_ref = $table->{lock};
-   my $self = [];
 
-   if ($lock_ref && ref $lock_ref eq q(HASH)) {
-      for (keys %{ $lock_ref }) {
-         push @{ $self }, { key     => $_,
-                            pid     => $lock_ref->{ $_ }->{spid},
-                            stime   => $lock_ref->{ $_ }->{stime},
-                            timeout => $lock_ref->{ $_ }->{timeout} };
-      }
-   }
-
-   $me->_release( $lock_file );
-   return $self;
+   $me->throw( error => q(eNotOverridden), arg1 => q(list) );
+   return;
 }
 
-sub _list_ipc {
-   my $me = shift; my (@flds, $line, $lock_no, $self, $semid, $shmid);
+sub _reset {
+   my $me = shift;
 
-   $self  = [];
-   $semid = $me->_get_semid();
-
-   unless (semop $semid, pack q(s!s!s!), 0, -1, 0) {
-      $me->throw( error => q(eCannotSetSemaphore), arg1 => $me->lockfile );
-   }
-
-   $shmid = $me->_get_shmid();
-
-   for $lock_no (0 .. $me->num_locks - 1) {
-      shmread $shmid, $line, $me->size * $lock_no, $me->size;
-
-      last if ($line =~ m{ \A EOF, }mx);
-
-      @flds = split m{ , }mx, $line;
-      push @{ $self }, { key     => $flds[0],
-                         pid     => $flds[1],
-                         stime   => $flds[2],
-                         timeout => $flds[3] };
-   }
-
-   unless (semop $semid, pack q(s!s!s!), 0, 1, 0) {
-      $me->throw( error => q(eCannotReleaseSemaphore), arg1 => $me->lockfile );
-   }
-
-   return $self;
+   $me->throw( error => q(eNotOverridden), arg1 => q(reset) );
+   return;
 }
 
-sub _read_shmfile {
-   my $me = shift; my ($e, $lock, $ref, $xs); umask $me->umask;
+sub _set {
+   my $me = shift;
 
-   unless ($lock = IO::File->new( $me->lockfile, q(w), $me->mode )) {
-      $me->throw( error => q(eCannotWrite), arg1 => $me->lockfile );
-   }
-
-   flock $lock, LOCK_EX;
-
-   if (-f $me->shmfile) {
-      $xs  = XML::Simple->new( ForceArray => [ q(lock) ], SuppressEmpty => 1 );
-      $ref = eval { $xs->xml_in( $me->shmfile ) };
-
-      if ($e = $me->catch) {
-         $me->_release( $lock ); $me->throw( $e );
-      }
-   }
-   else { $ref = {} }
-
-   return ($lock, $ref);
-}
-
-sub _release {
-   my ($me, $lock) = @_; flock $lock, LOCK_UN; $lock->close; return;
-}
-
-sub _reset_fcntl {
-   my ($me, $key) = @_; my ($lock_file, $table) = $me->_read_shmfile();
-
-   unless (exists $table->{lock} && exists $table->{lock}->{ $key }) {
-      $me->_release( $lock_file );
-      $me->throw( error => q(eLockNotSet), arg1 => $key );
-   }
-
-   delete $table->{lock}->{ $key };
-   $me->_write_shmfile( $lock_file, $table );
-   return 1;
-}
-
-sub _reset_ipc {
-   my ($me, $key) = @_; my ($found, $line, $lock_no, $semid, $shmid);
-
-   $semid = $me->_get_semid();
-
-   unless (semop $semid, pack q(s!s!s!), 0, -1, 0) {
-      $me->throw( error => q(eCannotSetSemaphore), arg1 => $me->lockfile );
-   }
-
-   $shmid = $me->_get_shmid();
-   $found = 0;
-
-   for $lock_no (0 .. $me->num_locks - 1) {
-      shmread $shmid, $line, $me->size * $lock_no, $me->size;
-
-      if ($found) {
-         shmwrite $shmid, $line, $me->size * ($lock_no - 1), $me->size;
-      }
-
-      last       if ($line =~ m{ \A EOF, }mx);
-      $found = 1 if ($line =~ m{ \A $key , }mx);
-   }
-
-   unless (semop $semid, pack q(s!s!s!), 0, 1, 0) {
-      $me->throw( error => q(eCannotReleaseSemaphore), arg1 => $me->lockfile );
-   }
-
-   $me->throw( error => q(eLockNotSet), arg1 => $key ) unless ($found);
-
-   return 1;
-}
-
-sub _set_fcntl {
-   my ($me, $key, $pid, $timeout) = @_;
-   my ($lock, $lock_file, $lock_ref, $now, $start, $table, $text);
-
-   $table = {}; $start = time;
-
-   while (!$now || ($table->{lock} && $table->{lock}->{ $key })) {
-      ($lock_file, $table) = $me->_read_shmfile();
-      $lock_ref = $table->{lock} || {};
-      $now = time;
-
-      if (($lock = $lock_ref->{ $key })
-          && ($now > $lock->{stime} + $lock->{timeout})) {
-         $text  = 'Timed out '.$key.' set by '.$lock->{spid}.' on ';
-         $text .= time2str( q(%Y-%m-%d at %H:%M), $lock->{stime} );
-         $text .= ' after '.$lock->{timeout}.' seconds';
-         $me->log->error( $text );
-         delete $lock_ref->{ $key };
-         $lock  = 0;
-      }
-
-      if ($me->patience && $now - $start > $me->patience) {
-         $me->_release( $lock_file );
-         $me->throw( error => q(ePatienceExpired), arg1 => $key );
-      }
-
-      if ($lock) {
-         $me->_release( $lock_file ); usleep( 1_000_000 * $me->nap_time );
-      }
-   }
-
-   $table->{lock}->{ $key } = { spid    => $pid,
-                                stime   => $now,
-                                timeout => $timeout };
-   $me->_write_shmfile( $lock_file, $table );
-   return 1;
-}
-
-sub _set_ipc {
-   my ($me, $key, $pid, $timeout) = @_;
-   my ($found, $line, $lock_no, $lock_set, $lpid, $ltime, $ltimeout, $rec);
-   my ($semid, $start, $shmid, $text);
-
-   $semid = $me->_get_semid(); $start = time;
-
-   while (!$lock_set) {
-      unless (semop $semid, pack q(s!s!s!), 0, -1, 0) {
-         $me->throw( error => q(eCannotSetSemaphore), arg1 => $me->lockfile );
-      }
-
-      $shmid = $me->_get_shmid();
-      $rec   = $key.q(,).$pid.q(,).time.q(,).$timeout.q(,);
-      $found = 0;
-
-      for $lock_no (0 .. $me->num_locks - 1) {
-         shmread $shmid, $line, $me->size * $lock_no, $me->size;
-
-         if ($line =~ m{ \A EOF, }mx) {
-            shmwrite $shmid, $rec, $me->size * $lock_no, $me->size
-               unless ($lock_set);
-            shmwrite $shmid, q(EOF,), $me->size * ($lock_no + 1), $me->size;
-            $lock_set = 1;
-            last;
-         }
-
-         next if ($line !~ m{ \A $key [,] }mx);
-         (undef, $lpid, $ltime, $ltimeout) = split m{ [,] }mx, $line;
-         if (time < $ltime + $ltimeout) { $found = 1; last }
-
-         shmwrite $shmid, $rec, $me->size * $lock_no, $me->size;
-         $text  = 'Timed out '.$key.' set by '.$lpid;
-         $text .= ' on '.time2str( q(%Y-%m-%d at %H:%M), $ltime );
-         $text .= ' after '.$ltimeout.' seconds';
-         $me->log->error( $text );
-         $lock_set = 1;
-      }
-
-      unless (semop $semid, pack q(s!s!s!), 0, 1, 0) {
-         $me->throw( error => q(eCannotReleaseSemaphore),
-                     arg1  => $me->lockfile );
-      }
-
-      if ($me->patience && time - $start > $me->patience) {
-         $me->throw( error => q(ePatienceExpired), arg1 => $key );
-      }
-
-      usleep( 1_000_000 * $me->nap_time ) if ($found);
-   }
-
-   return 1;
-}
-
-sub _write_shmfile {
-   my ($me, $lock_file, $table) = @_; my ($e, $wtr, $xs);
-
-   unless ($wtr = IO::AtomicFile->new( $me->shmfile, q(w), $me->mode )) {
-      $me->_release( $lock_file );
-      $me->throw( error => q(eCannotWrite), arg1 => $me->shmfile );
-   }
-
-   $xs = XML::Simple->new( NoAttr        => 1,
-                           SuppressEmpty => 1,
-                           RootName      => q(table) );
-   eval { $xs->xml_out( $table, OutputFile => $wtr ) };
-
-   if ($e = $me->catch) {
-      $wtr->delete; $me->_release( $lock_file ); $me->throw( $e );
-   }
-
-   $wtr->close; $me->_release( $lock_file );
+   $me->throw( error => q(eNotOverridden), arg1 => q(set) );
    return;
 }
 
@@ -571,6 +298,8 @@ None
 =item L<IO::AtomicFile>
 
 =item L<IPC::SysV>
+
+=item L<Next>
 
 =item L<Time::Elapsed>
 
