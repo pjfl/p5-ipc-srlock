@@ -1,0 +1,187 @@
+package IPC:SRLock::Errs;
+
+# @(#)$Id: Errs.pm 62 2008-04-11 01:20:52Z pjf $
+
+use strict;
+use warnings;
+use Exception::Class (
+    'IPC::SRLock::Exception' => { fields => [qw(arg1 arg2 out rv)] } );
+use base       qw(IPC::SRLock::Exception);
+use English    qw(-no_match_vars);
+use List::Util qw(first);
+use Readonly;
+
+use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 62 $ =~ /\d+/gmx );
+
+Readonly my $NUL => q();
+
+our $IGNORE = [];
+
+sub catch {
+   my ($me, @rest) = @_; my $e;
+
+   return $e if ($e = $me->caught( @rest ));
+
+   return $me->new( $EVAL_ERROR ) if ($EVAL_ERROR);
+
+   return;
+}
+
+sub as_string {
+   my ($me, $verbosity, $offset) = @_;
+   my ($i, $frame, $line, $l_no, %seen, $text);
+
+   $verbosity ||= 1; $offset ||= 1; $text = $NUL.$me->message;
+
+   return $text if ($verbosity < 2 && !$me->show_trace);
+
+   $i     = $verbosity > 2 ? 0 : $offset;
+   $frame = undef;
+
+   while (defined( $frame = $me->trace->frame( $i++ ) )) {
+      $line = "\n".$frame->package.' line '.$frame->line;
+
+      if ($verbosity > 2) { $text .= $line; next }
+
+      last if (($l_no = $seen{ $frame->package }) && $l_no == $frame->line);
+
+      $seen{ $frame->package } = $frame->line;
+   }
+
+   return $text;
+}
+
+sub throw {
+   my ($me, @rest) = @_;
+
+   die $me if (ref $me);
+
+   my @args = @rest == 1 ? ( error => $rest[0] ) : @rest;
+
+   die $me->new( arg1           => $NUL,
+                 arg2           => $NUL,
+                 ignore_package => $IGNORE,
+                 out            => $NUL,
+                 rv             => 1,
+                 show_trace     => 0,
+                 @args );
+}
+
+1;
+
+__END__
+
+=pod
+
+=head1 Name
+
+IPC::SRLock::Errs - Exception base class
+
+=head1 Version
+
+0.1.$Revision: 62 $
+
+=head1 Synopsis
+
+=head1 Description
+
+Implements try (by way of an eval), throw, and catch error
+semantics. Inherits from Exception::Class
+
+=head1 Subroutines/Methods
+
+=head2 catch
+
+Catches and returns a thrown exception or generates a new exception if
+EVAL_ERROR has been set
+
+=head2 as_string
+
+   warn $e->as_string( $verbosity, $offset );
+
+Serialize the exception to a string. The passed parameters; B<verbosity>
+and B<offset> determine how much output is returned.
+
+The B<verbosity> parameter can be:
+
+=over 3
+
+=item 1
+
+The default value. Only show a stack trace if c<$me-E<gt>show_trace> is true
+
+=item 2
+
+Always show the stack trace and start at frame B<offset> which
+defaults to 1. The stack trace stops when the first duplicate output
+line is detected
+
+=item 3
+
+Always shows the complete stack trace starting at frame 0
+
+=back
+
+=head2 throw
+
+Create (or re-throw) an exception to be caught by the catch above. If
+the passed parameter is a reference it is re-thrown. If a single scalar
+is passed it is taken to be an error message code, a new exception is
+created with all other parameters taking their default values. If more
+than one parameter is passed the it is treated as a list and used to
+instantiate the new exception. The 'error' parameter must be provided
+in this case
+
+=head1 Diagnostics
+
+None
+
+=head1 Configuration and Environment
+
+The C<$IGNORE> package variable is list of methods whose presence
+should be suppressed in the stack trace output
+
+=head1 Dependencies
+
+=over 3
+
+=item L<Exception::Class>
+
+=item L<List::Util>
+
+=item L<Readonly>
+
+=back
+
+=head1 Incompatibilities
+
+There are no known incompatibilities in this module.
+
+=head1 Bugs and Limitations
+
+There are no known bugs in this module.
+The default ignore package list should be configurable.
+Please report problems to the address below.
+Patches are welcome.
+
+=head1 Author
+
+Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
+
+=head1 License and Copyright
+
+Copyright (c) 2008 Peter Flanigan. All rights reserved.
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself. See L<perlartistic>.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+=cut
+
+# Local Variables:
+# mode: perl
+# tab-width: 3
+# End:
