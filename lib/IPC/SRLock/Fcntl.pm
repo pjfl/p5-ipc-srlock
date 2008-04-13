@@ -5,7 +5,6 @@ package IPC::SRLock::Fcntl;
 use strict;
 use warnings;
 use base qw(IPC::SRLock);
-use Date::Format;
 use File::Spec::Functions;
 use Fcntl qw(:flock);
 use IO::AtomicFile;
@@ -19,17 +18,14 @@ use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 # Private methods
 
 sub _init {
-   my ($me, $app) = @_; $app ||= Class::Null->new();
-   my $self       = $me->NEXT::_init( $app );
-   my $config     = $app->config || {};
-   my $path;
+   my ($me, $app, $config) = @_; my $path;
 
-   $self->tempdir(  $config->{tempdir} || $self->tempdir );
-   $path = catfile( $self->tempdir, $self->name.q(.lck) );
-   $self->lockfile( $path =~ m{ \A ([ -\.\/\w.]+) \z }mx ? $1 : q() );
-   $path = catfile( $self->tempdir, $self->name.q(.shm) );
-   $self->shmfile(  $path =~ m{ \A ([ -\.\/\w.]+) \z }mx ? $1 : q() );
-   return $self;
+   $me->tempdir(    $config->{tempdir} || $me->tempdir );
+   $path = catfile( $me->tempdir, $me->name.q(.lck) );
+   $me->lockfile(   $path =~ m{ \A ([ -\.\/\w.]+) \z }mx ? $1 : q() );
+   $path = catfile( $me->tempdir, $me->name.q(.shm) );
+   $me->shmfile(    $path =~ m{ \A ([ -\.\/\w.]+) \z }mx ? $1 : q() );
+   return;
 }
 
 sub _list {
@@ -92,7 +88,7 @@ sub _reset {
 
 sub _set {
    my ($me, $key, $pid, $timeout) = @_;
-   my ($lock, $lock_file, $lock_ref, $now, $start, $table, $text);
+   my ($lock, $lock_file, $lock_ref, $now, $start, $table);
 
    $table = {}; $start = time;
 
@@ -103,12 +99,12 @@ sub _set {
 
       if (($lock = $lock_ref->{ $key })
           && ($now > $lock->{stime} + $lock->{timeout})) {
-         $text  = 'Timed out '.$key.' set by '.$lock->{spid}.' on ';
-         $text .= time2str( q(%Y-%m-%d at %H:%M), $lock->{stime} );
-         $text .= ' after '.$lock->{timeout}.' seconds';
-         $me->log->error( $text );
+         $me->log->error( $me->_timeout_error( $key,
+                                               $lock->{spid   },
+                                               $lock->{stime  },
+                                               $lock->{timeout} ) );
          delete $lock_ref->{ $key };
-         $lock  = 0;
+         $lock = 0;
       }
 
       if ($me->patience && $now - $start > $me->patience) {

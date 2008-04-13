@@ -5,7 +5,6 @@ package IPC::SRLock::Sysv;
 use strict;
 use warnings;
 use base qw(IPC::SRLock);
-use Date::Format;
 use IPC::SysV qw(IPC_CREAT);
 use Time::HiRes qw(usleep);
 
@@ -145,9 +144,7 @@ sub _set {
          if (time < $ltime + $ltimeout) { $found = 1; last }
 
          shmwrite $shmid, $rec, $me->size * $lock_no, $me->size;
-         $text  = 'Timed out '.$key.' set by '.$lpid;
-         $text .= ' on '.time2str( q(%Y-%m-%d at %H:%M), $ltime );
-         $text .= ' after '.$ltimeout.' seconds';
+         $text = $me->_timeout_error( $key, $lpid, $ltime, $ltimeout );
          $me->log->error( $text );
          $lock_set = 1;
       }
