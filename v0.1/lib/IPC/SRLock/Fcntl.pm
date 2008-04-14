@@ -9,22 +9,37 @@ use File::Spec::Functions;
 use Fcntl qw(:flock);
 use IO::AtomicFile;
 use IO::File;
-use NEXT;
+use Readonly;
 use Time::HiRes qw(usleep);
 use XML::Simple;
 
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
+Readonly my %ATTRS => ( lockfile  => undef,
+                        mode      => oct q(0666),
+                        shmfile   => undef,
+                        tempdir   => q(/tmp),
+                        umask     => 0, );
+
+__PACKAGE__->mk_accessors( keys %ATTRS );
+
 # Private methods
 
 sub _init {
-   my ($me, $app, $config) = @_; my $path;
+   my $me = shift; my $path;
 
-   $me->tempdir(    $config->{tempdir} || $me->tempdir );
-   $path = catfile( $me->tempdir, $me->name.q(.lck) );
-   $me->lockfile(   $path =~ m{ \A ([ -\.\/\w.]+) \z }mx ? $1 : q() );
-   $path = catfile( $me->tempdir, $me->name.q(.shm) );
-   $me->shmfile(    $path =~ m{ \A ([ -\.\/\w.]+) \z }mx ? $1 : q() );
+   $me->{ $_ } = $ATTRS{ $_ } for (grep { ! defined $me->{ $_ } } keys %ATTRS);
+
+   unless ($me->lockfile) {
+      $path = catfile( $me->tempdir, $me->name.q(.lck) );
+      $me->lockfile( $path =~ m{ \A ([ -\.\/\w.]+) \z }mx ? $1 : q() );
+   }
+
+   unless ($me->shmfile) {
+      $path = catfile( $me->tempdir, $me->name.q(.shm) );
+      $me->shmfile( $path =~ m{ \A ([ -\.\/\w.]+) \z }mx ? $1 : q() );
+   }
+
    return;
 }
 

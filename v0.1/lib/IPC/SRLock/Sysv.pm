@@ -6,11 +6,28 @@ use strict;
 use warnings;
 use base qw(IPC::SRLock);
 use IPC::SysV qw(IPC_CREAT);
+use Readonly;
 use Time::HiRes qw(usleep);
 
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
+Readonly my %ATTRS => ( lockfile  => 195_911_405,
+                        mode      => oct q(0666),
+                        num_locks => 100,
+                        shmfile   => 195_911_405,
+                        size      => 300 );
+
+__PACKAGE__->mk_accessors( keys %ATTRS );
+
 # Private methods
+
+sub _init {
+   my $me = shift;
+
+   $me->{ $_ } = $ATTRS{ $_ } for (grep { ! defined $me->{ $_ } } keys %ATTRS);
+
+   return;
+}
 
 sub _get_semid {
    my $me = shift; my $semid = semget $me->lockfile, 1, 0;

@@ -14,19 +14,7 @@ use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 62 $ =~ /\d+/gmx );
 
 BEGIN { use_ok q(IPC::SRLock) }
 
-{
-   package Test::App;
-
-   use base qw(Class::Accessor::Fast);
-
-   __PACKAGE__->mk_accessors( qw(config debug log) );
-}
-
-my $app = Test::App->new();
-
-$app->config( { lock => { type => q(fcntl) } } );
-
-my $lock = IPC::SRLock->new( $app );
+my $lock = IPC::SRLock->new( { type => q(fcntl) } );
 
 $lock->set( k => $PROGRAM_NAME );
 
@@ -37,17 +25,11 @@ $lock->reset( k => $PROGRAM_NAME );
 
 ok( !(first { $_ eq $PROGRAM_NAME }
       map   { $_->{key} } @{ $lock->list() }), q(lock reset fcntl) );
-
 ok( unlink q(/tmp/ipc_srlock.lck), q(unlink lock file) );
-
 ok( unlink q(/tmp/ipc_srlock.shm), q(unlink shared file) );
 
 $lock->clear_lock_obj;
-
-$app->config( { lock => { type => q(sysv) } } );
-
-$lock = IPC::SRLock->new( $app );
-
+$lock = IPC::SRLock->new( { type => q(sysv) } );
 $lock->set( k => $PROGRAM_NAME );
 
 ok( (first { $_ eq $PROGRAM_NAME }
@@ -59,11 +41,7 @@ ok( !(first { $_ eq $PROGRAM_NAME }
       map   { $_->{key} } @{ $lock->list() }), q(lock reset ipc) );
 
 $lock->clear_lock_obj;
-
-$app->config( { lock => { patience => 10, type => q(memcached) } } );
-
-$lock = IPC::SRLock->new( $app );
-
+$lock = IPC::SRLock->new( { patience => 10, type => q(memcached) } );
 $lock->set( k => $PROGRAM_NAME );
 
 ok( (first { $_ eq $PROGRAM_NAME }
