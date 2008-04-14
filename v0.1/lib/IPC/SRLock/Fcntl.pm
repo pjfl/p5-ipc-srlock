@@ -120,6 +120,7 @@ sub _set {
    $table->{lock}->{ $key } = { spid    => $pid,
                                 stime   => $now,
                                 timeout => $timeout };
+   $me->log->debug( join q(,), $key, $pid, $now, $timeout ) if ($me->debug);
    $me->_write_shmfile( $lock_file, $table );
    return 1;
 }
