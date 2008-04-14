@@ -10,6 +10,7 @@ use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 my $dist     = q(lib/IPC/SRLock.pm);
 my $requires = { 'perl'                           => '5.8',
+                 'Cache::Memcached'               => '1.24',
                  'Class::Accessor::Fast'          => '0.31',
                  'Class::Inspector'               => '1.18',
                  'Class::Null'                    => '1.09',

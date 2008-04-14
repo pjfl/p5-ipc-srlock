@@ -9,7 +9,7 @@ use Class::Inspector;
 use Class::Null;
 use Date::Format;
 use English qw(-no_match_vars);
-use IPC::SRLock::Errs;
+use IPC::SRLock::ExceptionClass;
 use NEXT;
 use Time::Elapsed qw(elapsed);
 use Readonly;
@@ -20,12 +20,14 @@ Readonly my %ATTRS =>
    ( debug     => 0,
      lockfile  => 195_911_405,
      log       => undef,
+     memd      => undef,
      mode      => oct q(0666),
      name      => (lc join q(_), split m{ :: }mx, __PACKAGE__),
      nap_time  => 0.5,
      num_locks => 100,
      patience  => 0,
      pid       => undef,
+     servers   => [ q(localhost:11211) ],
      shmfile   => 195_911_405,
      size      => 300,
      time_out  => 300,
@@ -59,7 +61,7 @@ sub new {
 }
 
 sub catch {
-   my ($me, @rest) = @_; return IPC::SRLock::Errs->catch( @rest );
+   my ($me, @rest) = @_; return IPC::SRLock::ExceptionClass->catch( @rest );
 }
 
 sub clear_lock_obj {
@@ -133,7 +135,7 @@ sub table_view {
 }
 
 sub throw {
-   my ($me, @rest) = @_; return IPC::SRLock::Errs->throw( @rest );
+   my ($me, @rest) = @_; return IPC::SRLock::ExceptionClass->throw( @rest );
 }
 
 sub timeout_error {
@@ -239,13 +241,19 @@ of code to run single threaded
 =head2 new
 
 Implements the singleton pattern. The B<type> attribute determines
-which factory subclass is loaded. This package contains two
-subclasses; B<fcntl> and B<sysv>
+which factory subclass is loaded. This package contains three
+subclasses; B<fcntl>, B<memcached> and B<sysv>
 
 =head3 fcntl
 
 Uses L<Fcntl> to lock access to a disk based file which is
-read/written by L<XML::Simple>. This is the default type
+read/written by L<XML::Simple>. This is the default type. File are in
+B<tempdir> which defaults to I</tmp>
+
+=head2 memcached
+
+Uses L<Cache::Memcached> to implement a distributed lock manager. The
+B<servers> attribute defaults to I<localhost:11211>
 
 =head3 sysv
 
@@ -253,7 +261,7 @@ Uses System V semaphores to lock access to a shared memory file
 
 =head2 catch
 
-Expose the C<catch> method in L<IPC::SRLock::Errs>
+Expose the C<catch> method in L<IPC::SRLock::ExceptionClass>
 
 =head2 clear_lock_obj
 
@@ -306,7 +314,7 @@ C<$lock_obj-E<gt>get_table> on the C<$stash> hash ref
 
 =head2 throw
 
-Expose the C<throw> method in C<IPC::SRLock::Errs>
+Expose the C<throw> method in C<IPC::SRLock::ExceptionClass>
 
 =head2 timeout_error
 
@@ -362,6 +370,8 @@ None
 
 =over 3
 
+=item L<Cache::Memcached>
+
 =item L<Class::Accessor::Fast>
 
 =item L<Class::Inspector>
@@ -374,7 +384,7 @@ None
 
 =item L<IO::File>
 
-=item L<IPC::SRLock::Errs>
+=item L<IPC::SRLock::ExceptionClass>
 
 =item L<IPC::SysV>
 
@@ -392,13 +402,13 @@ None
 
 =head1 Incompatibilities
 
-There are no known incompatibilities in this module.
+There are no known incompatibilities in this module
 
 =head1 Bugs and Limitations
 
 There are no known bugs in this module.
 Please report problems to the address below.
-Patches are welcome.
+Patches are welcome
 
 =head1 Author
 
@@ -409,11 +419,11 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 Copyright (c) 2008 Peter Flanigan. All rights reserved.
 
 This program is free software; you can redistribute it and/or modify it
-under the same terms as Perl itself. See L<perlartistic>.
+under the same terms as Perl itself. See L<perlartistic>
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE
 
 =cut
 
