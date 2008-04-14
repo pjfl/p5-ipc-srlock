@@ -351,7 +351,8 @@ Should be overridden in the factory subclass
 
 =head1 Diagnostics
 
-None
+Setting C<$app-E<gt>debug> to true will cause the C<set> methods to log
+the lock record at the debug level, calls C<$app-E<gt>log-E<gt>debug>
 
 =head1 Configuration and Environment
 
