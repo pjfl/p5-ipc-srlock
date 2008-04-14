@@ -1,4 +1,4 @@
-package IPC::SRLock::Errs;
+package IPC::SRLock::ExceptionClass;
 
 # @(#)$Id$
 
