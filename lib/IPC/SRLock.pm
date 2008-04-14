@@ -18,43 +18,30 @@ use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 Readonly my %ATTRS =>
    ( debug     => 0,
-     lockfile  => 195_911_405,
      log       => undef,
-     memd      => undef,
-     mode      => oct q(0666),
      name      => (lc join q(_), split m{ :: }mx, __PACKAGE__),
      nap_time  => 0.5,
-     num_locks => 100,
      patience  => 0,
      pid       => undef,
-     servers   => [ q(localhost:11211) ],
-     shmfile   => 195_911_405,
-     size      => 300,
      time_out  => 300,
-     tempdir   => q(/tmp),
-     type      => q(fcntl),
-     umask     => 0, );
+     type      => q(fcntl), );
 
 __PACKAGE__->mk_accessors( keys %ATTRS );
 
 my $_lock_obj;
 
 sub new {
-   my ($me, $app) = @_;
+   my ($me, @rest) = @_;
 
    unless ($_lock_obj) {
-      $app ||= Class::Null->new();
-      my $config = $app->config || {};
-      my $attrs  = $me->_hash_merge( \%ATTRS, $config->{lock} );
+      my $args   = $me->_arg_list( @rest );
+      my $attrs  = $me->_hash_merge( \%ATTRS, $args );
       my $class  = __PACKAGE__.q(::).(ucfirst $attrs->{type});
-
       $me->_ensure_class_loaded( $class );
-
       $_lock_obj = bless $attrs, $class;
-      $_lock_obj->debug( $app->debug || $_lock_obj->debug );
-      $_lock_obj->log(   $app->log || Class::Null->new() );
+      $_lock_obj->log(   $_lock_obj->log || Class::Null->new() );
       $_lock_obj->pid(   $PID );
-      $_lock_obj->_init( $app, $config );
+      $_lock_obj->_init( $args );
    }
 
    return $_lock_obj;

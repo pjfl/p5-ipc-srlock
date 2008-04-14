@@ -6,20 +6,29 @@ use strict;
 use warnings;
 use base qw(IPC::SRLock);
 use Cache::Memcached;
+use Readonly;
 use Time::HiRes qw(usleep);
 
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
+Readonly my %ATTRS => ( lockfile  => q(_lockfile),
+                        memd      => undef,
+                        servers   => [ q(localhost:11211) ],
+                        shmfile   => q(_shmfile), );
+
+__PACKAGE__->mk_accessors( keys %ATTRS );
+
 # Private methods
 
 sub _init {
-   my ($me, $app, $config) = @_;
+   my $me = shift;
 
-   $me->lockfile( q(lockfile) );
-   $me->memd(     Cache::Memcached->new( debug     => $me->debug,
-                                         namespace => $me->name,
-                                         servers   => $me->servers ) );
-   $me->shmfile(  q(shmfile) );
+   $me->{ $_ } = $ATTRS{ $_ } for (grep { ! defined $me->{ $_ } } keys %ATTRS);
+
+   $me->memd( $me->memd
+              || Cache::Memcached->new( debug     => $me->debug,
+                                        namespace => $me->name,
+                                        servers   => $me->servers ) );
    return;
 }
 
@@ -29,7 +38,7 @@ sub _list {
    $self = []; $start = time;
 
    while (1) {
-      if ($me->memd->add( $me->lockfile, 1 )) {
+      if ($me->memd->add( $me->lockfile, 1, $me->patience + 30 )) {
          $recs = $me->memd->get( $me->shmfile ) || {};
 
          for $key (sort keys %{ $recs }) {
@@ -54,7 +63,7 @@ sub _reset {
    my ($me, $key) = @_; my ($found, $recs); my $start = time;
 
    while (1) {
-      if ($me->memd->add( $me->lockfile, 1 )) {
+      if ($me->memd->add( $me->lockfile, 1, $me->patience + 30 )) {
          $recs = $me->memd->get( $me->shmfile ) || {};
          $found = 1 if (delete $recs->{ $key });
          $me->memd->set( $me->shmfile, $recs ) if ($found);
@@ -78,7 +87,7 @@ sub _set {
    while (1) {
       $now = time;
 
-      if ($me->memd->add( $me->lockfile, 1 )) {
+      if ($me->memd->add( $me->lockfile, 1, $me->patience + 30 )) {
          $recs = $me->memd->get( $me->shmfile ) || {};
 
          if ($rec = $recs->{ $key }) {
