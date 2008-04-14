@@ -60,9 +60,7 @@ ok( !(first { $_ eq $PROGRAM_NAME }
 
 $lock->clear_lock_obj;
 
-$app->config( { lock => { patience => 10,
-                          servers  => [ q(localhost:11211) ],
-                          type     => q(memcached) } } );
+$app->config( { lock => { patience => 10, type => q(memcached) } } );
 
 $lock = IPC::SRLock->new( $app );
 
