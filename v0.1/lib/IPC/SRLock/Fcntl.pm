@@ -107,13 +107,14 @@ sub _set {
          $lock = 0;
       }
 
-      if ($me->patience && $now - $start > $me->patience) {
-         $me->_release( $lock_file );
-         $me->throw( error => q(ePatienceExpired), arg1 => $key );
-      }
-
       if ($lock) {
-         $me->_release( $lock_file ); usleep( 1_000_000 * $me->nap_time );
+         $me->_release( $lock_file );
+
+         if ($me->patience && $now - $start > $me->patience) {
+            $me->throw( error => q(ePatienceExpired), arg1 => $key );
+         }
+
+         usleep( 1_000_000 * $me->nap_time );
       }
    }
 

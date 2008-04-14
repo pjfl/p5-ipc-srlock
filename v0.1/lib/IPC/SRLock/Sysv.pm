@@ -114,24 +114,25 @@ sub _reset {
 
 sub _set {
    my ($me, $key, $pid, $timeout) = @_;
-   my ($found, $line, $lock_no, $lock_set, $lpid, $ltime, $ltimeout, $rec);
-   my ($semid, $start, $shmid, $text);
+   my ($found, $line, $lock_no, $lock_set, $lpid, $ltime, $ltimeout, $now);
+   my ($rec, $semid, $start, $shmid, $text);
 
-   $semid = $me->_get_semid(); $start = time;
+   $semid = $me->_get_semid();
+   $shmid = $me->_get_shmid();
+   $start = time;
 
    while (!$lock_set) {
       unless (semop $semid, pack q(s!s!s!), 0, -1, 0) {
          $me->throw( error => q(eCannotSetSemaphore), arg1 => $me->lockfile );
       }
 
-      $shmid = $me->_get_shmid();
-      $rec   = $key.q(,).$pid.q(,).time.q(,).$timeout.q(,);
-      $found = 0;
+      $found = 0; $now = time;
 
       for $lock_no (0 .. $me->num_locks - 1) {
          shmread $shmid, $line, $me->size * $lock_no, $me->size;
 
          if ($line =~ m{ \A EOF, }mx) {
+            $rec = $key.q(,).$pid.q(,).$now.q(,).$timeout.q(,);
             shmwrite $shmid, $rec, $me->size * $lock_no, $me->size
                unless ($lock_set);
             shmwrite $shmid, q(EOF,), $me->size * ($lock_no + 1), $me->size;
@@ -142,8 +143,9 @@ sub _set {
 
          next if ($line !~ m{ \A $key [,] }mx);
          (undef, $lpid, $ltime, $ltimeout) = split m{ [,] }mx, $line;
-         if (time < $ltime + $ltimeout) { $found = 1; last }
+         if ($now < $ltime + $ltimeout) { $found = 1; last }
 
+         $rec = $key.q(,).$pid.q(,).$now.q(,).$timeout.q(,);
          shmwrite $shmid, $rec, $me->size * $lock_no, $me->size;
          $text = $me->timeout_error( $key, $lpid, $ltime, $ltimeout );
          $me->log->error( $text );
@@ -155,7 +157,7 @@ sub _set {
                      arg1  => $me->lockfile );
       }
 
-      if ($me->patience && time - $start > $me->patience) {
+      if (!$lock_set && $me->patience && $now - $start > $me->patience) {
          $me->throw( error => q(ePatienceExpired), arg1 => $key );
       }
 
