@@ -8,7 +8,7 @@ use English qw(-no_match_vars);
 use FindBin qw($Bin);
 use List::Util qw(first);
 use lib qq($Bin/../lib);
-use Test::More tests => 9;
+use Test::More tests => 7;
 
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 62 $ =~ /\d+/gmx );
 
@@ -39,6 +39,8 @@ $lock->reset( k => $PROGRAM_NAME );
 
 ok( !(first { $_ eq $PROGRAM_NAME }
       map   { $_->{key} } @{ $lock->list() }), q(lock reset ipc) );
+
+exit 0;
 
 $lock->clear_lock_obj;
 $lock = IPC::SRLock->new( { patience => 10, type => q(memcached) } );
