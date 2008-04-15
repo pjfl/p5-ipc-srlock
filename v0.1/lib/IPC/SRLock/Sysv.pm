@@ -15,7 +15,7 @@ Readonly my %ATTRS => ( lockfile  => 195_911_405,
                         mode      => oct q(0666),
                         num_locks => 100,
                         shmfile   => 195_911_405,
-                        size      => 300 );
+                        size      => 300, );
 
 __PACKAGE__->mk_accessors( keys %ATTRS );
 

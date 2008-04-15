@@ -282,7 +282,7 @@ Unique key to identify the lock. Mandatory no default
 
 =item B<p>
 
-Explicitely set the process id associated with the lock. Defaults to
+Explicitly set the process id associated with the lock. Defaults to
 the current process id
 
 =item B<t>

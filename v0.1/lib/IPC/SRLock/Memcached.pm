@@ -53,7 +53,7 @@ sub _list {
          return $self;
       }
 
-      $me->_sleep_or_throw( $start, time, $key );
+      $me->_sleep_or_throw( $start, time, $me->lockfile );
    }
 
    return;
@@ -72,7 +72,7 @@ sub _reset {
          return 1;
       }
 
-      $me->_sleep_or_throw( $start, time, $key );
+      $me->_sleep_or_throw( $start, time, $me->lockfile );
    }
 
    return;
@@ -115,7 +115,7 @@ sub _set {
          return 1 if ($lock_set);
       }
 
-      $me->_sleep_or_throw( $start, $now, $key );
+      $me->_sleep_or_throw( $start, $now, $me->lockfile );
    }
 
    return;
