@@ -1,6 +1,7 @@
 lib/IPC/SRLock.pm
-lib/IPC/SRLock/Errs.pm
+lib/IPC/SRLock/ExceptionClass.pm
 lib/IPC/SRLock/Fcntl.pm
+lib/IPC/SRLock/Memcached.pm
 lib/IPC/SRLock/Sysv.pm
 Makefile.PL
 MANIFEST			This list of files
