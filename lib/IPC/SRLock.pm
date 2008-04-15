@@ -208,13 +208,13 @@ IPC::SRLock - Set/reset locking semantics to single thread processes
 
    use IPC::SRLock;
 
-   $app->config( tempdir => q(path_to_tmp_directory), type => q(fcntl) );
+   my $config   = { tempdir => q(path_to_tmp_directory), type => q(fcntl) };
 
-   my $lock_obj = IPC::SRLock->new( $app );
+   my $lock_obj = IPC::SRLock->new( $config );
 
    $lock_obj->set( k => q(some_resource_identfier) );
 
-   # This critical region of code is guaranteed to by single threaded
+   # This critical region of code is guaranteed to be single threaded
 
    $lock_obj->reset( k => q(some_resource_identfier) );
 
@@ -234,10 +234,10 @@ subclasses; B<fcntl>, B<memcached> and B<sysv>
 =head3 fcntl
 
 Uses L<Fcntl> to lock access to a disk based file which is
-read/written by L<XML::Simple>. This is the default type. File are in
+read/written by L<XML::Simple>. This is the default type. Files are in
 B<tempdir> which defaults to I</tmp>
 
-=head2 memcached
+=head3 memcached
 
 Uses L<Cache::Memcached> to implement a distributed lock manager. The
 B<servers> attribute defaults to I<localhost:11211>

@@ -75,7 +75,7 @@ __END__
 
 =head1 Name
 
-IPC::SRLock::Errs - Exception base class
+IPC::SRLock::ExceptionClass - Exception base class
 
 =head1 Version
 
@@ -100,7 +100,7 @@ EVAL_ERROR has been set
    warn $e->as_string( $verbosity, $offset );
 
 Serialize the exception to a string. The passed parameters; B<verbosity>
-and B<offset> determine how much output is returned.
+and B<offset> determine how much output is returned
 
 The B<verbosity> parameter can be:
 
@@ -129,7 +129,7 @@ the passed parameter is a reference it is re-thrown. If a single scalar
 is passed it is taken to be an error message code, a new exception is
 created with all other parameters taking their default values. If more
 than one parameter is passed the it is treated as a list and used to
-instantiate the new exception. The 'error' parameter must be provided
+instantiate the new exception. The B<error> parameter must be provided
 in this case
 
 =head1 Diagnostics
@@ -155,14 +155,14 @@ should be suppressed in the stack trace output
 
 =head1 Incompatibilities
 
-There are no known incompatibilities in this module.
+There are no known incompatibilities in this module
 
 =head1 Bugs and Limitations
 
 There are no known bugs in this module.
 The default ignore package list should be configurable.
 Please report problems to the address below.
-Patches are welcome.
+Patches are welcome
 
 =head1 Author
 
@@ -170,14 +170,14 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2008 Peter Flanigan. All rights reserved.
+Copyright (c) 2008 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
-under the same terms as Perl itself. See L<perlartistic>.
+under the same terms as Perl itself. See L<perlartistic>
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE
 
 =cut
 
