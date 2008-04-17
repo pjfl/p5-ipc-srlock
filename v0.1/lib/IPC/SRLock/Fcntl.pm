@@ -5,6 +5,7 @@ package IPC::SRLock::Fcntl;
 use strict;
 use warnings;
 use base qw(IPC::SRLock);
+use File::Spec;
 use File::Spec::Functions;
 use Fcntl qw(:flock);
 use IO::AtomicFile;
@@ -18,7 +19,7 @@ use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 Readonly my %ATTRS => ( lockfile  => undef,
                         mode      => oct q(0666),
                         shmfile   => undef,
-                        tempdir   => q(/tmp),
+                        tempdir   => File::Spec->tmpdir,
                         umask     => 0, );
 
 __PACKAGE__->mk_accessors( keys %ATTRS );
