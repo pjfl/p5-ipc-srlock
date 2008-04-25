@@ -389,7 +389,12 @@ None
 
 =head1 Incompatibilities
 
-There are no known incompatibilities in this module
+Testing of the B<sysv> subclass is skiped on: cygwin, freebsd, netbsd
+and solaris because CPAN testing on these platforms fails
+
+Testing of the B<memcached> subclass is skipped on all platforms as it
+requires C<memcached> to be listening on the localhost's default
+memcached port
 
 =head1 Bugs and Limitations
 

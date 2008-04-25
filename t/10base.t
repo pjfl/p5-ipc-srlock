@@ -8,11 +8,16 @@ use English qw(-no_match_vars);
 use FindBin qw($Bin);
 use List::Util qw(first);
 use lib qq($Bin/../lib);
-use Test::More tests => 7;
+use Test::More;
 
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 62 $ =~ /\d+/gmx );
 
-BEGIN { use_ok q(IPC::SRLock) }
+my %turkeys = ( qw(cygwin 1 freebsd 1 netbsd 1 solaris 1) );
+
+if ($turkeys{ $OSNAME }) { plan tests => 5 }
+else { plan tests => 7 }
+
+use_ok q(IPC::SRLock);
 
 my $lock = IPC::SRLock->new( { type => q(fcntl) } );
 
@@ -27,6 +32,8 @@ ok( !(first { $_ eq $PROGRAM_NAME }
       map   { $_->{key} } @{ $lock->list() }), q(lock reset fcntl) );
 ok( unlink q(/tmp/ipc_srlock.lck), q(unlink lock file) );
 ok( unlink q(/tmp/ipc_srlock.shm), q(unlink shared file) );
+
+exit 0 if (exists $turkeys{ $OSNAME });
 
 $lock->clear_lock_obj;
 $lock = IPC::SRLock->new( { type => q(sysv) } );
