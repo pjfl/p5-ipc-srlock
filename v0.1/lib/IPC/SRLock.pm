@@ -396,6 +396,9 @@ Testing of the B<memcached> subclass is skipped on all platforms as it
 requires C<memcached> to be listening on the localhost's default
 memcached port
 
+Automated testing of B<sysv> has been stopped because the testing
+platforms produce inconsistant results
+
 =head1 Bugs and Limitations
 
 There are no known bugs in this module.
