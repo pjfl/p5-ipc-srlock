@@ -14,8 +14,8 @@ use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 62 $ =~ /\d+/gmx );
 
 my %turkeys = ( qw(cygwin 1 freebsd 1 netbsd 1 solaris 1) );
 
-if ($ENV{AUTOMATED_TESTING} || $turkeys{ $OSNAME }) { plan tests => 5 }
-else { plan tests => 7 }
+if ($ENV{AUTOMATED_TESTING} || $turkeys{ $OSNAME }) { plan tests => 3 }
+else { plan tests => 5 }
 
 use_ok q(IPC::SRLock);
 
@@ -30,8 +30,9 @@ $lock->reset( k => $PROGRAM_NAME );
 
 ok( !(first { $_ eq $PROGRAM_NAME }
       map   { $_->{key} } @{ $lock->list() }), q(lock reset fcntl) );
-ok( unlink q(/tmp/ipc_srlock.lck), q(unlink lock file) );
-ok( unlink q(/tmp/ipc_srlock.shm), q(unlink shared file) );
+
+unlink q(/tmp/ipc_srlock.lck);
+unlink q(/tmp/ipc_srlock.shm);
 
 exit 0 if ($ENV{AUTOMATED_TESTING} || $turkeys{ $OSNAME });
 
