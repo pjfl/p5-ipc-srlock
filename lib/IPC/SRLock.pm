@@ -399,6 +399,9 @@ memcached port
 Automated testing of B<sysv> has been stopped because the testing
 platforms produce inconsistant results
 
+Reduced testing further due to inconsistant CPAN testing results. Last try
+after this will just exit 0 if $ENV{AUTOMATED_TESTING}
+
 =head1 Bugs and Limitations
 
 There are no known bugs in this module.
