@@ -137,9 +137,9 @@ sub _set {
    $table->{lock}->{ $key } = { spid    => $pid,
                                 stime   => $now,
                                 timeout => $timeout };
-   $text = join q(,), $key, $pid, $now, $timeout;
-   $me->log->debug( $text."\n" ) if ($me->debug);
    $me->_write_shmfile( $lock_file, $table );
+   $text = join q(,), $key, $pid, $now, $timeout;
+   $me->log->debug( 'Set lock '.$text."\n" ) if ($me->debug);
    return 1;
 }
 
