@@ -106,7 +106,8 @@ sub _set {
          }
          else {
             $recs->{ $key } = $pid.q(,).$now.q(,).$timeout;
-            $me->log->debug( $key.q(,).$recs->{ $key }."\n" ) if ($me->debug);
+            $text = 'Set lock '.$key.q(,).$recs->{ $key }."\n";
+            $me->log->debug( $text ) if ($me->debug);
             $me->memd->set( $me->shmfile, $recs );
             $lock_set = 1;
          }
