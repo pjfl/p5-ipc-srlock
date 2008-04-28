@@ -104,7 +104,7 @@ sub _reset {
 
 sub _set {
    my ($me, $key, $pid, $timeout) = @_;
-   my ($lock, $lock_file, $lock_ref, $now, $start, $table);
+   my ($lock, $lock_file, $lock_ref, $now, $start, $table, $text);
 
    $table = {}; $start = time;
 
@@ -137,7 +137,8 @@ sub _set {
    $table->{lock}->{ $key } = { spid    => $pid,
                                 stime   => $now,
                                 timeout => $timeout };
-   $me->log->debug( join q(,), $key, $pid, $now, $timeout ) if ($me->debug);
+   $text = join q(,), $key, $pid, $now, $timeout;
+   $me->log->debug( $text."\n" ) if ($me->debug);
    $me->_write_shmfile( $lock_file, $table );
    return 1;
 }

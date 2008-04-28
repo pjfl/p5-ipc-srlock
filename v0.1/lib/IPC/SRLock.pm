@@ -10,7 +10,6 @@ use Class::Null;
 use Date::Format;
 use English qw(-no_match_vars);
 use IPC::SRLock::ExceptionClass;
-use NEXT;
 use Time::Elapsed qw(elapsed);
 use Readonly;
 
@@ -374,8 +373,6 @@ None
 =item L<IPC::SRLock::ExceptionClass>
 
 =item L<IPC::SysV>
-
-=item L<NEXT>
 
 =item L<Readonly>
 

@@ -153,7 +153,7 @@ sub _set {
             shmwrite $shmid, $rec, $me->size * $lock_no, $me->size
                unless ($lock_set);
             shmwrite $shmid, q(EOF,), $me->size * ($lock_no + 1), $me->size;
-            $me->log->debug( $rec ) if ($me->debug);
+            $me->log->debug( $rec."\n" ) if ($me->debug);
             $lock_set = 1;
             last;
          }
