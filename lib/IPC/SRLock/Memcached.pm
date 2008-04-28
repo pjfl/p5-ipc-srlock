@@ -105,7 +105,8 @@ sub _set {
             }
          }
          else {
-            $recs->{ $key } = $pid.q(,).$now.q(,).$timeout;;
+            $recs->{ $key } = $pid.q(,).$now.q(,).$timeout;
+            $me->log->debug( $key.q(,).$recs->{ $key }."\n" ) if ($me->debug);
             $me->memd->set( $me->shmfile, $recs );
             $lock_set = 1;
          }
