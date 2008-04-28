@@ -130,7 +130,7 @@ sub timeout_error {
 
    $text  = 'Timed out '.$key.' set by '.$pid;
    $text .= ' on '.time2str( q(%Y-%m-%d at %H:%M), $when );
-   $text .= ' after '.$after.' seconds';
+   $text .= ' after '.$after.' seconds'."\n";
    return $text;
 }
 
