@@ -386,20 +386,16 @@ None
 
 =head1 Incompatibilities
 
-Testing of the B<sysv> subclass is skiped on: cygwin, freebsd, netbsd
-and solaris because CPAN testing on these platforms fails
+The B<sysv> subclass will not work on cygwin
+
+=head1 Bugs and Limitations
 
 Testing of the B<memcached> subclass is skipped on all platforms as it
 requires C<memcached> to be listening on the localhost's default
 memcached port
 
-Automated testing of B<sysv> has been stopped because the testing
-platforms produce inconsistant results
-
-Reduced testing further due to inconsistant CPAN testing results. Last try
-after this will just exit 0 if $ENV{AUTOMATED_TESTING}
-
-=head1 Bugs and Limitations
+Automated testing has been disabled due to inconsistancies in the CPAN
+testing platforms. See spurious results on previous releases
 
 There are no known bugs in this module.
 Please report problems to the address below.
@@ -411,7 +407,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2008 Peter Flanigan. All rights reserved.
+Copyright (c) 2008 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>
