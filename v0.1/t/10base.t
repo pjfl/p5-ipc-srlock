@@ -12,12 +12,12 @@ use Test::More;
 
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 62 $ =~ /\d+/gmx );
 
-my %turkeys = ( qw(cygwin 1 freebsd 1 netbsd 1 solaris 1) );
-
-if ($ENV{AUTOMATED_TESTING} || $turkeys{ $OSNAME }) { plan tests => 3 }
+if ($ENV{AUTOMATED_TESTING}) { plan tests => 1 }
 else { plan tests => 5 }
 
 use_ok q(IPC::SRLock);
+
+exit 0 if ($ENV{AUTOMATED_TESTING});
 
 my $lock = IPC::SRLock->new( { type => q(fcntl) } );
 
@@ -33,8 +33,6 @@ ok( !(first { $_ eq $PROGRAM_NAME }
 
 unlink q(/tmp/ipc_srlock.lck);
 unlink q(/tmp/ipc_srlock.shm);
-
-exit 0 if ($ENV{AUTOMATED_TESTING} || $turkeys{ $OSNAME });
 
 $lock->clear_lock_obj;
 $lock = IPC::SRLock->new( { type => q(sysv) } );
