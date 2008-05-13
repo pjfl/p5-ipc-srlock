@@ -392,7 +392,7 @@ The B<sysv> subclass will not work on cygwin
 
 Testing of the B<memcached> subclass is skipped on all platforms as it
 requires C<memcached> to be listening on the localhost's default
-memcached port
+memcached port I<localhost:11211>
 
 Automated testing has been disabled due to inconsistancies in the CPAN
 testing platforms. See spurious results on previous releases
