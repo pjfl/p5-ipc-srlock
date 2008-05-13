@@ -9,6 +9,7 @@ use Module::Build;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 my $requires = { 'perl'                  => '5.8',
+                 'version'               => '0.74',
                  'Cache::Memcached'      => '1.24',
                  'Class::Accessor::Fast' => '0.31',
                  'Class::Inspector'      => '1.18',
