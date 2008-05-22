@@ -1,0 +1,7 @@
+2008-05-22  Peter Flanigan  <pjf@localhost>
+
+	* lib/IPC/SRLock/Fcntl.pm (_init):
+
+	Replaced XML::Simple with Data::Serializer::Storable
+
+
