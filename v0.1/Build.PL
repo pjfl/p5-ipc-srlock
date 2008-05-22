@@ -14,6 +14,7 @@ my $requires = { 'perl'                  => '5.8',
                  'Class::Accessor::Fast' => '0.31',
                  'Class::Inspector'      => '1.18',
                  'Class::Null'           => '1.09',
+                 'Data::Serializer'      => '0.46',
                  'Date::Format'          => '2.22',
                  'Exception::Class'      => '1.23',
                  'IO::AtomicFile'        => '2.110',
@@ -22,8 +23,7 @@ my $requires = { 'perl'                  => '5.8',
                  'List::Util'            => '1.19',
                  'Readonly'              => '1.03',
                  'Time::Elapsed'         => '0.10',
-                 'Time::HiRes'           => '1.9711',
-                 'XML::Simple'           => '2.14' };
+                 'Time::HiRes'           => '1.9711' };
 my $build = Module::Build->new
    ( create_makefile_pl => q(traditional),
      create_readme      => 1,
