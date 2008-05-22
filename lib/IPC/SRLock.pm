@@ -233,7 +233,7 @@ subclasses; B<fcntl>, B<memcached> and B<sysv>
 =head3 fcntl
 
 Uses L<Fcntl> to lock access to a disk based file which is
-read/written by L<XML::Simple>. This is the default type. Files are in
+read/written by L<Data::Serializer>. This is the default type. Files are in
 B<tempdir> which defaults to I</tmp>
 
 =head3 memcached
@@ -364,6 +364,8 @@ None
 
 =item L<Class::Null>
 
+=item L<Data::Serializer>
+
 =item L<Date::Format>
 
 =item L<IO::AtomicFile>
@@ -380,8 +382,6 @@ None
 
 =item L<Time::HiRes>
 
-=item L<XML::Simple>
-
 =back
 
 =head1 Incompatibilities
@@ -393,9 +393,6 @@ The B<sysv> subclass will not work on cygwin
 Testing of the B<memcached> subclass is skipped on all platforms as it
 requires C<memcached> to be listening on the localhost's default
 memcached port I<localhost:11211>
-
-Automated testing has been disabled due to inconsistancies in the CPAN
-testing platforms. See spurious results on previous releases
 
 There are no known bugs in this module.
 Please report problems to the address below.
