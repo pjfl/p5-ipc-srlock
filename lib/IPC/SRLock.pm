@@ -370,8 +370,6 @@ None
 
 =item L<IO::AtomicFile>
 
-=item L<IO::File>
-
 =item L<IPC::SRLock::ExceptionClass>
 
 =item L<IPC::SysV>
