@@ -138,7 +138,9 @@ sub timeout_error {
 sub _arg_list {
    my ($me, @rest) = @_;
 
-   return $rest[0] && ref $rest[0] ? $rest[0] : { @rest };
+   return {} unless ($rest[0]);
+
+   return ref $rest[0] ? $rest[0] : { @rest };
 }
 
 sub _ensure_class_loaded {
@@ -222,28 +224,54 @@ IPC::SRLock - Set/reset locking semantics to single thread processes
 Provides set/reset locking methods which will force a critical region
 of code to run single threaded
 
+=head1 Configuration and Environment
+
+This class defines accessors and mutators for these attributes:
+
+=over 3
+
+=item debug
+
+Turns on debug output. Defaults to 0
+
+=item log
+
+If set to a log object, it's C<debug> method is called if debugging is
+turned on. Defaults to L<Class::Null>
+
+=item name
+
+Used as the lock file names. Defaults to I<ipc_srlock>
+
+=item nap_time
+
+How long to wait between polls of the lock table. Defaults to 0.5 seconds
+
+=item patience
+
+Time in seconds to wait for a lock before giving up. If set to 0 waits
+forever. Defaults to 0
+
+=item pid
+
+The process id doing the locking. Defaults to this processes id
+
+=item time_out
+
+Time in seconds before a lock is deemed to have expired. Defaults to 300
+
+=item type
+
+Determines which factory subclass is loaded. Defaults to I<fcntl>
+
+=back
+
 =head1 Subroutines/Methods
 
 =head2 new
 
-Implements the singleton pattern. The B<type> attribute determines
-which factory subclass is loaded. This package contains three
-subclasses; B<fcntl>, B<memcached> and B<sysv>
-
-=head3 fcntl
-
-Uses L<Fcntl> to lock access to a disk based file which is
-read/written by L<Data::Serializer>. This is the default type. Files are in
-B<tempdir> which defaults to I</tmp>
-
-=head3 memcached
-
-Uses L<Cache::Memcached> to implement a distributed lock manager. The
-B<servers> attribute defaults to I<localhost:11211>
-
-=head3 sysv
-
-Uses System V semaphores to lock access to a shared memory file
+This constructor implements the singleton pattern, ensures that the
+factory subclass is loaded in initialises it
 
 =head2 catch
 
@@ -262,6 +290,8 @@ keys/values in the hash are suitable for passing to
 L<HTML::FormWidgets>
 
 =head2 list
+
+   my $array_ref = $lock_obj->list;
 
 Returns an array of hash refs that represent the current lock table
 
@@ -345,18 +375,12 @@ Should be overridden in the factory subclass
 
 =head1 Diagnostics
 
-Setting C<$app-E<gt>debug> to true will cause the C<set> methods to log
-the lock record at the debug level, calls C<$app-E<gt>log-E<gt>debug>
-
-=head1 Configuration and Environment
-
-None
+Setting B<debug> to true will cause the C<set> methods to log
+the lock record at the debug level
 
 =head1 Dependencies
 
 =over 3
-
-=item L<Cache::Memcached>
 
 =item L<Class::Accessor::Fast>
 
@@ -364,21 +388,13 @@ None
 
 =item L<Class::Null>
 
-=item L<Data::Serializer>
-
 =item L<Date::Format>
 
-=item L<IO::AtomicFile>
-
 =item L<IPC::SRLock::ExceptionClass>
-
-=item L<IPC::SysV>
 
 =item L<Readonly>
 
 =item L<Time::Elapsed>
-
-=item L<Time::HiRes>
 
 =back
 

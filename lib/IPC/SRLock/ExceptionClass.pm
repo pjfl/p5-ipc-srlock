@@ -99,7 +99,7 @@ EVAL_ERROR has been set
 
    warn $e->as_string( $verbosity, $offset );
 
-Serialize the exception to a string. The passed parameters; B<verbosity>
+Serialise the exception to a string. The passed parameters; B<verbosity>
 and B<offset> determine how much output is returned
 
 The B<verbosity> parameter can be:
