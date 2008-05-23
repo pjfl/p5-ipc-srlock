@@ -210,23 +210,64 @@ IPC::SRLock::Sysv - Set/reset locks using semop and shmop
 
 Uses System V semaphores to lock access to a shared memory file
 
+=head1 Configuration and Environment
+
+This class defines accessors and mutators for these attributes:
+
+=over 3
+
+=item lockfile
+
+The key the the semaphore. Defaults to 195_911_405
+
+=item mode
+
+Mode to create the shared memory file. Defaults to 0666
+
+=item num_locks
+
+Maximum number of simultaneous locks. Defaults to 100
+
+=item shmfile
+
+The key to the shared memory file. Defaults to 195_911_405
+
+=item size
+
+Maximum size of a lock record. Limits the lock key to 255
+bytes. Defaults to 300
+
+=back
+
 =head1 Subroutines/Methods
 
 =head2 _init
 
+Initialise the object
+
 =head2 _get_semid
+
+Return the semaphore reference
 
 =head2 _get_shmid
 
+Return the shared memory reference
+
 =head2 _list
+
+List the contents of the lock table
 
 =head2 _reset
 
+Delete a lock from the lock table
+
 =head2 _set
+
+Set a lock in the lock table
 
 =head1 Diagnostics
 
-=head1 Configuration and Environment
+None
 
 =head1 Dependencies
 

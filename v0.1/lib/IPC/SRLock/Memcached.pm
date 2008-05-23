@@ -158,24 +158,57 @@ IPC::SRLock::Memcached - Set/reset locks using libmemcache
 
 =head1 Description
 
-Uses L<Cache::Memcached> to implement a distributed lock manager. The
-B<servers> attribute defaults to I<localhost:11211>
+Uses L<Cache::Memcached> to implement a distributed lock manager
+
+=head1 Configuration and Environment
+
+This class defines accessors and mutators for these attributes:
+
+=over 3
+
+=item lockfile
+
+Name of the key to the lock file record. Defaults to I<_lockfile>
+
+=item memd
+
+An instance of L<Cache::Memcached> with it's namespace set to I<ipc_srlock>
+
+=item servers
+
+An array ref of servers to connect to. Defaults to I<localhost:11211>
+
+=item shmfile
+
+Name of the key to the lock table record. Defaults to I<_shmfile>
+
+=back
 
 =head1 Subroutines/Methods
 
 =head2 _init
 
+Initialise the object
+
 =head2 _list
+
+List the contents of the lock table
 
 =head2 _reset
 
+Delete a lock from the lock table
+
 =head2 _set
+
+Set a lock in the lock table
 
 =head2 _sleep_or_throw
 
+Sleep for a bit or throw a timeout exception
+
 =head1 Diagnostics
 
-=head1 Configuration and Environment
+None
 
 =head1 Dependencies
 

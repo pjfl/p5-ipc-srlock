@@ -183,28 +183,71 @@ IPC::SRLock::Fcntl - Set/reset locks using fcntl
 =head1 Description
 
 Uses L<Fcntl> to lock access to a disk based file which is
-read/written by L<Data::Serializer>. This is the default type. Files are in
-B<tempdir> which defaults to I</tmp>
+read/written by L<Data::Serializer>. This is the default type for
+L<IPC::SRLock>.
+
+=head1 Configuration and Environment
+
+This class defines accessors and mutators for these attributes:
+
+=over 3
+
+=item lockfile
+
+Path to the file used by fcntl
+
+=item mode
+
+File mode to use when creating the lock table file. Defaults to 0666
+
+=item shmfile
+
+Path to the lock table file
+
+=item tempdir
+
+Path to the directory where the lock files reside. Defaults to
+C<File::Spec-E<gt>tmpdir>
+
+=item umask
+
+The umask to set when creating the lock table file. Defaults to 0
+
+=back
 
 =head1 Subroutines/Methods
 
 =head2 _init
 
+Initialise the object
+
 =head2 _list
+
+List the contents of the lock table
 
 =head2 _read_shmfile
 
-=head2 _releases
+Read the file containing the lock table from disk
+
+=head2 _release
+
+Release the exclusive flock on the lock file
 
 =head2 _reset
 
+Delete a lock from the lock table
+
 =head2 _set
+
+Set a lock in the lock table
 
 =head2 _write_shmfile
 
+Write the lock table to the disk file
+
 =head1 Diagnostics
 
-=head1 Configuration and Environment
+None
 
 =head1 Dependencies
 
