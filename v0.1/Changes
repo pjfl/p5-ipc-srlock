@@ -1,10 +1,16 @@
-2008-05-23  Peter Flanigan  <pjf@localhost>
+2008-06-02
+
+	* Build.PL:
+
+	Made version a build requirement
+
+2008-05-23
 
 	* lib/IPC/SRLock.pm (POD):
 
 	Improved POD. Added POD tests
 
-2008-05-22  Peter Flanigan  <pjf@localhost>
+2008-05-22
 
 	* lib/IPC/SRLock/Fcntl.pm (_init):
 
