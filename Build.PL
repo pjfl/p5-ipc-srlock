@@ -26,7 +26,8 @@ my $requires = { 'perl'                        => '5.8',
                  'Time::Elapsed'               => '0.10',
                  'Time::HiRes'                 => '1.9711' };
 my $build = Module::Build->new
-   ( create_makefile_pl => q(traditional),
+   ( build_requires     => { 'version' => q(0.74) },
+     create_makefile_pl => q(traditional),
      create_readme      => 1,
      create_packlist    => 0,
      dist_version_from  => q(lib/IPC/SRLock.pm),
