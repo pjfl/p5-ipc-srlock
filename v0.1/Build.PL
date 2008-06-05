@@ -26,7 +26,7 @@ my $requires = { 'perl'                        => '5.8',
                  'Time::Elapsed'               => '0.10',
                  'Time::HiRes'                 => '1.9711' };
 my $build = Module::Build->new
-   ( build_requires     => { 'version' => q(0.74) },
+   ( build_requires     => { 'Test::More' => q(0.74), 'version'=> q(0.74) },
      create_makefile_pl => q(traditional),
      create_readme      => 1,
      create_packlist    => 0,
