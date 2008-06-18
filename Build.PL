@@ -33,7 +33,9 @@ my $build = Module::Build->new
      dist_version_from  => q(lib/IPC/SRLock.pm),
      license            => q(perl),
      module_name        => q(IPC::SRLock),
-     notes              => { cpan_testers => 1 },
+     notes
+        => { cpan_testers      => 1,
+             cpan_testers_cond => q($ENV{PATH} =~ m{ srezic }mx) },
      requires           => $requires );
 
 $build->create_build_script();
