@@ -1,3 +1,9 @@
+2008-06-18
+
+	* Build.PL:
+
+	Stopped srezic from testing this module. Fails to process build requirement
+
 2008-06-02
 
 	* Build.PL:
