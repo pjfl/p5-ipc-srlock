@@ -326,7 +326,7 @@ it to zero makes the lock last indefinitely
    $lock_obj->table_view( $stash, $model );
 
 The C<$model> object's methods store the result of calling
-C<$lock_obj-E<gt>get_table> on the C<$stash> hash ref
+C<< $lock_obj->get_table >> on the C<$stash> hash ref
 
 =head2 throw
 
