@@ -22,98 +22,104 @@ __PACKAGE__->mk_accessors( keys %ATTRS );
 # Private methods
 
 sub _init {
-   my $me = shift;
+   my $self = shift;
 
-   $me->{ $_ } = $ATTRS{ $_ } for (grep { ! defined $me->{ $_ } } keys %ATTRS);
+   for (grep { ! defined $self->{ $_ } } keys %ATTRS) {
+      $self->{ $_ } = $ATTRS{ $_ };
+   }
 
    return;
 }
 
 sub _get_semid {
-   my $me = shift; my $semid = semget $me->lockfile, 1, 0;
+   my $self = shift; my $semid = semget $self->lockfile, 1, 0;
 
    return $semid if (defined $semid);
 
-   $semid = semget $me->lockfile, 1, IPC_CREAT | $me->mode;
+   $semid = semget $self->lockfile, 1, IPC_CREAT | $self->mode;
 
    unless (defined $semid) {
-      $me->throw( error => q(eCannotCreateSemaphore), arg1 => $me->lockfile );
+      $self->throw( error => q(eCannotCreateSemaphore),
+                    arg1  => $self->lockfile );
    }
 
    unless (semop $semid, pack q(s!s!s!), 0, 1, 0) {
-      $me->throw( error => q(eCannotPrimeSemaphore), arg1 => $me->lockfile );
+      $self->throw( error => q(eCannotPrimeSemaphore),
+                    arg1  => $self->lockfile );
    }
 
    return $semid;
 }
 
 sub _get_shmid {
-   my $me = shift; my ($shmid, $size);
+   my $self = shift; my ($shmid, $size);
 
-   $size  = $me->size * $me->num_locks;
-   $shmid = shmget $me->shmfile, $size, 0;
+   $size  = $self->size * $self->num_locks;
+   $shmid = shmget $self->shmfile, $size, 0;
 
    return $shmid if (defined $shmid);
 
-   $shmid = shmget $me->shmfile, $size, IPC_CREAT | $me->mode;
+   $shmid = shmget $self->shmfile, $size, IPC_CREAT | $self->mode;
 
    unless (defined $shmid) {
-      $me->throw( error => q(eCannotCreateMemorySegment),
-                  arg1  => $me->shmfile );
+      $self->throw( error => q(eCannotCreateMemorySegment),
+                    arg1  => $self->shmfile );
    }
 
-   shmwrite $shmid, q(EOF,), 0, $me->size;
+   shmwrite $shmid, q(EOF,), 0, $self->size;
    return $shmid;
 }
 
 sub _list {
-   my $me = shift; my (@flds, $line, $lock_no, $self, $semid, $shmid);
+   my $self = shift; my (@flds, $line, $list, $lock_no, $semid, $shmid);
 
-   $self  = [];
-   $semid = $me->_get_semid();
+   $list  = [];
+   $semid = $self->_get_semid();
 
    unless (semop $semid, pack q(s!s!s!), 0, -1, 0) {
-      $me->throw( error => q(eCannotSetSemaphore), arg1 => $me->lockfile );
+      $self->throw( error => q(eCannotSetSemaphore), arg1 => $self->lockfile );
    }
 
-   $shmid = $me->_get_shmid();
+   $shmid = $self->_get_shmid();
 
-   for $lock_no (0 .. $me->num_locks - 1) {
-      shmread $shmid, $line, $me->size * $lock_no, $me->size;
+   for $lock_no (0 .. $self->num_locks - 1) {
+      shmread $shmid, $line, $self->size * $lock_no, $self->size;
 
       last if ($line =~ m{ \A EOF, }mx);
 
       @flds = split m{ , }mx, $line;
-      push @{ $self }, { key     => $flds[0],
+      push @{ $list }, { key     => $flds[0],
                          pid     => $flds[1],
                          stime   => $flds[2],
                          timeout => $flds[3] };
    }
 
    unless (semop $semid, pack q(s!s!s!), 0, 1, 0) {
-      $me->throw( error => q(eCannotReleaseSemaphore), arg1 => $me->lockfile );
+      $self->throw( error => q(eCannotReleaseSemaphore),
+                    arg1  => $self->lockfile );
    }
 
-   return $self;
+   return $list;
 }
 
 sub _reset {
-   my ($me, $key) = @_; my ($found, $line, $lock_no, $semid, $shmid);
+   my ($self, $key) = @_; my ($found, $line, $lock_no, $semid, $shmid);
 
-   $semid = $me->_get_semid();
+   $semid = $self->_get_semid();
 
    unless (semop $semid, pack q(s!s!s!), 0, -1, 0) {
-      $me->throw( error => q(eCannotSetSemaphore), arg1 => $me->lockfile );
+      $self->throw( error => q(eCannotSetSemaphore),
+                    arg1  => $self->lockfile );
    }
 
-   $shmid = $me->_get_shmid();
+   $shmid = $self->_get_shmid();
    $found = 0;
 
-   for $lock_no (0 .. $me->num_locks - 1) {
-      shmread $shmid, $line, $me->size * $lock_no, $me->size;
+   for $lock_no (0 .. $self->num_locks - 1) {
+      shmread $shmid, $line, $self->size * $lock_no, $self->size;
 
       if ($found) {
-         shmwrite $shmid, $line, $me->size * ($lock_no - 1), $me->size;
+         shmwrite $shmid, $line, $self->size * ($lock_no - 1), $self->size;
       }
 
       last       if ($line =~ m{ \A EOF, }mx);
@@ -121,39 +127,42 @@ sub _reset {
    }
 
    unless (semop $semid, pack q(s!s!s!), 0, 1, 0) {
-      $me->throw( error => q(eCannotReleaseSemaphore), arg1 => $me->lockfile );
+      $self->throw( error => q(eCannotReleaseSemaphore),
+                    arg1  => $self->lockfile );
    }
 
-   $me->throw( error => q(eLockNotSet), arg1 => $key ) unless ($found);
+   $self->throw( error => q(eLockNotSet), arg1 => $key ) unless ($found);
 
    return 1;
 }
 
 sub _set {
-   my ($me, $key, $pid, $timeout) = @_;
+   my ($self, $key, $pid, $timeout) = @_;
    my ($found, $line, $lock_no, $lock_set, $lpid, $ltime, $ltimeout, $now);
    my ($rec, $semid, $start, $shmid, $text);
 
-   $semid = $me->_get_semid();
-   $shmid = $me->_get_shmid();
+   $semid = $self->_get_semid();
+   $shmid = $self->_get_shmid();
    $start = time;
 
    while (!$lock_set) {
       unless (semop $semid, pack q(s!s!s!), 0, -1, 0) {
-         $me->throw( error => q(eCannotSetSemaphore), arg1 => $me->lockfile );
+         $self->throw( error => q(eCannotSetSemaphore),
+                       arg1  => $self->lockfile );
       }
 
       $found = 0; $now = time;
 
-      for $lock_no (0 .. $me->num_locks - 1) {
-         shmread $shmid, $line, $me->size * $lock_no, $me->size;
+      for $lock_no (0 .. $self->num_locks - 1) {
+         shmread $shmid, $line, $self->size * $lock_no, $self->size;
 
          if ($line =~ m{ \A EOF, }mx) {
             $rec = $key.q(,).$pid.q(,).$now.q(,).$timeout.q(,);
-            shmwrite $shmid, $rec, $me->size * $lock_no, $me->size
+            shmwrite $shmid, $rec, $self->size * $lock_no, $self->size
                unless ($lock_set);
-            shmwrite $shmid, q(EOF,), $me->size * ($lock_no + 1), $me->size;
-            $me->log->debug( 'Set lock '.$rec."\n" ) if ($me->debug);
+            shmwrite $shmid, q(EOF,),
+                     $self->size * ($lock_no + 1), $self->size;
+            $self->log->debug( 'Set lock '.$rec."\n" ) if ($self->debug);
             $lock_set = 1;
             last;
          }
@@ -163,22 +172,22 @@ sub _set {
          if ($now < $ltime + $ltimeout) { $found = 1; last }
 
          $rec = $key.q(,).$pid.q(,).$now.q(,).$timeout.q(,);
-         shmwrite $shmid, $rec, $me->size * $lock_no, $me->size;
-         $text = $me->timeout_error( $key, $lpid, $ltime, $ltimeout );
-         $me->log->error( $text );
+         shmwrite $shmid, $rec, $self->size * $lock_no, $self->size;
+         $text = $self->timeout_error( $key, $lpid, $ltime, $ltimeout );
+         $self->log->error( $text );
          $lock_set = 1;
       }
 
       unless (semop $semid, pack q(s!s!s!), 0, 1, 0) {
-         $me->throw( error => q(eCannotReleaseSemaphore),
-                     arg1  => $me->lockfile );
+         $self->throw( error => q(eCannotReleaseSemaphore),
+                     arg1  => $self->lockfile );
       }
 
-      if (!$lock_set && $me->patience && $now - $start > $me->patience) {
-         $me->throw( error => q(ePatienceExpired), arg1 => $key );
+      if (!$lock_set && $self->patience && $now - $start > $self->patience) {
+         $self->throw( error => q(ePatienceExpired), arg1 => $key );
       }
 
-      usleep( 1_000_000 * $me->nap_time ) if ($found);
+      usleep( 1_000_000 * $self->nap_time ) if ($found);
    }
 
    return 1;
