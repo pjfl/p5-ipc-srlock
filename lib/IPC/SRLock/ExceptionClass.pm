@@ -18,27 +18,27 @@ Readonly my $NUL => q();
 our $IGNORE = [];
 
 sub catch {
-   my ($me, @rest) = @_; my $e;
+   my ($self, @rest) = @_; my $e;
 
-   return $e if ($e = $me->caught( @rest ));
+   return $e if ($e = $self->caught( @rest ));
 
-   return $me->new( $EVAL_ERROR ) if ($EVAL_ERROR);
+   return $self->new( $EVAL_ERROR ) if ($EVAL_ERROR);
 
    return;
 }
 
 sub as_string {
-   my ($me, $verbosity, $offset) = @_;
+   my ($self, $verbosity, $offset) = @_;
    my ($i, $frame, $line, $l_no, %seen, $text);
 
-   $verbosity ||= 1; $offset ||= 1; $text = $NUL.$me->message;
+   $verbosity ||= 1; $offset ||= 1; $text = $NUL.$self->message;
 
-   return $text if ($verbosity < 2 && !$me->show_trace);
+   return $text if ($verbosity < 2 && !$self->show_trace);
 
    $i     = $verbosity > 2 ? 0 : $offset;
    $frame = undef;
 
-   while (defined( $frame = $me->trace->frame( $i++ ) )) {
+   while (defined( $frame = $self->trace->frame( $i++ ) )) {
       $line = "\n".$frame->package.' line '.$frame->line;
 
       if ($verbosity > 2) { $text .= $line; next }
@@ -52,19 +52,19 @@ sub as_string {
 }
 
 sub throw {
-   my ($me, @rest) = @_;
+   my ($self, @rest) = @_;
 
-   die $me if (ref $me);
+   die $self if (ref $self);
 
    my @args = @rest == 1 ? ( error => $rest[0] ) : @rest;
 
-   die $me->new( arg1           => $NUL,
-                 arg2           => $NUL,
-                 ignore_package => $IGNORE,
-                 out            => $NUL,
-                 rv             => 1,
-                 show_trace     => 0,
-                 @args );
+   die $self->new( arg1           => $NUL,
+                   arg2           => $NUL,
+                   ignore_package => $IGNORE,
+                   out            => $NUL,
+                   rv             => 1,
+                   show_trace     => 0,
+                   @args );
 }
 
 1;
@@ -108,7 +108,8 @@ The B<verbosity> parameter can be:
 
 =item 1
 
-The default value. Only show a stack trace if c<$me-E<gt>show_trace> is true
+The default value. Only show a stack trace if C<< $self->show_trace >>
+is true
 
 =item 2
 

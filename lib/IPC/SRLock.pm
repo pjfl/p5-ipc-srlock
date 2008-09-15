@@ -30,13 +30,13 @@ __PACKAGE__->mk_accessors( keys %ATTRS );
 my $_lock_obj;
 
 sub new {
-   my ($me, @rest) = @_;
+   my ($proto, @rest) = @_;
 
    unless ($_lock_obj) {
-      my $args   = $me->_arg_list( @rest );
-      my $attrs  = $me->_hash_merge( \%ATTRS, $args );
+      my $args   = $proto->_arg_list( @rest );
+      my $attrs  = $proto->_hash_merge( \%ATTRS, $args );
       my $class  = __PACKAGE__.q(::).(ucfirst $attrs->{type});
-      $me->_ensure_class_loaded( $class );
+      $proto->_ensure_class_loaded( $class );
       $_lock_obj = bless $attrs, $class;
       $_lock_obj->log(   $_lock_obj->log || Class::Null->new() );
       $_lock_obj->pid(   $PID );
@@ -47,7 +47,7 @@ sub new {
 }
 
 sub catch {
-   my ($me, @rest) = @_; return IPC::SRLock::ExceptionClass->catch( @rest );
+   my ($self, @rest) = @_; return IPC::SRLock::ExceptionClass->catch( @rest );
 }
 
 sub clear_lock_obj {
@@ -56,7 +56,7 @@ sub clear_lock_obj {
 }
 
 sub get_table {
-   my $me = shift; my ($count, $data, $flds, $lock, $tleft);
+   my $self = shift; my ($count, $data, $flds, $lock, $tleft);
 
    $count = 0;
    $data  = { align  => { id    => 'left',
@@ -71,7 +71,7 @@ sub get_table {
                           tleft => 'Time Left' },
               values => [] };
 
-   for $lock (@{ $me->list }) {
+   for $lock (@{ $self->list }) {
       $flds          = {};
       $flds->{id   } = $lock->{key};
       $flds->{pid  } = $lock->{pid};
@@ -89,28 +89,28 @@ sub get_table {
 }
 
 sub list {
-   my $me = shift; return $me->_list;
+   my $self = shift; return $self->_list;
 }
 
 sub reset {
-   my ($me, @rest) = @_; my $args = $me->_arg_list( @rest );
+   my ($self, @rest) = @_; my $args = $self->_arg_list( @rest );
 
-   $me->throw( q(eNoKey) ) unless (my $key = $args->{k});
+   $self->throw( q(eNoKey) ) unless (my $key = $args->{k});
 
-   return $me->_reset( $key );
+   return $self->_reset( $key );
 }
 
 sub set {
-   my ($me, @rest) = @_; my $args = $me->_arg_list( @rest );
+   my ($self, @rest) = @_; my $args = $self->_arg_list( @rest );
 
-   $me->throw( q(eNoKey) )       unless (my $key = $args->{k});
-   $me->throw( q(eNoProcessId) ) unless (my $pid = $args->{p} || $me->pid);
+   $self->throw( q(eNoKey) )       unless (my $key = $args->{k});
+   $self->throw( q(eNoProcessId) ) unless (my $pid = $args->{p} || $self->pid);
 
-   return $me->_set( $key, $pid, $args->{t} || $me->time_out );
+   return $self->_set( $key, $pid, $args->{t} || $self->time_out );
 }
 
 sub table_view {
-   my ($me, $s, $model) = @_; my $data = $me->get_table;
+   my ($self, $s, $model) = @_; my $data = $self->get_table;
 
    $model->add_field(    $s, { data   => $data,
                                select => q(left),
@@ -121,11 +121,11 @@ sub table_view {
 }
 
 sub throw {
-   my ($me, @rest) = @_; return IPC::SRLock::ExceptionClass->throw( @rest );
+   my ($self, @rest) = @_; return IPC::SRLock::ExceptionClass->throw( @rest );
 }
 
 sub timeout_error {
-   my ($me, $key, $pid, $when, $after) = @_; my $text;
+   my ($self, $key, $pid, $when, $after) = @_; my $text;
 
    $text  = 'Timed out '.$key.' set by '.$pid;
    $text .= ' on '.time2str( q(%Y-%m-%d at %H:%M), $when );
@@ -136,7 +136,7 @@ sub timeout_error {
 # Private methods
 
 sub _arg_list {
-   my ($me, @rest) = @_;
+   my ($self, @rest) = @_;
 
    return {} unless ($rest[0]);
 
@@ -144,7 +144,7 @@ sub _arg_list {
 }
 
 sub _ensure_class_loaded {
-   my ($me, $class) = @_; my $error;
+   my ($self, $class) = @_; my $error;
 
    {
 ## no critic
@@ -154,16 +154,16 @@ sub _ensure_class_loaded {
 ## critic
    }
 
-   $me->throw( $error ) if ($error);
+   $self->throw( $error ) if ($error);
 
-   $me->throw( error => q(eUndefinedPackage), arg1 => $class )
+   $self->throw( error => q(eUndefinedPackage), arg1 => $class )
         unless (Class::Inspector->loaded( $class ));
 
    return;
 }
 
 sub _hash_merge {
-   my ($me, $l, $r) = @_; return { %{ $l }, %{ $r || {} } };
+   my ($self, $l, $r) = @_; return { %{ $l }, %{ $r || {} } };
 }
 
 sub _init {
@@ -171,23 +171,23 @@ sub _init {
 }
 
 sub _list {
-   my $me = shift;
+   my $self = shift;
 
-   $me->throw( error => q(eNotOverridden), arg1 => q(list) );
+   $self->throw( error => q(eNotOverridden), arg1 => q(list) );
    return;
 }
 
 sub _reset {
-   my $me = shift;
+   my $self = shift;
 
-   $me->throw( error => q(eNotOverridden), arg1 => q(reset) );
+   $self->throw( error => q(eNotOverridden), arg1 => q(reset) );
    return;
 }
 
 sub _set {
-   my $me = shift;
+   my $self = shift;
 
-   $me->throw( error => q(eNotOverridden), arg1 => q(set) );
+   $self->throw( error => q(eNotOverridden), arg1 => q(set) );
    return;
 }
 
@@ -338,7 +338,7 @@ Return the text of the the timeout message
 
 =head2 _arg_list
 
-   my $args = $me->_arg_list( @rest );
+   my $args = $self->_arg_list( @rest );
 
 Returns a hash ref containing the passed parameter list. Enables
 methods to be called with either a list or a hash ref as it's input
@@ -346,13 +346,13 @@ parameters
 
 =head2 _ensure_class_loaded
 
-   $me->_ensure_class_loaded( $some_class );
+   $self->_ensure_class_loaded( $some_class );
 
 Require the requested class, throw an error if it doesn't load
 
 =head2 _hash_merge
 
-   my $hash = $me->_hash_merge( { key1 => val1 }, { key2 => val2 } );
+   my $hash = $self->_hash_merge( { key1 => val1 }, { key2 => val2 } );
 
 Simplistic merging of two hashes
 

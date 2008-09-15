@@ -21,65 +21,67 @@ __PACKAGE__->mk_accessors( keys %ATTRS );
 # Private methods
 
 sub _init {
-   my $me = shift;
+   my $self = shift;
 
-   $me->{ $_ } = $ATTRS{ $_ } for (grep { ! defined $me->{ $_ } } keys %ATTRS);
+   for (grep { !defined $self->{ $_ } } keys %ATTRS) {
+      $self->{ $_ } = $ATTRS{ $_ };
+   }
 
-   $me->memd( $me->memd
-              || Cache::Memcached->new( debug     => $me->debug,
-                                        namespace => $me->name,
-                                        servers   => $me->servers ) );
+   $self->memd( $self->memd
+                || Cache::Memcached->new( debug     => $self->debug,
+                                          namespace => $self->name,
+                                          servers   => $self->servers ) );
    return;
 }
 
 sub _list {
-   my $me = shift; my (@flds, $key, $recs, $self, $start);
+   my $self = shift; my (@flds, $key, $list, $recs, $start);
 
-   $self = []; $start = time;
+   $list = []; $start = time;
 
    while (1) {
-      if ($me->memd->add( $me->lockfile, 1, $me->patience + 30 )) {
-         $recs = $me->memd->get( $me->shmfile ) || {};
+      if ($self->memd->add( $self->lockfile, 1, $self->patience + 30 )) {
+         $recs = $self->memd->get( $self->shmfile ) || {};
 
          for $key (sort keys %{ $recs }) {
             @flds = split m{ , }mx, $recs->{ $key };
-            push @{ $self }, { key     => $key,
+            push @{ $list }, { key     => $key,
                                pid     => $flds[0],
                                stime   => $flds[1],
                                timeout => $flds[2] };
          }
 
-         $me->memd->delete( $me->lockfile );
-         return $self;
+         $self->memd->delete( $self->lockfile );
+         return $list;
       }
 
-      $me->_sleep_or_throw( $start, time, $me->lockfile );
+      $self->_sleep_or_throw( $start, time, $self->lockfile );
    }
 
    return;
 }
 
 sub _reset {
-   my ($me, $key) = @_; my ($found, $recs); my $start = time;
+   my ($self, $key) = @_; my ($found, $recs); my $start = time;
 
    while (1) {
-      if ($me->memd->add( $me->lockfile, 1, $me->patience + 30 )) {
-         $recs = $me->memd->get( $me->shmfile ) || {};
+      if ($self->memd->add( $self->lockfile, 1, $self->patience + 30 )) {
+         $recs = $self->memd->get( $self->shmfile ) || {};
          $found = 1 if (delete $recs->{ $key });
-         $me->memd->set( $me->shmfile, $recs ) if ($found);
-         $me->memd->delete( $me->lockfile );
-         $me->throw( error => q(eLockNotSet), arg1 => $key ) unless ($found);
+         $self->memd->set( $self->shmfile, $recs ) if ($found);
+         $self->memd->delete( $self->lockfile );
+         $self->throw( error => q(eLockNotSet), arg1 => $key ) unless ($found);
          return 1;
       }
 
-      $me->_sleep_or_throw( $start, time, $me->lockfile );
+      $self->_sleep_or_throw( $start, time, $self->lockfile );
    }
 
    return;
 }
 
 sub _set {
-   my ($me, $key, $pid, $timeout) = @_;
+   my ($self, $key, $pid, $timeout) = @_;
    my (@flds, $lock_set, $now, $rec, $recs, $start, $text);
 
    $start = time;
@@ -87,50 +89,50 @@ sub _set {
    while (1) {
       $now = time;
 
-      if ($me->memd->add( $me->lockfile, 1, $me->patience + 30 )) {
-         $recs = $me->memd->get( $me->shmfile ) || {};
+      if ($self->memd->add( $self->lockfile, 1, $self->patience + 30 )) {
+         $recs = $self->memd->get( $self->shmfile ) || {};
 
          if ($rec = $recs->{ $key }) {
             @flds = split m{ [,] }mx, $rec;
 
             if ($now > $flds[1] + $flds[2]) {
                $recs->{ $key } = $pid.q(,).$now.q(,).$timeout;
-               $me->memd->set( $me->shmfile, $recs );
-               $text = $me->timeout_error( $key,
-                                           $flds[0],
-                                           $flds[1],
-                                           $flds[2] );
-               $me->log->error( $text );
+               $self->memd->set( $self->shmfile, $recs );
+               $text = $self->timeout_error( $key,
+                                             $flds[0],
+                                             $flds[1],
+                                             $flds[2] );
+               $self->log->error( $text );
                $lock_set = 1;
             }
          }
          else {
             $recs->{ $key } = $pid.q(,).$now.q(,).$timeout;
             $text = 'Set lock '.$key.q(,).$recs->{ $key }."\n";
-            $me->log->debug( $text ) if ($me->debug);
-            $me->memd->set( $me->shmfile, $recs );
+            $self->log->debug( $text ) if ($self->debug);
+            $self->memd->set( $self->shmfile, $recs );
             $lock_set = 1;
          }
 
-         $me->memd->delete( $me->lockfile );
+         $self->memd->delete( $self->lockfile );
 
          return 1 if ($lock_set);
       }
 
-      $me->_sleep_or_throw( $start, $now, $me->lockfile );
+      $self->_sleep_or_throw( $start, $now, $self->lockfile );
    }
 
    return;
 }
 
 sub _sleep_or_throw {
-   my ($me, $start, $now, $key) = @_;
+   my ($self, $start, $now, $key) = @_;
 
-   if ($me->patience && $now - $start > $me->patience) {
-      $me->throw( error => q(ePatienceExpired), arg1 => $key );
+   if ($self->patience && $now - $start > $self->patience) {
+      $self->throw( error => q(ePatienceExpired), arg1 => $key );
    }
 
-   usleep( 1_000_000 * $me->nap_time );
+   usleep( 1_000_000 * $self->nap_time );
    return;
 }
 

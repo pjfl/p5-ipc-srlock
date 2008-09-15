@@ -28,55 +28,57 @@ __PACKAGE__->mk_accessors( keys %ATTRS );
 # Private methods
 
 sub _init {
-   my $me = shift; my $path;
+   my $self = shift; my $path;
 
-   $me->{ $_ } = $ATTRS{ $_ } for (grep { ! defined $me->{ $_ } } keys %ATTRS);
-
-   unless ($me->lockfile) {
-      $path = catfile( $me->tempdir, $me->name.q(.lck) );
-      $me->lockfile( $path =~ m{ \A ([ -\.\/\w.]+) \z }mx ? $1 : q() );
+   for (grep { !defined $self->{ $_ } } keys %ATTRS) {
+      $self->{ $_ } = $ATTRS{ $_ };
    }
 
-   unless ($me->shmfile) {
-      $path = catfile( $me->tempdir, $me->name.q(.shm) );
-      $me->shmfile( $path =~ m{ \A ([ -\.\/\w.]+) \z }mx ? $1 : q() );
+   unless ($self->lockfile) {
+      $path = catfile( $self->tempdir, $self->name.q(.lck) );
+      $self->lockfile( $path =~ m{ \A ([ -\.\/\w.]+) \z }mx ? $1 : q() );
    }
 
-   $me->serializer( Data::Serializer->new( serializer => q(Storable) ) );
+   unless ($self->shmfile) {
+      $path = catfile( $self->tempdir, $self->name.q(.shm) );
+      $self->shmfile( $path =~ m{ \A ([ -\.\/\w.]+) \z }mx ? $1 : q() );
+   }
+
+   $self->serializer( Data::Serializer->new( serializer => q(Storable) ) );
    return;
 }
 
 sub _list {
-   my $me   = shift; my ($lock_file, $lock_ref) = $me->_read_shmfile;
-   my $self = [];
+   my $self = shift; my ($lock_file, $lock_ref) = $self->_read_shmfile;
+   my $list = [];
 
    for (keys %{ $lock_ref }) {
-      push @{ $self }, { key     => $_,
+      push @{ $list }, { key     => $_,
                          pid     => $lock_ref->{ $_ }->{spid},
                          stime   => $lock_ref->{ $_ }->{stime},
                          timeout => $lock_ref->{ $_ }->{timeout} };
    }
 
-   $me->_release( $lock_file );
-   return $self;
+   $self->_release( $lock_file );
+   return $list;
 }
 
 sub _read_shmfile {
-   my $me = shift; my ($e, $lock, $ref);
+   my $self = shift; my ($e, $lock, $ref);
 
-   umask $me->umask;
+   umask $self->umask;
 
-   unless ($lock = IO::File->new( $me->lockfile, q(w), $me->mode )) {
-      $me->throw( error => q(eCannotWrite), arg1 => $me->lockfile );
+   unless ($lock = IO::File->new( $self->lockfile, q(w), $self->mode )) {
+      $self->throw( error => q(eCannotWrite), arg1 => $self->lockfile );
    }
 
    flock $lock, LOCK_EX;
 
-   if (-f $me->shmfile) {
-      $ref = eval { $me->serializer->retrieve( $me->shmfile ) };
+   if (-f $self->shmfile) {
+      $ref = eval { $self->serializer->retrieve( $self->shmfile ) };
 
-      if ($e = $me->catch) {
-         $me->_release( $lock ); $me->throw( $e );
+      if ($e = $self->catch) {
+         $self->_release( $lock ); $self->throw( $e );
       }
    }
    else { $ref = {} }
@@ -85,76 +87,76 @@ sub _read_shmfile {
 }
 
 sub _release {
-   my ($me, $lock) = @_; flock $lock, LOCK_UN; $lock->close; return;
+   my ($self, $lock) = @_; flock $lock, LOCK_UN; $lock->close; return;
 }
 
 sub _reset {
-   my ($me, $key) = @_; my ($lock_file, $lock_ref) = $me->_read_shmfile;
+   my ($self, $key) = @_; my ($lock_file, $lock_ref) = $self->_read_shmfile;
 
    unless (exists $lock_ref->{ $key }) {
-      $me->_release( $lock_file );
-      $me->throw( error => q(eLockNotSet), arg1 => $key );
+      $self->_release( $lock_file );
+      $self->throw( error => q(eLockNotSet), arg1 => $key );
    }
 
    delete $lock_ref->{ $key };
-   $me->_write_shmfile( $lock_file, $lock_ref );
+   $self->_write_shmfile( $lock_file, $lock_ref );
    return 1;
 }
 
 sub _set {
-   my ($me, $key, $pid, $timeout) = @_;
+   my ($self, $key, $pid, $timeout) = @_;
    my ($lock, $lock_file, $lock_ref, $now, $start, $text);
 
    $lock_ref = {}; $start = time;
 
    while (!$now || $lock_ref->{ $key }) {
-      ($lock_file, $lock_ref) = $me->_read_shmfile; $now = time;
+      ($lock_file, $lock_ref) = $self->_read_shmfile; $now = time;
 
       if (($lock = $lock_ref->{ $key })
           && ($now > $lock->{stime} + $lock->{timeout})) {
-         $me->log->error( $me->timeout_error( $key,
-                                              $lock->{spid   },
-                                              $lock->{stime  },
-                                              $lock->{timeout} ) );
+         $self->log->error( $self->timeout_error( $key,
+                                                  $lock->{spid   },
+                                                  $lock->{stime  },
+                                                  $lock->{timeout} ) );
          delete $lock_ref->{ $key };
          $lock = 0;
       }
 
       if ($lock) {
-         $me->_release( $lock_file );
+         $self->_release( $lock_file );
 
-         if ($me->patience && $now - $start > $me->patience) {
-            $me->throw( error => q(ePatienceExpired), arg1 => $key );
+         if ($self->patience && $now - $start > $self->patience) {
+            $self->throw( error => q(ePatienceExpired), arg1 => $key );
          }
 
-         usleep( 1_000_000 * $me->nap_time );
+         usleep( 1_000_000 * $self->nap_time );
       }
    }
 
    $lock_ref->{ $key } = { spid    => $pid,
                            stime   => $now,
                            timeout => $timeout };
-   $me->_write_shmfile( $lock_file, $lock_ref );
+   $self->_write_shmfile( $lock_file, $lock_ref );
    $text = join q(,), $key, $pid, $now, $timeout;
-   $me->log->debug( 'Set lock '.$text."\n" ) if ($me->debug);
+   $self->log->debug( 'Set lock '.$text."\n" ) if ($self->debug);
    return 1;
 }
 
 sub _write_shmfile {
-   my ($me, $lock_file, $lock_ref) = @_; my ($e, $wtr);
+   my ($self, $lock_file, $lock_ref) = @_; my ($e, $wtr);
 
-   unless ($wtr = IO::AtomicFile->new( $me->shmfile, q(w), $me->mode )) {
-      $me->_release( $lock_file );
-      $me->throw( error => q(eCannotWrite), arg1 => $me->shmfile );
+   unless ($wtr = IO::AtomicFile->new( $self->shmfile, q(w), $self->mode )) {
+      $self->_release( $lock_file );
+      $self->throw( error => q(eCannotWrite), arg1 => $self->shmfile );
    }
 
-   eval { $me->serializer->store( $lock_ref, $wtr ) };
+   eval { $self->serializer->store( $lock_ref, $wtr ) };
 
-   if ($e = $me->catch) {
-      $wtr->delete; $me->_release( $lock_file ); $me->throw( $e );
+   if ($e = $self->catch) {
+      $wtr->delete; $self->_release( $lock_file ); $self->throw( $e );
    }
 
-   $wtr->close; $me->_release( $lock_file );
+   $wtr->close; $self->_release( $lock_file );
    return;
 }
 
