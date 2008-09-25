@@ -105,7 +105,7 @@ sub _reset {
 
 sub _set {
    my ($self, $key, $pid, $timeout) = @_;
-   my ($lock, $lock_file, $lock_ref, $now, $start, $text);
+   my ($lock, $lock_file, $lock_ref, $now, $start);
 
    $lock_ref = {}; $start = time;
 
@@ -137,8 +137,7 @@ sub _set {
                            stime   => $now,
                            timeout => $timeout };
    $self->_write_shmfile( $lock_file, $lock_ref );
-   $text = join q(,), $key, $pid, $now, $timeout;
-   $self->log->debug( 'Set lock '.$text."\n" ) if ($self->debug);
+   $self->log->debug( "Lock $key set by $pid\n" ) if ($self->debug);
    return 1;
 }
 

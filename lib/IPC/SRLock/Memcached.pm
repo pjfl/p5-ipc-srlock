@@ -108,15 +108,17 @@ sub _set {
          }
          else {
             $recs->{ $key } = $pid.q(,).$now.q(,).$timeout;
-            $text = 'Set lock '.$key.q(,).$recs->{ $key }."\n";
-            $self->log->debug( $text ) if ($self->debug);
             $self->memd->set( $self->shmfile, $recs );
             $lock_set = 1;
          }
 
          $self->memd->delete( $self->lockfile );
 
-         return 1 if ($lock_set);
+         if ($lock_set) {
+            $self->log->debug( "Lock $key set by $pid\n" ) if ($self->debug);
+
+            return 1;
+         }
       }
 
       $self->_sleep_or_throw( $start, $now, $self->lockfile );
