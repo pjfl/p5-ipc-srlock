@@ -176,7 +176,7 @@ sub _set {
             last;
          }
 
-         $timedout  = 1;
+         $timedout = 1;
          $rec      = $key.q(,).$pid.q(,).$now.q(,).$timeout.q(,);
          shmwrite $shmid, $rec, $self->size * $lock_no, $self->size;
          $lock_set = 1;
