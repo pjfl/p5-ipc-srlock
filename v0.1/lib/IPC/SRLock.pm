@@ -19,7 +19,7 @@ Readonly my %ATTRS =>
    ( debug     => 0,
      log       => undef,
      name      => (lc join q(_), split m{ :: }mx, __PACKAGE__),
-     nap_time  => 0.5,
+     nap_time  => 0.1,
      patience  => 0,
      pid       => undef,
      time_out  => 300,
@@ -36,6 +36,7 @@ sub new {
       my $args   = $proto->_arg_list( @rest );
       my $attrs  = $proto->_hash_merge( \%ATTRS, $args );
       my $class  = __PACKAGE__.q(::).(ucfirst $attrs->{type});
+
       $proto->_ensure_class_loaded( $class );
       $_lock_obj = bless $attrs, $class;
       $_lock_obj->log(   $_lock_obj->log || Class::Null->new() );
