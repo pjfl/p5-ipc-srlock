@@ -116,7 +116,7 @@ sub table_view {
    $model->add_field(    $s, { data   => $data,
                                select => q(left),
                                type   => q(table) } );
-   $model->group_fields( $s, { id     => q(lock_table_select), nitems => 1 } );
+   $model->group_fields( $s, { id     => q(lock_table.select), nitems => 1 } );
    $model->add_buttons(  $s, qw(Delete) ) if ($data->{count} > 0);
    return;
 }
