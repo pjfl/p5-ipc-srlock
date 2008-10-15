@@ -25,6 +25,7 @@ my $requires = { 'perl'                        => '5.008',
                  'Readonly'                    => '1.03',
                  'Time::Elapsed'               => '0.10',
                  'Time::HiRes'                 => '1.9711' };
+my $cond  = q($ENV{AUTOMATED_TESTING} || $ENV{COMSPEC});
 my $build = Module::Build->new
    ( build_requires     => { 'Test::More'          => q(0.74) },
      configure_requires => { 'ExtUtils::MakeMaker' => q(6.42),
@@ -35,7 +36,8 @@ my $build = Module::Build->new
      dist_version_from  => q(lib/IPC/SRLock.pm),
      license            => q(perl),
      module_name        => q(IPC::SRLock),
-     notes              => { cpan_testers_version => 1 },
+     notes              => { cpan_testers_version => 1,
+                             cpan_testers_cond    => $cond },
      requires           => $requires,
      sign               => 1 );
 
