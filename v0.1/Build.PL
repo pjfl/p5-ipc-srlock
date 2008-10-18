@@ -25,7 +25,7 @@ my $requires = { 'perl'                        => '5.008',
                  'Readonly'                    => '1.03',
                  'Time::Elapsed'               => '0.10',
                  'Time::HiRes'                 => '1.9711' };
-my $cond  = q($ENV{AUTOMATED_TESTING} || $ENV{COMSPEC});
+my $cond  = q($ENV{AUTOMATED_TESTING} || $ENV{COMSPEC} || $ENV{PATH} =~ m{ srezic }mx);
 my $build = Module::Build->new
    ( build_requires     => { 'Test::More'          => q(0.74) },
      configure_requires => { 'ExtUtils::MakeMaker' => q(6.42),
