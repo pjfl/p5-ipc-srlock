@@ -1,5 +1,8 @@
 Revision history for IPC::SRLock
 
+0.1.80  15/11/2008
+        - New approach to CPAN testing
+
 0.1.78  19/10/2008
         - Another attempt to find the off swith for CPAN testers
 
