@@ -12,8 +12,14 @@ use Test::More;
 
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 62 $ =~ /\d+/gmx );
 
-if ($ENV{AUTOMATED_TESTING}) { plan tests => 3 }
-else { plan tests => 5 }
+BEGIN {
+   if ($ENV{AUTOMATED_TESTING}
+       || ($ENV{PERL5OPT} || q()) =~ m{ CPAN-Reporter }mx) {
+      plan skip_all => q(CPAN Testing stopped);
+   }
+
+   plan tests => 5;
+}
 
 use_ok q(IPC::SRLock);
 
@@ -31,8 +37,6 @@ ok( !(first { $_ eq $PROGRAM_NAME }
 
 unlink q(/tmp/ipc_srlock.lck);
 unlink q(/tmp/ipc_srlock.shm);
-
-exit 0 if ($ENV{AUTOMATED_TESTING});
 
 $lock->clear_lock_obj;
 $lock = IPC::SRLock->new( { type => q(sysv) } );
