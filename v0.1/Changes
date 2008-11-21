@@ -1,5 +1,8 @@
 Revision history for IPC::SRLock
 
+0.1.82  21/11/2008
+        - Removed circular dependency on Exception::Class
+
 0.1.80  15/11/2008
         - New approach to CPAN testing
 
