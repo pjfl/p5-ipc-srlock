@@ -1,5 +1,8 @@
 Revision history for IPC::SRLock
 
+        - Added hclass table attribute to set key field to occupy most
+          space
+
 0.1.82  21/11/2008
         - Removed circular dependency on Exception::Class
 

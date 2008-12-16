@@ -57,27 +57,28 @@ sub clear_lock_obj {
 }
 
 sub get_table {
-   my $self = shift; my ($count, $data, $flds, $lock, $tleft);
+   my $self = shift;
 
-   $count = 0;
-   $data  = { align  => { id    => 'left',
-                          pid   => 'right',
-                          stime => 'right',
-                          tleft => 'right'},
-              count  => $count,
-              flds   => [ qw(id pid stime tleft) ],
-              labels => { id    => 'Key',
-                          pid   => 'PID',
-                          stime => 'Lock Time',
-                          tleft => 'Time Left' },
-              values => [] };
+   my $count = 0;
+   my $data  = { align  => { id    => 'left',
+                             pid   => 'right',
+                             stime => 'right',
+                             tleft => 'right'},
+                 count  => $count,
+                 flds   => [ qw(id pid stime tleft) ],
+                 hclass => { id => q(most) },
+                 labels => { id    => 'Key',
+                             pid   => 'PID',
+                             stime => 'Lock Time',
+                             tleft => 'Time Left' },
+                 values => [] };
 
-   for $lock (@{ $self->list }) {
-      $flds          = {};
+   for my $lock (@{ $self->list }) {
+      my $flds       = {};
       $flds->{id   } = $lock->{key};
       $flds->{pid  } = $lock->{pid};
       $flds->{stime} = time2str( q(%Y-%m-%d %H:%M:%S), $lock->{stime} );
-      $tleft         = $lock->{stime} + $lock->{timeout} - time;
+      my $tleft      = $lock->{stime} + $lock->{timeout} - time;
       $flds->{tleft} = $tleft > 0 ? elapsed( $tleft ) : 'Expired';
       $flds->{class}->{tleft}
                      = $tleft < 1 ? q(error dataValue) : q(odd dataValue);
