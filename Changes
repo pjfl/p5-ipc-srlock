@@ -1,5 +1,6 @@
 Revision history for IPC::SRLock
 
+        - Now uses IPC::ShareLite in SysV store
         - Added hclass table attribute to set key field to occupy most
           space
 

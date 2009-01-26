@@ -1,16 +1,16 @@
 #!/usr/bin/perl
 
-# @(#)$Id: 11lock.t 62 2008-04-11 01:20:52Z pjf $
+# @(#)$Id$
 
 use strict;
 use warnings;
 use English qw(-no_match_vars);
-use FindBin qw($Bin);
-use List::Util qw(first);
-use lib qq($Bin/../lib);
+use File::Spec::Functions;
+use FindBin  qw( $Bin );
+use lib (catdir( $Bin, updir, q(lib) ));
 use Test::More;
 
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 62 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev$ =~ /\d+/gmx );
 
 BEGIN {
    if ($ENV{AUTOMATED_TESTING} || $ENV{PERL_CR_SMOKER_CURRENT}
