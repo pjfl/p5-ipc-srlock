@@ -8,6 +8,7 @@ use English qw(-no_match_vars);
 use File::Spec::Functions;
 use FindBin  qw( $Bin );
 use lib (catdir( $Bin, updir, q(lib) ));
+use List::Util qw(first);
 use Test::More;
 
 use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev$ =~ /\d+/gmx );
