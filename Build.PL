@@ -27,7 +27,8 @@ my $requires = { 'perl'                  => '5.008',
                  'Time::Elapsed'         => '0.10',
                  'Time::HiRes'           => '1.9711' };
 my $build = Module::Build->new
-   ( add_to_cleanup     => [ 'IPC-SRLock-*',
+   ( add_to_cleanup     => [ 'Debian_CPANTS.txt',
+                             'IPC-SRLock-*',
                              map { ( '*/' x $_ ) . '*~' } 0..5 ],
      build_requires     => { 'Test::Harness'       => q(2.64),
                              'Test::More'          => q(0.74),
