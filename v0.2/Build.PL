@@ -22,7 +22,6 @@ my $requires = { 'perl'                  => '5.008',
                  'IPC::SysV'             => '1.04',
                  'IPC::ShareLite'        => '0.13',
                  'List::Util'            => '1.19',
-                 'Readonly'              => '1.03',
                  'Storable'              => '2.15',
                  'Time::Elapsed'         => '0.10',
                  'Time::HiRes'           => '1.9711' };

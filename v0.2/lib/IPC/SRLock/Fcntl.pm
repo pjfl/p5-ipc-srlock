@@ -11,17 +11,16 @@ use File::Spec::Functions;
 use Fcntl qw(:flock);
 use IO::AtomicFile;
 use IO::File;
-use Readonly;
 use Time::HiRes qw(usleep);
 
 use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev$ =~ /\d+/gmx );
 
-Readonly my %ATTRS => ( lockfile   => undef,
-                        mode       => oct q(0666),
-                        serializer => undef,
-                        shmfile    => undef,
-                        tempdir    => File::Spec->tmpdir,
-                        umask      => 0, );
+my %ATTRS = ( lockfile   => undef,
+              mode       => oct q(0666),
+              serializer => undef,
+              shmfile    => undef,
+              tempdir    => File::Spec->tmpdir,
+              umask      => 0, );
 
 __PACKAGE__->mk_accessors( keys %ATTRS );
 
@@ -259,8 +258,6 @@ None
 =item L<Data::Serializer>
 
 =item L<IO::AtomicFile>
-
-=item L<Readonly>
 
 =back
 

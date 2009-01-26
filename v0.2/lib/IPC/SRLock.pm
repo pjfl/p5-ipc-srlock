@@ -11,11 +11,10 @@ use Date::Format;
 use English qw(-no_match_vars);
 use IPC::SRLock::ExceptionClass;
 use Time::Elapsed qw(elapsed);
-use Readonly;
 
 use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev$ =~ /\d+/gmx );
 
-Readonly my %ATTRS =>
+my %ATTRS =
    ( debug     => 0,
      log       => undef,
      name      => (lc join q(_), split m{ :: }mx, __PACKAGE__),
@@ -393,8 +392,6 @@ the lock record at the debug level
 =item L<Date::Format>
 
 =item L<IPC::SRLock::ExceptionClass>
-
-=item L<Readonly>
 
 =item L<Time::Elapsed>
 
