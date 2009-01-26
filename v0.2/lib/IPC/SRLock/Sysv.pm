@@ -10,10 +10,10 @@ use IPC::SysV      qw(IPC_CREAT);
 use Storable       qw(freeze thaw);
 use Time::HiRes    qw(usleep);
 
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev$ =~ /\d+/gmx );
 
-my %ATTRS = ( key   => 12244237, mode  => oct q(0666),
-              share => undef,    size  => 65_536, );
+my %ATTRS = ( lockfile => 12244237, mode => oct q(0666), size => 65_536,
+              _share   => undef );
 
 __PACKAGE__->mk_accessors( keys %ATTRS );
 
@@ -26,12 +26,12 @@ sub _init {
       $self->{ $_ } = $ATTRS{ $_ };
    }
 
-   my $share = IPC::ShareLite->new( '-key'    => $self->key,
+   my $share = IPC::ShareLite->new( '-key'    => $self->lockfile,
                                     '-create' => 1,
                                     '-mode'   => $self->mode,
                                     '-size'   => $self->size );
 
-   if ($share) { $self->share( $share ) }
+   if ($share) { $self->_share( $share ) }
    else { $self->throw( error => q(eNoSharedMem), arg1 => $self->key ) }
 
    return;
@@ -40,11 +40,11 @@ sub _init {
 sub _list {
    my $self = shift; my $list = [];
 
-   $self->share->lock( LOCK_SH );
+   $self->_share->lock( LOCK_SH );
 
-   my $data = $self->share->fetch;
+   my $data = $self->_share->fetch;
 
-   $self->share->unlock;
+   $self->_share->unlock;
 
    my $hash = $data ? thaw( $data ) : {};
 
@@ -63,14 +63,14 @@ sub _list {
 sub _reset {
    my ($self, $key) = @_;
 
-   $self->share->lock( LOCK_EX );
+   $self->_share->lock( LOCK_EX );
 
-   my $data  = $self->share->fetch;
+   my $data  = $self->_share->fetch;
    my $hash  = $data ? thaw( $data ) : {};
    my $found = delete $hash->{ $key };
 
-   $self->share->store( freeze( $hash ) );
-   $self->share->unlock;
+   $self->_share->store( freeze( $hash ) );
+   $self->_share->unlock;
 
    $self->throw( error => q(eLockNotSet), arg1 => $key ) unless ($found);
 
@@ -84,9 +84,9 @@ sub _set {
       my ($lock, $lpid, $ltime, $ltimeout);
       my $found = 0; my $now = time; my $timedout = 0;
 
-      $self->share->lock( LOCK_EX );
+      $self->_share->lock( LOCK_EX );
 
-      my $data = $self->share->fetch;
+      my $data = $self->_share->fetch;
       my $hash = $data ? thaw( $data ) : {};
 
       if (exists $hash->{ $key } and $lock = $hash->{ $key }) {
@@ -104,7 +104,7 @@ sub _set {
          $lock_set = _set_lock( $self, $hash, $key, $pid, $now, $timeout );
       }
 
-      $self->share->unlock;
+      $self->_share->unlock;
 
       if ($timedout) {
          my $text = $self->timeout_error( $key, $lpid, $ltime, $ltimeout );
@@ -128,7 +128,7 @@ sub _set_lock {
 
    $hash->{ $key } = { pid => $pid, stime => $now, timeout => $timeout };
 
-   $self->share->store( freeze( $hash ) );
+   $self->_share->store( freeze( $hash ) );
    return 1;
 }
 
@@ -144,13 +144,13 @@ IPC::SRLock::Sysv - Set/reset locks using semop and shmop
 
 =head1 Version
 
-0.1.$Revision$
+0.2.$Revision$
 
 =head1 Synopsis
 
    use IPC::SRLock;
 
-   my $config   = { tempdir => q(path_to_tmp_directory), type => q(sysv) };
+   my $config   = { type => q(sysv) };
 
    my $lock_obj = IPC::SRLock->new( $config );
 
@@ -166,24 +166,15 @@ This class defines accessors and mutators for these attributes:
 
 =item lockfile
 
-The key the the semaphore. Defaults to 195_911_405
+The key the the semaphore. Defaults to 12_244_237
 
 =item mode
 
 Mode to create the shared memory file. Defaults to 0666
 
-=item num_locks
-
-Maximum number of simultaneous locks. Defaults to 100
-
-=item shmfile
-
-The key to the shared memory file. Defaults to 195_911_405
-
 =item size
 
-Maximum size of a lock record. Limits the lock key to 255
-bytes. Defaults to 300
+Maximum size of a shared memory segment. Defaults to 65_536
 
 =back
 
@@ -192,14 +183,6 @@ bytes. Defaults to 300
 =head2 _init
 
 Initialise the object
-
-=head2 _get_semid
-
-Return the semaphore reference
-
-=head2 _get_shmid
-
-Return the shared memory reference
 
 =head2 _list
 
@@ -219,13 +202,17 @@ None
 
 =head1 Dependencies
 
-=over 4
+=over 3
 
 =item L<IPC::SRLock>
 
+=item L<IPC::ShareLite>
+
+=item L<Storable>
+
 =item L<IPC::SysV>
 
-=item L<Readonly>
+=item L<Time::HiRes>
 
 =back
 

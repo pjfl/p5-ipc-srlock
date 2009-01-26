@@ -9,7 +9,7 @@ use Cache::Memcached;
 use Readonly;
 use Time::HiRes qw(usleep);
 
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev$ =~ /\d+/gmx );
 
 Readonly my %ATTRS => ( lockfile  => q(_lockfile),
                         memd      => undef,
@@ -150,7 +150,7 @@ IPC::SRLock::Memcached - Set/reset locks using libmemcache
 
 =head1 Version
 
-0.1.$Revision$
+0.2.$Revision$
 
 =head1 Synopsis
 
