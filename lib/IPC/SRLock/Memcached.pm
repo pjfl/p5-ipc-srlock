@@ -6,15 +6,14 @@ use strict;
 use warnings;
 use base qw(IPC::SRLock);
 use Cache::Memcached;
-use Readonly;
 use Time::HiRes qw(usleep);
 
 use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev$ =~ /\d+/gmx );
 
-Readonly my %ATTRS => ( lockfile  => q(_lockfile),
-                        memd      => undef,
-                        servers   => [ q(localhost:11211) ],
-                        shmfile   => q(_shmfile), );
+my %ATTRS = ( lockfile  => q(_lockfile),
+              memd      => undef,
+              servers   => [ q(localhost:11211) ],
+              shmfile   => q(_shmfile), );
 
 __PACKAGE__->mk_accessors( keys %ATTRS );
 
@@ -221,8 +220,6 @@ None
 =item L<IPC::SRLock>
 
 =item L<Cache::Memcached>
-
-=item L<Readonly>
 
 =back
 

@@ -9,11 +9,10 @@ use Exception::Class (
 use base       qw(IPC::SRLock::Exception);
 use English    qw(-no_match_vars);
 use List::Util qw(first);
-use Readonly;
 
 use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev$ =~ /\d+/gmx );
 
-Readonly my $NUL => q();
+my $NUL = q();
 
 our $IGNORE = [];
 
@@ -149,8 +148,6 @@ should be suppressed in the stack trace output
 =item L<Exception::Class>
 
 =item L<List::Util>
-
-=item L<Readonly>
 
 =back
 

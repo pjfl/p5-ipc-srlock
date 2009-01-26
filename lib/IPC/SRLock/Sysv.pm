@@ -32,7 +32,7 @@ sub _init {
                                     '-size'   => $self->size );
 
    if ($share) { $self->_share( $share ) }
-   else { $self->throw( error => q(eNoSharedMem), arg1 => $self->key ) }
+   else { $self->throw( error => q(eNoSharedMem), arg1 => $self->lockfile ) }
 
    return;
 }
