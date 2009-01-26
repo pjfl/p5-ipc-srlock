@@ -1,6 +1,6 @@
 Revision history for IPC::SRLock
 
-0.2.91  26/01/2009
+0.2.92  26/01/2009
         - No longer depends on Readonly
         - Now uses IPC::ShareLite in SysV store
         - Added hclass table attribute to set key field to occupy most
