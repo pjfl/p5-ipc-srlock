@@ -6,7 +6,7 @@ use strict;
 use warnings;
 use Exception::Class (
     'IPC::SRLock::Exception' => { fields => [qw(arg1 arg2 out rv)] } );
-use parent     qw(IPC::SRLock::Exception);
+use base       qw(IPC::SRLock::Exception);
 use English    qw(-no_match_vars);
 use List::Util qw(first);
 
