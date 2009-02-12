@@ -1,5 +1,8 @@
 Revision history for IPC::SRLock
 
+0.2.94  12/02/2009
+        - Dropped the singleton pattern from the construtor
+
 0.2.92  26/01/2009
         - No longer depends on Readonly
         - Now uses IPC::ShareLite in SysV store
