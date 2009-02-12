@@ -4,7 +4,7 @@ package IPC::SRLock::Memcached;
 
 use strict;
 use warnings;
-use base qw(IPC::SRLock);
+use parent qw(IPC::SRLock);
 use Cache::Memcached;
 use Time::HiRes qw(usleep);
 
