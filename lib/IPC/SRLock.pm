@@ -33,7 +33,9 @@ sub new {
    my $class = __PACKAGE__.q(::).(ucfirst $attrs->{type});
 
    $self->_ensure_class_loaded( $class );
-   $new = bless $attrs, $class;
+
+   my $new   = bless $attrs, $class;
+
    $new->log(   $new->log || Class::Null->new() );
    $new->pid(   $PID );
    $new->_init( $args );
