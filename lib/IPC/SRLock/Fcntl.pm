@@ -4,7 +4,7 @@ package IPC::SRLock::Fcntl;
 
 use strict;
 use warnings;
-use base qw(IPC::SRLock);
+use parent qw(IPC::SRLock);
 use Data::Serializer;
 use File::Spec;
 use File::Spec::Functions;
@@ -48,14 +48,15 @@ sub _init {
 }
 
 sub _list {
-   my $self = shift; my ($lock_file, $lock_ref) = $self->_read_shmfile;
-   my $list = [];
+   my $self = shift; my $list = [];
 
-   for (keys %{ $lock_ref }) {
-      push @{ $list }, { key     => $_,
-                         pid     => $lock_ref->{ $_ }->{spid},
-                         stime   => $lock_ref->{ $_ }->{stime},
-                         timeout => $lock_ref->{ $_ }->{timeout} };
+   my ($lock_file, $lock_ref) = $self->_read_shmfile;
+
+   while (my ($key, $hash) = each %{ $lock_ref }) {
+      push @{ $list }, { key     => $key,
+                         pid     => $hash->{spid},
+                         stime   => $hash->{stime},
+                         timeout => $hash->{timeout} };
    }
 
    $self->_release( $lock_file );

@@ -4,7 +4,7 @@ package IPC::SRLock;
 
 use strict;
 use warnings;
-use base qw(Class::Accessor::Fast);
+use parent qw(Class::Accessor::Fast);
 use Class::Inspector;
 use Class::Null;
 use Date::Format;
@@ -14,36 +14,30 @@ use Time::Elapsed qw(elapsed);
 
 use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev$ =~ /\d+/gmx );
 
-my %ATTRS =
-   ( debug     => 0,
-     log       => undef,
-     name      => (lc join q(_), split m{ :: }mx, __PACKAGE__),
-     nap_time  => 0.1,
-     patience  => 0,
-     pid       => undef,
-     time_out  => 300,
-     type      => q(fcntl), );
+my %ATTRS = ( debug    => 0,
+              log      => undef,
+              name     => (lc join q(_), split m{ :: }mx, __PACKAGE__),
+              nap_time => 0.1,
+              patience => 0,
+              pid      => undef,
+              time_out => 300,
+              type     => q(fcntl), );
 
 __PACKAGE__->mk_accessors( keys %ATTRS );
 
-my $_lock_obj;
-
 sub new {
-   my ($proto, @rest) = @_;
+   my ($self, @rest) = @_;
 
-   unless ($_lock_obj) {
-      my $args   = $proto->_arg_list( @rest );
-      my $attrs  = $proto->_hash_merge( \%ATTRS, $args );
-      my $class  = __PACKAGE__.q(::).(ucfirst $attrs->{type});
+   my $args  = $self->_arg_list( @rest );
+   my $attrs = $self->_hash_merge( \%ATTRS, $args );
+   my $class = __PACKAGE__.q(::).(ucfirst $attrs->{type});
 
-      $proto->_ensure_class_loaded( $class );
-      $_lock_obj = bless $attrs, $class;
-      $_lock_obj->log(   $_lock_obj->log || Class::Null->new() );
-      $_lock_obj->pid(   $PID );
-      $_lock_obj->_init( $args );
-   }
-
-   return $_lock_obj;
+   $self->_ensure_class_loaded( $class );
+   $new = bless $attrs, $class;
+   $new->log(   $new->log || Class::Null->new() );
+   $new->pid(   $PID );
+   $new->_init( $args );
+   return $new;
 }
 
 sub catch {
@@ -56,8 +50,7 @@ sub clear_lock_obj {
 }
 
 sub get_table {
-   my $self = shift;
-
+   my $self  = shift;
    my $count = 0;
    my $data  = { align  => { id    => 'left',
                              pid   => 'right',
@@ -111,13 +104,11 @@ sub set {
 }
 
 sub table_view {
-   my ($self, $s, $model) = @_; my $data = $self->get_table;
+   my ($self, $model) = @_; my $data = $self->get_table;
 
-   $model->add_field(    $s, { data   => $data,
-                               select => q(left),
-                               type   => q(table) } );
-   $model->group_fields( $s, { id     => q(lock_table.select), nitems => 1 } );
-   $model->add_buttons(  $s, qw(Delete) ) if ($data->{count} > 0);
+   $model->add_field( { data => $data, select => q(left), type => q(table) } );
+   $model->group_fields( { id => q(lock_table.select), nitems => 1 } );
+   $model->add_buttons( qw(Delete) ) if ($data->{count} > 0);
    return;
 }
 
@@ -144,23 +135,21 @@ sub _arg_list {
    return ref $rest[0] ? $rest[0] : { @rest };
 }
 
-sub _ensure_class_loaded {
-   my ($self, $class) = @_; my $error;
+sub ensure_class_loaded {
+   my ($self, $class, $opts) = @_; my $error;
 
-   {
-## no critic
-      local $@;
-      eval "require $class;";
-      $error = $@;
-## critic
-   }
+   return 1 if (!$opts->{ignore_loaded} && Class::Inspector->loaded( $class ));
+
+   ## no critic
+   {  local $EVAL_ERROR; eval "require $class;"; $error = $EVAL_ERROR; }
+   ## critic
 
    $self->throw( $error ) if ($error);
 
    $self->throw( error => q(eUndefinedPackage), arg1 => $class )
-        unless (Class::Inspector->loaded( $class ));
+      unless (Class::Inspector->loaded( $class ));
 
-   return;
+   return 1;
 }
 
 sub _hash_merge {

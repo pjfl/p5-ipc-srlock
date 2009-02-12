@@ -48,9 +48,7 @@ sub _list {
 
    my $hash = $data ? thaw( $data ) : {};
 
-   for my $key (keys %{ $hash }) {
-      my $lock = $hash->{ $key };
-
+   while (my ($key, $lock) = each %{ $hash }) {
       push @{ $list }, { key     => $key,
                          pid     => $lock->{pid    },
                          stime   => $lock->{stime  },
