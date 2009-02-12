@@ -1,6 +1,6 @@
 Revision history for IPC::SRLock
 
-0.2.97  12/02/2009
+0.2.98  12/02/2009
         - Dropped the singleton pattern from the construtor
 
 0.2.92  26/01/2009
