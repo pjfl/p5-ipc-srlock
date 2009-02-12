@@ -275,6 +275,8 @@ different factory subclasses
 
 =head2 get_table
 
+   my $data = $lock_obj->get_table;
+
 Returns a hash ref that contains the current lock table contents. The
 keys/values in the hash are suitable for passing to
 L<HTML::FormWidgets>
@@ -287,9 +289,13 @@ Returns an array of hash refs that represent the current lock table
 
 =head2 reset
 
+   $lock_obj->reset( k => q(some_resource_key) );
+
 Resets the lock referenced by the B<k> attribute.
 
 =head2 set
+
+   $lock_obj->set( k => q(some_resource_key) );
 
 Sets the specified lock. Attributes are:
 
@@ -313,10 +319,11 @@ it to zero makes the lock last indefinitely
 
 =head2 table_view
 
-   $lock_obj->table_view( $stash, $model );
+   $lock_obj->table_view( $model );
 
 The C<$model> object's methods store the result of calling
-C<< $lock_obj->get_table >> on the C<$stash> hash ref
+C<< $lock_obj->get_table >> on the C<<$model->context->stash >>
+hash ref. The model should be a L<CatalystX::Usul::Model> object
 
 =head2 throw
 
