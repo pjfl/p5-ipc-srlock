@@ -46,11 +46,6 @@ sub catch {
    my ($self, @rest) = @_; return IPC::SRLock::ExceptionClass->catch( @rest );
 }
 
-sub clear_lock_obj {
-   # Only for the test suite to re-initialise the lock instance
-   $_lock_obj = 0; return;
-}
-
 sub get_table {
    my $self  = shift;
    my $count = 0;
@@ -268,12 +263,6 @@ factory subclass is loaded in initialises it
 =head2 catch
 
 Expose the C<catch> method in L<IPC::SRLock::ExceptionClass>
-
-=head2 clear_lock_obj
-
-Sets the internal variable that holds the self referential object to
-false. This lets the test script create multiple lock objects with
-different factory subclasses
 
 =head2 get_table
 

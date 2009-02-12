@@ -40,7 +40,6 @@ ok( !(first { $_ eq $PROGRAM_NAME }
 unlink q(/tmp/ipc_srlock.lck);
 unlink q(/tmp/ipc_srlock.shm);
 
-$lock->clear_lock_obj;
 $lock = IPC::SRLock->new( { type => q(sysv) } );
 $lock->set( k => $PROGRAM_NAME );
 
@@ -54,7 +53,6 @@ ok( !(first { $_ eq $PROGRAM_NAME }
 
 exit 0;
 
-$lock->clear_lock_obj;
 $lock = IPC::SRLock->new( { patience => 10, type => q(memcached) } );
 $lock->set( k => $PROGRAM_NAME );
 
