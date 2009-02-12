@@ -132,7 +132,7 @@ sub _arg_list {
    return ref $rest[0] ? $rest[0] : { @rest };
 }
 
-sub ensure_class_loaded {
+sub _ensure_class_loaded {
    my ($self, $class, $opts) = @_; my $error;
 
    return 1 if (!$opts->{ignore_loaded} && Class::Inspector->loaded( $class ));
