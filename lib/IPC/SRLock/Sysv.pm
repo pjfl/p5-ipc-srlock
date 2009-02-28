@@ -67,7 +67,8 @@ sub _reset {
    my $hash  = $data ? thaw( $data ) : {};
    my $found = delete $hash->{ $key };
 
-   $self->_share->store( freeze( $hash ) );
+   $self->_share->store( freeze( $hash ) ) if ($found);
+
    $self->_share->unlock;
 
    $self->throw( error => q(eLockNotSet), arg1 => $key ) unless ($found);
@@ -93,13 +94,13 @@ sub _set {
          $ltimeout = $lock->{timeout};
 
          if ($now > $ltime + $ltimeout) {
-            $lock_set = _set_lock( $self, $hash, $key, $pid, $now, $timeout );
+            $lock_set = $self->_set_lock( $hash, $key, $pid, $now, $timeout );
             $timedout = 1;
          }
          else { $found = 1 }
       }
       else {
-         $lock_set = _set_lock( $self, $hash, $key, $pid, $now, $timeout );
+         $lock_set = $self->_set_lock( $hash, $key, $pid, $now, $timeout );
       }
 
       $self->_share->unlock;

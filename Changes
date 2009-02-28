@@ -1,5 +1,8 @@
 Revision history for IPC::SRLock
 
+0.2.100 28/02/2009
+        - Removed table_data method
+
 0.2.99  12/02/2009
         - Dropped the singleton pattern from the construtor
 
