@@ -32,13 +32,13 @@ sub new {
    my $attrs = $self->_hash_merge( \%ATTRS, $args );
    my $class = __PACKAGE__.q(::).(ucfirst $attrs->{type});
 
-   $self->_ensure_class_loaded( $class );
+   $self->_ensure_class_loaded( $class ); # Load factory subclass
 
    my $new   = bless $attrs, $class;
 
    $new->log(   $new->log || Class::Null->new() );
    $new->pid(   $PID );
-   $new->_init( $args );
+   $new->_init( $args ); # Initialise factory subclass
    return $new;
 }
 
@@ -98,15 +98,6 @@ sub set {
    $self->throw( q(eNoProcessId) ) unless (my $pid = $args->{p} || $self->pid);
 
    return $self->_set( $key, $pid, $args->{t} || $self->time_out );
-}
-
-sub table_view {
-   my ($self, $model) = @_; my $data = $self->get_table;
-
-   $model->add_field( { data => $data, select => q(left), type => q(table) } );
-   $model->group_fields( { id => q(lock_table.select), nitems => 1 } );
-   $model->add_buttons( qw(Delete) ) if ($data->{count} > 0);
-   return;
 }
 
 sub throw {
@@ -307,14 +298,6 @@ Set the time to live for this lock. Defaults to five minutes. Setting
 it to zero makes the lock last indefinitely
 
 =back
-
-=head2 table_view
-
-   $lock_obj->table_view( $model );
-
-The C<$model> object's methods store the result of calling
-C<< $lock_obj->get_table >> on the C<<$model->context->stash >>
-hash ref. The model should be a L<CatalystX::Usul::Model> object
 
 =head2 throw
 
