@@ -1,5 +1,8 @@
 Revision history for IPC::SRLock
 
+0.2.103 05/04/2009
+        - More crap for CPAN testing
+
 0.2.100 28/02/2009
         - Removed table_data method
 
