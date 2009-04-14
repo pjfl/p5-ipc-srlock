@@ -9,13 +9,18 @@ use Test::More;
 use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev$ =~ /\d+/gmx );
 
 BEGIN {
-   if ($ENV{AUTOMATED_TESTING} || $ENV{PERL_CR_SMOKER_CURRENT}
-       || ($ENV{PERL5OPT} || q()) =~ m{ CPAN-Reporter }mx
-       || ($ENV{PERL5_CPANPLUS_IS_RUNNING} && $ENV{PERL5_CPAN_IS_RUNNING})) {
-      plan skip_all => q(CPAN Testing stopped);
+   if (!-e catfile( $FindBin::Bin, updir, q(MANIFEST.SKIP) )) {
+      plan skip_all => 'Kwalitee test only for developers';
    }
 }
 
-eval { require Test::Kwalitee; Test::Kwalitee->import() };
+eval { require Test::Kwalitee; };
 
 plan( skip_all => 'Test::Kwalitee not installed; skipping' ) if ($@);
+
+Test::Kwalitee->import();
+
+# Local Variables:
+# mode: perl
+# tab-width: 3
+# End:

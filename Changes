@@ -1,5 +1,7 @@
 Revision history for IPC::SRLock
 
+        - Upated POD Coverage Kwalitee tests
+
 0.2.103 05/04/2009
         - More crap for CPAN testing
 
