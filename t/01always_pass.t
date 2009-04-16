@@ -1,7 +1,5 @@
 # @(#)$Id$
 
-# Even CPAN testers can't fuck this up
-
 use strict;
 use warnings;
 
