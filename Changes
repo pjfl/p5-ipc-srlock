@@ -1,5 +1,6 @@
 Revision history for IPC::SRLock
 
+        - Improved testing idioms
         - Upated POD Coverage Kwalitee tests
 
 0.2.103 05/04/2009
