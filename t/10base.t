@@ -4,8 +4,8 @@
 
 use strict;
 use warnings;
-use English qw(-no_match_vars);
 use File::Spec::Functions;
+use English  qw( -no_match_vars );
 use FindBin  qw( $Bin );
 use lib (catdir( $Bin, updir, q(lib) ));
 use Test::More;
