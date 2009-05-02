@@ -62,3 +62,8 @@ $lock->reset( k => $PROGRAM_NAME );
 
 ok( !(first { $_ eq $PROGRAM_NAME }
       map   { $_->{key} } @{ $lock->list() }), q(lock reset memcached) );
+
+# Local Variables:
+# mode: perl
+# tab-width: 3
+# End:
