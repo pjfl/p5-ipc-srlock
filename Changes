@@ -1,5 +1,7 @@
 Revision history for IPC::SRLock
 
+0.2.114 05/06/2009
+        - Changed exception class API
         - Improved testing idioms
         - Upated POD Coverage Kwalitee tests
 
