@@ -69,7 +69,7 @@ sub _read_shmfile {
    umask $self->umask;
 
    unless ($lock = IO::File->new( $self->lockfile, q(w), $self->mode )) {
-      $self->throw( error => q(eCannotWrite), arg1 => $self->lockfile );
+      $self->throw( error => q(eCannotWrite), args => [ $self->lockfile ] );
    }
 
    flock $lock, LOCK_EX;
@@ -95,7 +95,7 @@ sub _reset {
 
    unless (exists $lock_ref->{ $key }) {
       $self->_release( $lock_file );
-      $self->throw( error => q(eLockNotSet), arg1 => $key );
+      $self->throw( error => q(eLockNotSet), args => [ $key ] );
    }
 
    delete $lock_ref->{ $key };
@@ -126,7 +126,7 @@ sub _set {
          $self->_release( $lock_file );
 
          if ($self->patience && $now - $start > $self->patience) {
-            $self->throw( error => q(ePatienceExpired), arg1 => $key );
+            $self->throw( error => q(ePatienceExpired), args => [ $key ] );
          }
 
          usleep( 1_000_000 * $self->nap_time );
@@ -146,7 +146,7 @@ sub _write_shmfile {
 
    unless ($wtr = IO::AtomicFile->new( $self->shmfile, q(w), $self->mode )) {
       $self->_release( $lock_file );
-      $self->throw( error => q(eCannotWrite), arg1 => $self->shmfile );
+      $self->throw( error => q(eCannotWrite), args => [ $self->shmfile ] );
    }
 
    eval { $self->serializer->store( $lock_ref, $wtr ) };

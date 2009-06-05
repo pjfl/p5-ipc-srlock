@@ -134,7 +134,7 @@ sub _ensure_class_loaded {
 
    $self->throw( $error ) if ($error);
 
-   $self->throw( error => q(eUndefinedPackage), arg1 => $class )
+   $self->throw( error => q(eUndefinedPackage), args => [ $class ] )
       unless (Class::Inspector->loaded( $class ));
 
    return 1;
@@ -151,21 +151,21 @@ sub _init {
 sub _list {
    my $self = shift;
 
-   $self->throw( error => q(eNotOverridden), arg1 => q(list) );
+   $self->throw( error => q(eNotOverridden), args => [ q(_list) ] );
    return;
 }
 
 sub _reset {
    my $self = shift;
 
-   $self->throw( error => q(eNotOverridden), arg1 => q(reset) );
+   $self->throw( error => q(eNotOverridden), args => [ q(_reset) ] );
    return;
 }
 
 sub _set {
    my $self = shift;
 
-   $self->throw( error => q(eNotOverridden), arg1 => q(set) );
+   $self->throw( error => q(eNotOverridden), args => [ q(_set) ] );
    return;
 }
 

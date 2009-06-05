@@ -5,7 +5,7 @@ package IPC::SRLock::ExceptionClass;
 use strict;
 use warnings;
 use Exception::Class (
-    'IPC::SRLock::Exception' => { fields => [qw(arg1 arg2 out rv)] } );
+    'IPC::SRLock::Exception' => { fields => [qw(args out rv)] } );
 use base       qw(IPC::SRLock::Exception);
 use English    qw(-no_match_vars);
 use List::Util qw(first);
@@ -57,8 +57,7 @@ sub throw {
 
    my @args = @rest == 1 ? ( error => $rest[0] ) : @rest;
 
-   die $self->new( arg1           => $NUL,
-                   arg2           => $NUL,
+   die $self->new( args           => [],
                    ignore_package => $IGNORE,
                    out            => $NUL,
                    rv             => 1,

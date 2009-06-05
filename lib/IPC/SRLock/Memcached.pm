@@ -69,7 +69,8 @@ sub _reset {
          $found = 1 if (delete $recs->{ $key });
          $self->memd->set( $self->shmfile, $recs ) if ($found);
          $self->memd->delete( $self->lockfile );
-         $self->throw( error => q(eLockNotSet), arg1 => $key ) unless ($found);
+         $self->throw( error => q(eLockNotSet), args => [ $key ] )
+            unless ($found);
          return 1;
       }
 
@@ -130,7 +131,7 @@ sub _sleep_or_throw {
    my ($self, $start, $now, $key) = @_;
 
    if ($self->patience && $now - $start > $self->patience) {
-      $self->throw( error => q(ePatienceExpired), arg1 => $key );
+      $self->throw( error => q(ePatienceExpired), args => [ $key ] );
    }
 
    usleep( 1_000_000 * $self->nap_time );

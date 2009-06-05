@@ -32,7 +32,7 @@ sub _init {
                                     '-size'   => $self->size );
 
    if ($share) { $self->_share( $share ) }
-   else { $self->throw( error => q(eNoSharedMem), arg1 => $self->lockfile ) }
+   else { $self->throw( error => q(eNoSharedMem), args => [$self->lockfile] ) }
 
    return;
 }
@@ -71,7 +71,7 @@ sub _reset {
 
    $self->_share->unlock;
 
-   $self->throw( error => q(eLockNotSet), arg1 => $key ) unless ($found);
+   $self->throw( error => q(eLockNotSet), args => [ $key ] ) unless ($found);
 
    return 1;
 }
@@ -111,7 +111,7 @@ sub _set {
       }
 
       if (!$lock_set && $self->patience && $now - $start > $self->patience) {
-         $self->throw( error => q(ePatienceExpired), arg1 => $key );
+         $self->throw( error => q(ePatienceExpired), args => [ $key ] );
       }
 
       usleep( 1_000_000 * $self->nap_time ) if ($found);
