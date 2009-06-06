@@ -1,10 +1,12 @@
-package IPC::SRLock::Fcntl;
-
 # @(#)$Id$
+
+package IPC::SRLock::Fcntl;
 
 use strict;
 use warnings;
+use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev$ =~ /\d+/gmx );
 use parent qw(IPC::SRLock);
+
 use Data::Serializer;
 use File::Spec;
 use File::Spec::Functions;
@@ -12,8 +14,6 @@ use Fcntl qw(:flock);
 use IO::AtomicFile;
 use IO::File;
 use Time::HiRes qw(usleep);
-
-use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev$ =~ /\d+/gmx );
 
 my %ATTRS = ( lockfile   => undef,
               mode       => oct q(0666),
@@ -69,7 +69,8 @@ sub _read_shmfile {
    umask $self->umask;
 
    unless ($lock = IO::File->new( $self->lockfile, q(w), $self->mode )) {
-      $self->throw( error => q(eCannotWrite), args => [ $self->lockfile ] );
+      $self->throw( error => 'File [_1] cannot write',
+                    args  => [ $self->lockfile ] );
    }
 
    flock $lock, LOCK_EX;
@@ -95,7 +96,7 @@ sub _reset {
 
    unless (exists $lock_ref->{ $key }) {
       $self->_release( $lock_file );
-      $self->throw( error => q(eLockNotSet), args => [ $key ] );
+      $self->throw( error => 'Lock [_1] not set', args => [ $key ] );
    }
 
    delete $lock_ref->{ $key };
@@ -126,7 +127,7 @@ sub _set {
          $self->_release( $lock_file );
 
          if ($self->patience && $now - $start > $self->patience) {
-            $self->throw( error => q(ePatienceExpired), args => [ $key ] );
+            $self->throw( error => 'Lock [_1] timed out', args => [ $key ] );
          }
 
          usleep( 1_000_000 * $self->nap_time );
@@ -146,7 +147,8 @@ sub _write_shmfile {
 
    unless ($wtr = IO::AtomicFile->new( $self->shmfile, q(w), $self->mode )) {
       $self->_release( $lock_file );
-      $self->throw( error => q(eCannotWrite), args => [ $self->shmfile ] );
+      $self->throw( error => 'File [_1] cannot write',
+                    args  => [ $self->shmfile ] );
    }
 
    eval { $self->serializer->store( $lock_ref, $wtr ) };

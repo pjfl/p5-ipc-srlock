@@ -1,16 +1,16 @@
-package IPC::SRLock::ExceptionClass;
-
 # @(#)$Id$
+
+package IPC::SRLock::ExceptionClass;
 
 use strict;
 use warnings;
+use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev$ =~ /\d+/gmx );
 use Exception::Class (
     'IPC::SRLock::Exception' => { fields => [qw(args out rv)] } );
-use base       qw(IPC::SRLock::Exception);
+use base qw(IPC::SRLock::Exception);
+
 use English    qw(-no_match_vars);
 use List::Util qw(first);
-
-use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev$ =~ /\d+/gmx );
 
 my $NUL = q();
 

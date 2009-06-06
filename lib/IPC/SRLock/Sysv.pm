@@ -1,16 +1,16 @@
-package IPC::SRLock::Sysv;
-
 # @(#)$Id$
+
+package IPC::SRLock::Sysv;
 
 use strict;
 use warnings;
-use parent         qw(IPC::SRLock);
+use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev$ =~ /\d+/gmx );
+use parent qw(IPC::SRLock);
+
 use IPC::ShareLite qw(:lock);
 use IPC::SysV      qw(IPC_CREAT);
 use Storable       qw(freeze thaw);
 use Time::HiRes    qw(usleep);
-
-use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev$ =~ /\d+/gmx );
 
 my %ATTRS = ( lockfile => 12244237, mode => oct q(0666), size => 65_536,
               _share   => undef );
@@ -31,9 +31,12 @@ sub _init {
                                     '-mode'   => $self->mode,
                                     '-size'   => $self->size );
 
-   if ($share) { $self->_share( $share ) }
-   else { $self->throw( error => q(eNoSharedMem), args => [$self->lockfile] ) }
+   unless ($share) {
+      $self->throw( error => 'No shared memory [_1]',
+                    args  => [ $self->lockfile ] );
+   }
 
+   $self->_share( $share );
    return;
 }
 
@@ -71,7 +74,9 @@ sub _reset {
 
    $self->_share->unlock;
 
-   $self->throw( error => q(eLockNotSet), args => [ $key ] ) unless ($found);
+   unless ($found) {
+      $self->throw( error => 'Lock [_1] not set', args => [ $key ] );
+   }
 
    return 1;
 }
@@ -111,7 +116,7 @@ sub _set {
       }
 
       if (!$lock_set && $self->patience && $now - $start > $self->patience) {
-         $self->throw( error => q(ePatienceExpired), args => [ $key ] );
+         $self->throw( error => 'Lock [_1] timed out', args => [ $key ] );
       }
 
       usleep( 1_000_000 * $self->nap_time ) if ($found);

@@ -1,14 +1,14 @@
-package IPC::SRLock::Memcached;
-
 # @(#)$Id$
+
+package IPC::SRLock::Memcached;
 
 use strict;
 use warnings;
+use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev$ =~ /\d+/gmx );
 use parent qw(IPC::SRLock);
+
 use Cache::Memcached;
 use Time::HiRes qw(usleep);
-
-use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev$ =~ /\d+/gmx );
 
 my %ATTRS = ( lockfile  => q(_lockfile),
               memd      => undef,
@@ -69,7 +69,7 @@ sub _reset {
          $found = 1 if (delete $recs->{ $key });
          $self->memd->set( $self->shmfile, $recs ) if ($found);
          $self->memd->delete( $self->lockfile );
-         $self->throw( error => q(eLockNotSet), args => [ $key ] )
+         $self->throw( error => 'Lock [_1] not set', args => [ $key ] )
             unless ($found);
          return 1;
       }
@@ -131,7 +131,7 @@ sub _sleep_or_throw {
    my ($self, $start, $now, $key) = @_;
 
    if ($self->patience && $now - $start > $self->patience) {
-      $self->throw( error => q(ePatienceExpired), args => [ $key ] );
+      $self->throw( error => 'Lock [_1] timed out', args => [ $key ] );
    }
 
    usleep( 1_000_000 * $self->nap_time );

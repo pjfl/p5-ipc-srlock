@@ -1,18 +1,18 @@
-package IPC::SRLock;
-
 # @(#)$Id$
+
+package IPC::SRLock;
 
 use strict;
 use warnings;
+use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev$ =~ /\d+/gmx );
 use parent qw(Class::Accessor::Fast);
+
 use Class::Inspector;
 use Class::Null;
 use Date::Format;
 use English qw(-no_match_vars);
 use IPC::SRLock::ExceptionClass;
 use Time::Elapsed qw(elapsed);
-
-use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev$ =~ /\d+/gmx );
 
 my %ATTRS = ( debug    => 0,
               log      => undef,
@@ -36,8 +36,8 @@ sub new {
 
    my $new   = bless $attrs, $class;
 
-   $new->log(   $new->log || Class::Null->new() );
-   $new->pid(   $PID );
+   $new->log  ( $new->log || Class::Null->new() );
+   $new->pid  ( $PID );
    $new->_init( $args ); # Initialise factory subclass
    return $new;
 }
@@ -86,7 +86,7 @@ sub list {
 sub reset {
    my ($self, @rest) = @_; my $args = $self->_arg_list( @rest );
 
-   $self->throw( q(eNoKey) ) unless (my $key = $args->{k});
+   $self->throw( 'No key specified' ) unless (my $key = $args->{k});
 
    return $self->_reset( $key );
 }
@@ -94,8 +94,11 @@ sub reset {
 sub set {
    my ($self, @rest) = @_; my $args = $self->_arg_list( @rest );
 
-   $self->throw( q(eNoKey) )       unless (my $key = $args->{k});
-   $self->throw( q(eNoProcessId) ) unless (my $pid = $args->{p} || $self->pid);
+   $self->throw( 'No key specified' ) unless (my $key = $args->{k});
+
+   unless (my $pid = $args->{p} || $self->pid) {
+      $self->throw( 'No pid specified' );
+   }
 
    return $self->_set( $key, $pid, $args->{t} || $self->time_out );
 }
@@ -134,7 +137,7 @@ sub _ensure_class_loaded {
 
    $self->throw( $error ) if ($error);
 
-   $self->throw( error => q(eUndefinedPackage), args => [ $class ] )
+   $self->throw( error => 'Class [_1] failed to load', args => [ $class ] )
       unless (Class::Inspector->loaded( $class ));
 
    return 1;
@@ -151,21 +154,24 @@ sub _init {
 sub _list {
    my $self = shift;
 
-   $self->throw( error => q(eNotOverridden), args => [ q(_list) ] );
+   $self->throw( error => 'Method [_1] not overridden in [_2]',
+                 args  => [ q(_list), ref $self || $self ] );
    return;
 }
 
 sub _reset {
    my $self = shift;
 
-   $self->throw( error => q(eNotOverridden), args => [ q(_reset) ] );
+   $self->throw( error => 'Method [_1] not overridden in [_2]',
+                 args  => [ q(_reset), ref $self || $self ] );
    return;
 }
 
 sub _set {
    my $self = shift;
 
-   $self->throw( error => q(eNotOverridden), args => [ q(_set) ] );
+   $self->throw( error => 'Method [_1] not overridden in [_2]',
+                 args  => [ q(_set), ref $self || $self ] );
    return;
 }
 
