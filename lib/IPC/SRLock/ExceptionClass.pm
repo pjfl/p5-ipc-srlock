@@ -5,40 +5,46 @@ package IPC::SRLock::ExceptionClass;
 use strict;
 use warnings;
 use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev$ =~ /\d+/gmx );
-use Exception::Class (
-    'IPC::SRLock::Exception' => { fields => [qw(args out rv)] } );
+use Exception::Class
+   ( 'IPC::SRLock::Exception' => { fields => [qw(args out rv)] } );
 use base qw(IPC::SRLock::Exception);
 
 use English    qw(-no_match_vars);
 use List::Util qw(first);
+use Carp;
 
 my $NUL = q();
 
-our $IGNORE = [];
+our $IGNORE = [ __PACKAGE__ ];
 
 sub catch {
    my ($self, @rest) = @_; my $e;
 
    return $e if ($e = $self->caught( @rest ));
 
-   return $self->new( $EVAL_ERROR ) if ($EVAL_ERROR);
+   return $EVAL_ERROR if (ref $EVAL_ERROR);
+
+   return $self->new( args           => [],
+                      ignore_package => $IGNORE,
+                      out            => $NUL,
+                      rv             => 1,
+                      show_trace     => 0,
+                      error          => $EVAL_ERROR ) if ($EVAL_ERROR);
 
    return;
 }
 
 sub as_string {
-   my ($self, $verbosity, $offset) = @_;
-   my ($i, $frame, $line, $l_no, %seen, $text);
+   my ($self, $verbosity, $offset) = @_; $verbosity ||= 1; $offset ||= 1;
 
-   $verbosity ||= 1; $offset ||= 1; $text = $NUL.$self->message;
+   my ($l_no, %seen); my $text = $NUL.$self->message;
 
-   return $text if ($verbosity < 2 && !$self->show_trace);
+   return $text if ($verbosity < 2 and not $self->show_trace);
 
-   $i     = $verbosity > 2 ? 0 : $offset;
-   $frame = undef;
+   my $i = $verbosity > 2 ? 0 : $offset; my $frame = undef;
 
-   while (defined( $frame = $self->trace->frame( $i++ ) )) {
-      $line = "\n".$frame->package.' line '.$frame->line;
+   while (defined ($frame = $self->trace->frame( $i++ ))) {
+      my $line = "\n".$frame->package.' line '.$frame->line;
 
       if ($verbosity > 2) { $text .= $line; next }
 
@@ -53,16 +59,18 @@ sub as_string {
 sub throw {
    my ($self, @rest) = @_;
 
-   die $self if (ref $self);
+   croak $rest[ 0 ] if ($rest[ 0 ] and ref $rest[ 0 ]);
 
    my @args = @rest == 1 ? ( error => $rest[0] ) : @rest;
 
-   die $self->new( args           => [],
-                   ignore_package => $IGNORE,
-                   out            => $NUL,
-                   rv             => 1,
-                   show_trace     => 0,
-                   @args );
+   croak $self->new( args           => [],
+                     ignore_package => $IGNORE,
+                     out            => $NUL,
+                     rv             => 1,
+                     show_trace     => 0,
+                     @args );
+
+   return;
 }
 
 1;

@@ -1,6 +1,7 @@
 Revision history for IPC::SRLock
 
-0.2.116 06/06/2009
+0.2.118 06/06/2009
+        - Updated exception class
         - Replaced mnemonics in errors
 
 0.2.114 05/06/2009

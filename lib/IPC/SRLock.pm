@@ -96,9 +96,9 @@ sub set {
 
    $self->throw( 'No key specified' ) unless (my $key = $args->{k});
 
-   unless (my $pid = $args->{p} || $self->pid) {
-      $self->throw( 'No pid specified' );
-   }
+   my $pid = $args->{p} || $self->pid;
+
+   $self->throw( 'No pid specified' ) unless ($pid);
 
    return $self->_set( $key, $pid, $args->{t} || $self->time_out );
 }
