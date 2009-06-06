@@ -1,5 +1,6 @@
 Revision history for IPC::SRLock
 
+0.2.116 06/06/2009
         - Replaced mnemonics in errors
 
 0.2.114 05/06/2009
