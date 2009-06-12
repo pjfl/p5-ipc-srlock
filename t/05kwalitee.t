@@ -2,13 +2,13 @@
 
 use strict;
 use warnings;
-use File::Spec::Functions;
-use English  qw( -no_match_vars );
-use FindBin  qw( $Bin );
-use lib (catdir( $Bin, updir, q(lib) ));
-use Test::More;
-
 use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev$ =~ /\d+/gmx );
+use File::Spec::Functions;
+use FindBin qw( $Bin );
+use lib catdir( $Bin, updir, q(lib) );
+
+use English qw( -no_match_vars );
+use Test::More;
 
 if (!-e catfile( $Bin, updir, q(MANIFEST.SKIP) )) {
    plan skip_all => 'Kwalitee test only for developers';
