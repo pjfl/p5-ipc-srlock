@@ -7,6 +7,7 @@ use File::Spec::Functions;
 use FindBin qw( $Bin );
 use lib catdir( $Bin, updir, q(lib) );
 
+use Exception::Class ( q(TestException) => { fields => [ qw(args) ] } );
 use English qw( -no_match_vars );
 use Test::More;
 
@@ -16,14 +17,21 @@ BEGIN {
       plan skip_all => q(CPAN Testing stopped);
    }
 
-   plan tests => 5;
+   plan tests => 7;
 }
 
 use List::Util qw(first);
 
 use_ok q(IPC::SRLock);
 
-my $lock = IPC::SRLock->new( { type => q(fcntl) } );
+my $lock = IPC::SRLock->new( { type => q(fcntl) } ); my $e;
+
+eval { $lock->reset( k => $PROGRAM_NAME ) };
+
+if ($e = Exception::Class->caught()){
+   ok( $e->error eq 'Lock [_1] not set', q(lock not set) );
+   ok( $e->args->[0] eq $PROGRAM_NAME, q(lock error args) );
+}
 
 $lock->set( k => $PROGRAM_NAME );
 
@@ -51,6 +59,7 @@ ok( !(first { $_ eq $PROGRAM_NAME }
 
 exit 0;
 
+# Need a memcached server to run these tests
 $lock = IPC::SRLock->new( { patience => 10, type => q(memcached) } );
 $lock->set( k => $PROGRAM_NAME );
 
