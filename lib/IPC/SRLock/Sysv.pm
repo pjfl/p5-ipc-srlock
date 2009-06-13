@@ -4,7 +4,7 @@ package IPC::SRLock::Sysv;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev$ =~ /\d+/gmx );
 use parent qw(IPC::SRLock);
 
 use IPC::ShareLite qw(:lock);
@@ -148,7 +148,7 @@ IPC::SRLock::Sysv - Set/reset locks using semop and shmop
 
 =head1 Version
 
-0.2.$Revision$
+0.3.$Revision$
 
 =head1 Synopsis
 

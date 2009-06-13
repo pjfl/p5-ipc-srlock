@@ -4,7 +4,7 @@ package IPC::SRLock::Memcached;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev$ =~ /\d+/gmx );
 use parent qw(IPC::SRLock);
 
 use Cache::Memcached;
@@ -150,7 +150,7 @@ IPC::SRLock::Memcached - Set/reset locks using libmemcache
 
 =head1 Version
 
-0.2.$Revision$
+0.3.$Revision$
 
 =head1 Synopsis
 

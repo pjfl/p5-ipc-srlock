@@ -4,7 +4,7 @@ package IPC::SRLock;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev$ =~ /\d+/gmx );
 use parent qw(Class::Accessor::Fast);
 
 use Class::Inspector;
@@ -187,7 +187,7 @@ IPC::SRLock - Set/reset locking semantics to single thread processes
 
 =head1 Version
 
-0.2.$Revision$
+0.3.$Revision$
 
 =head1 Synopsis
 
@@ -408,3 +408,4 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE
 # mode: perl
 # tab-width: 3
 # End:
+
