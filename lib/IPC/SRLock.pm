@@ -362,7 +362,7 @@ the lock record at the debug level
 
 =item L<Class::Accessor::Fast>
 
-=item L<Class::Inspector>
+=item L<Class::MOP>
 
 =item L<Class::Null>
 
