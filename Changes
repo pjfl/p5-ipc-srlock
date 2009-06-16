@@ -1,5 +1,7 @@
 Revision history for IPC::SRLock
 
+        - Use Class::MOP in ensure_class_loaded
+
 0.3.125 13/06/2009
         - Added more tests
 

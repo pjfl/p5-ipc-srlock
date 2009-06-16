@@ -9,9 +9,8 @@ use Exception::Class
    ( 'IPC::SRLock::Exception' => { fields => [qw(args out rv)] } );
 use base qw(IPC::SRLock::Exception);
 
-use English    qw(-no_match_vars);
-use List::Util qw(first);
 use Carp;
+use English qw(-no_match_vars);
 
 my $NUL = q();
 
@@ -21,8 +20,6 @@ sub catch {
    my ($self, @rest) = @_; my $e;
 
    return $e if ($e = $self->caught( @rest ));
-
-   return $EVAL_ERROR if (ref $EVAL_ERROR);
 
    return $self->new( args           => [],
                       ignore_package => $IGNORE,

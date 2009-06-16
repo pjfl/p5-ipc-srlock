@@ -7,7 +7,7 @@ use warnings;
 use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev$ =~ /\d+/gmx );
 use parent qw(Class::Accessor::Fast);
 
-use Class::Inspector;
+use Class::MOP;
 use Class::Null;
 use Date::Format;
 use English qw(-no_match_vars);
@@ -127,18 +127,19 @@ sub _arg_list {
 }
 
 sub _ensure_class_loaded {
-   my ($self, $class, $opts) = @_; my $error;
+   my ($self, $class, $opts) = @_; $opts ||= {};
 
-   return 1 if (!$opts->{ignore_loaded} && Class::Inspector->loaded( $class ));
+   my $is_class_loaded = sub { Class::MOP::is_class_loaded( $class ) };
 
-   ## no critic
-   {  local $EVAL_ERROR; eval "require $class;"; $error = $EVAL_ERROR; }
-   ## critic
+   return 1 if (not $opts->{ignore_loaded} and $is_class_loaded->());
 
-   $self->throw( $error ) if ($error);
+   eval { Class::MOP::load_class( $class ) };
 
-   $self->throw( error => 'Class [_1] failed to load', args => [ $class ] )
-      unless (Class::Inspector->loaded( $class ));
+   $self->throw( $EVAL_ERROR ) if ($EVAL_ERROR);
+
+   unless ($is_class_loaded->()) {
+      $self->throw( error => 'Class [_1] failed to load', args => [ $class ] );
+   }
 
    return 1;
 }
