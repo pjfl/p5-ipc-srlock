@@ -127,18 +127,22 @@ sub _arg_list {
 }
 
 sub _ensure_class_loaded {
-   my ($self, $class, $opts) = @_; $opts ||= {};
+   my ($self, $class, $opts) = @_; my $error; $opts ||= {};
 
    my $is_class_loaded = sub { Class::MOP::is_class_loaded( $class ) };
 
    return 1 if (not $opts->{ignore_loaded} and $is_class_loaded->());
 
-   eval { Class::MOP::load_class( $class ) };
+   {  local $EVAL_ERROR;
+      eval { Class::MOP::load_class( $class ) };
+      $error = $EVAL_ERROR;
+   }
 
-   $self->throw( $EVAL_ERROR ) if ($EVAL_ERROR);
+   $self->throw( $error ) if ($error);
 
    unless ($is_class_loaded->()) {
-      $self->throw( error => 'Class [_1] failed to load', args => [ $class ] );
+      $error = 'Class [_1] loaded but package undefined';
+      $self->throw( error => $error, args => [ $class ] );
    }
 
    return 1;
