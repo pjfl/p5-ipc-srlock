@@ -133,7 +133,7 @@ sub _ensure_class_loaded {
 
    return 1 if (not $opts->{ignore_loaded} and $is_class_loaded->());
 
-   {  local $EVAL_ERROR;
+   {  local $EVAL_ERROR = undef;
       eval { Class::MOP::load_class( $class ) };
       $error = $EVAL_ERROR;
    }
