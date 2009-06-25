@@ -40,8 +40,7 @@ my $build = Module::Build->new
      license            => q(perl),
      module_name        => q(IPC::SRLock),
      notes              => { cpan_testers_version => 1 },
-     requires           => $requires,
-     sign               => 1 );
+     requires           => $requires, );
 
 $build->create_build_script();
 
