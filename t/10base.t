@@ -1,31 +1,37 @@
-#!/usr/bin/perl
-
 # @(#)$Id$
 
 use strict;
 use warnings;
-use English qw(-no_match_vars);
+use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev$ =~ /\d+/gmx );
 use File::Spec::Functions;
-use FindBin  qw( $Bin );
-use lib (catdir( $Bin, updir, q(lib) ));
-use List::Util qw(first);
-use Test::More;
+use FindBin qw( $Bin );
+use lib catdir( $Bin, updir, q(lib) );
 
-use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev$ =~ /\d+/gmx );
+use Exception::Class ( q(TestException) => { fields => [ qw(args) ] } );
+use English qw( -no_match_vars );
+use Test::More;
 
 BEGIN {
    if ($ENV{AUTOMATED_TESTING} || $ENV{PERL_CR_SMOKER_CURRENT}
-       || ($ENV{PERL5OPT} || q()) =~ m{ CPAN-Reporter }mx
-       || ($ENV{PERL5_CPANPLUS_IS_RUNNING} && $ENV{PERL5_CPAN_IS_RUNNING})) {
+       || ($ENV{PERL5OPT} || q()) =~ m{ CPAN-Reporter }mx) {
       plan skip_all => q(CPAN Testing stopped);
    }
 
-   plan tests => 5;
+   plan tests => 7;
 }
+
+use List::Util qw(first);
 
 use_ok q(IPC::SRLock);
 
-my $lock = IPC::SRLock->new( { type => q(fcntl) } );
+my $lock = IPC::SRLock->new( { type => q(fcntl) } ); my $e;
+
+eval { $lock->reset( k => $PROGRAM_NAME ) };
+
+if ($e = Exception::Class->caught()){
+   ok( $e->error eq 'Lock [_1] not set', q(lock not set) );
+   ok( $e->args->[0] eq $PROGRAM_NAME, q(lock error args) );
+}
 
 $lock->set( k => $PROGRAM_NAME );
 
@@ -53,6 +59,7 @@ ok( !(first { $_ eq $PROGRAM_NAME }
 
 exit 0;
 
+# Need a memcached server to run these tests
 $lock = IPC::SRLock->new( { patience => 10, type => q(memcached) } );
 $lock->set( k => $PROGRAM_NAME );
 
@@ -63,3 +70,8 @@ $lock->reset( k => $PROGRAM_NAME );
 
 ok( !(first { $_ eq $PROGRAM_NAME }
       map   { $_->{key} } @{ $lock->list() }), q(lock reset memcached) );
+
+# Local Variables:
+# mode: perl
+# tab-width: 3
+# End:

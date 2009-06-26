@@ -1,18 +1,18 @@
-package IPC::SRLock;
-
 # @(#)$Id$
+
+package IPC::SRLock;
 
 use strict;
 use warnings;
+use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev$ =~ /\d+/gmx );
 use parent qw(Class::Accessor::Fast);
-use Class::Inspector;
+
+use Class::MOP;
 use Class::Null;
 use Date::Format;
 use English qw(-no_match_vars);
 use IPC::SRLock::ExceptionClass;
 use Time::Elapsed qw(elapsed);
-
-use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev$ =~ /\d+/gmx );
 
 my %ATTRS = ( debug    => 0,
               log      => undef,
@@ -36,8 +36,8 @@ sub new {
 
    my $new   = bless $attrs, $class;
 
-   $new->log(   $new->log || Class::Null->new() );
-   $new->pid(   $PID );
+   $new->log  ( $new->log || Class::Null->new() );
+   $new->pid  ( $PID );
    $new->_init( $args ); # Initialise factory subclass
    return $new;
 }
@@ -86,7 +86,7 @@ sub list {
 sub reset {
    my ($self, @rest) = @_; my $args = $self->_arg_list( @rest );
 
-   $self->throw( q(eNoKey) ) unless (my $key = $args->{k});
+   $self->throw( 'No key specified' ) unless (my $key = $args->{k});
 
    return $self->_reset( $key );
 }
@@ -94,8 +94,11 @@ sub reset {
 sub set {
    my ($self, @rest) = @_; my $args = $self->_arg_list( @rest );
 
-   $self->throw( q(eNoKey) )       unless (my $key = $args->{k});
-   $self->throw( q(eNoProcessId) ) unless (my $pid = $args->{p} || $self->pid);
+   $self->throw( 'No key specified' ) unless (my $key = $args->{k});
+
+   my $pid = $args->{p} || $self->pid;
+
+   $self->throw( 'No pid specified' ) unless ($pid);
 
    return $self->_set( $key, $pid, $args->{t} || $self->time_out );
 }
@@ -124,18 +127,23 @@ sub _arg_list {
 }
 
 sub _ensure_class_loaded {
-   my ($self, $class, $opts) = @_; my $error;
+   my ($self, $class, $opts) = @_; my $error; $opts ||= {};
 
-   return 1 if (!$opts->{ignore_loaded} && Class::Inspector->loaded( $class ));
+   my $is_class_loaded = sub { Class::MOP::is_class_loaded( $class ) };
 
-   ## no critic
-   {  local $EVAL_ERROR; eval "require $class;"; $error = $EVAL_ERROR; }
-   ## critic
+   return 1 if (not $opts->{ignore_loaded} and $is_class_loaded->());
+
+   {  local $EVAL_ERROR = undef;
+      eval { Class::MOP::load_class( $class ) };
+      $error = $EVAL_ERROR;
+   }
 
    $self->throw( $error ) if ($error);
 
-   $self->throw( error => q(eUndefinedPackage), arg1 => $class )
-      unless (Class::Inspector->loaded( $class ));
+   unless ($is_class_loaded->()) {
+      $error = 'Class [_1] loaded but package undefined';
+      $self->throw( error => $error, args => [ $class ] );
+   }
 
    return 1;
 }
@@ -151,21 +159,24 @@ sub _init {
 sub _list {
    my $self = shift;
 
-   $self->throw( error => q(eNotOverridden), arg1 => q(list) );
+   $self->throw( error => 'Method [_1] not overridden in [_2]',
+                 args  => [ q(_list), ref $self || $self ] );
    return;
 }
 
 sub _reset {
    my $self = shift;
 
-   $self->throw( error => q(eNotOverridden), arg1 => q(reset) );
+   $self->throw( error => 'Method [_1] not overridden in [_2]',
+                 args  => [ q(_reset), ref $self || $self ] );
    return;
 }
 
 sub _set {
    my $self = shift;
 
-   $self->throw( error => q(eNotOverridden), arg1 => q(set) );
+   $self->throw( error => 'Method [_1] not overridden in [_2]',
+                 args  => [ q(_set), ref $self || $self ] );
    return;
 }
 
@@ -181,7 +192,7 @@ IPC::SRLock - Set/reset locking semantics to single thread processes
 
 =head1 Version
 
-0.2.$Revision$
+0.3.$Revision$
 
 =head1 Synopsis
 
@@ -355,7 +366,7 @@ the lock record at the debug level
 
 =item L<Class::Accessor::Fast>
 
-=item L<Class::Inspector>
+=item L<Class::MOP>
 
 =item L<Class::Null>
 
@@ -402,3 +413,4 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE
 # mode: perl
 # tab-width: 3
 # End:
+
