@@ -1,5 +1,7 @@
 Revision history for IPC::SRLock
 
+0.3.136 27/06/2006
+        - Fixed key used to sign distro
         - Use Class::MOP in ensure_class_loaded
 
 0.3.125 13/06/2009
