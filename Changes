@@ -1,5 +1,9 @@
 Revision history for IPC::SRLock
 
+        - Stringify key so we can pass io objects
+        - Now uses TryCatch
+        - Updated ensure_class_loaded
+
 0.3.137 27/06/2006
         - Fixed key used to sign distro
         - Use Class::MOP in ensure_class_loaded
