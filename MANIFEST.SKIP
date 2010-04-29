@@ -43,4 +43,4 @@
 TAGS
 Thumbs.db
 # Avoid archives of this distribution
-\bIPC-SRLock-[\d\.\_]+
+\bIPC-SRLock-v[\d\.\_]+

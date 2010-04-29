@@ -1,6 +1,8 @@
 Revision history for IPC::SRLock
 
-        - Stringify key so we can pass io objects
+0.4
+        - Switch to using M::B for install
+        - Stringify key so we can pass io objects *
         - Now uses TryCatch
         - Updated ensure_class_loaded
 
