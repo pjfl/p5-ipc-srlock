@@ -18,6 +18,7 @@ my $build = Module::Build->new
      dist_version_from  => q(lib/IPC/SRLock.pm),
      license            => q(perl),
      module_name        => q(IPC::SRLock),
+     no_index           => { directory => [ q(t) ] },
      requires           => {
         'perl'                  => '5.008',
         'parent'                => '0.221',
