@@ -42,5 +42,5 @@
 TAGS
 Thumbs.db
 # Avoid archives of this distribution
-\bIPC-SRLock-v[\d\.\_]+
+\bIPC-SRLock-[\d\.\_]+
 ^MYMETA.yml$
