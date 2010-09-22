@@ -14,6 +14,7 @@ use Fcntl qw(:flock);
 use IO::AtomicFile;
 use IO::File;
 use Time::HiRes qw(usleep);
+use Try::Tiny;
 
 my %ATTRS = ( lockfile   => undef,
               mode       => oct q(0666),
@@ -76,11 +77,8 @@ sub _read_shmfile {
    flock $lock, LOCK_EX;
 
    if (-f $self->shmfile) {
-      $ref = eval { $self->serializer->retrieve( $self->shmfile ) };
-
-      if ($e = $self->catch) {
-         $self->_release( $lock ); $self->throw( $e );
-      }
+      try   { $ref = $self->serializer->retrieve( $self->shmfile ) }
+      catch { $self->_release( $lock ); $self->throw( $_ ) };
    }
    else { $ref = {} }
 
@@ -151,11 +149,8 @@ sub _write_shmfile {
                     args  => [ $self->shmfile ] );
    }
 
-   eval { $self->serializer->store( $lock_ref, $wtr ) };
-
-   if ($e = $self->catch) {
-      $wtr->delete; $self->_release( $lock_file ); $self->throw( $e );
-   }
+   try   { $self->serializer->store( $lock_ref, $wtr ) }
+   catch { $wtr->delete; $self->_release( $lock_file ); $self->throw( $_ ) };
 
    $wtr->close; $self->_release( $lock_file );
    return;

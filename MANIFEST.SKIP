@@ -13,7 +13,6 @@
 \bblibdirs$
 ^MANIFEST\.skip$
 ^MANIFEST\.SKIP$
-^Build.PL$
 ^SIGNATURE$
 ^Debian_CPANTS.txt$
 

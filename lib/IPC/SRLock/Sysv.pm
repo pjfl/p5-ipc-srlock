@@ -31,11 +31,8 @@ sub _init {
                                     '-mode'   => $self->mode,
                                     '-size'   => $self->size );
 
-   unless ($share) {
-      $self->throw( error => 'No shared memory [_1]',
-                    args  => [ $self->lockfile ] );
-   }
-
+   $share or $self->throw( error => 'No shared memory [_1]',
+                           args  => [ $self->lockfile ] );
    $self->_share( $share );
    return;
 }
@@ -70,13 +67,11 @@ sub _reset {
    my $hash  = $data ? thaw( $data ) : {};
    my $found = delete $hash->{ $key };
 
-   $self->_share->store( freeze( $hash ) ) if ($found);
+   $found and $self->_share->store( freeze( $hash ) );
 
    $self->_share->unlock;
 
-   unless ($found) {
-      $self->throw( error => 'Lock [_1] not set', args => [ $key ] );
-   }
+   $found or $self->throw( error => 'Lock [_1] not set', args => [ $key ] );
 
    return 1;
 }
@@ -119,10 +114,10 @@ sub _set {
          $self->throw( error => 'Lock [_1] timed out', args => [ $key ] );
       }
 
-      usleep( 1_000_000 * $self->nap_time ) if ($found);
+      $found and usleep( 1_000_000 * $self->nap_time );
    }
 
-   $self->log->debug( "Lock $key set by $pid\n" ) if ($self->debug);
+   $self->debug and $self->log->debug( "Lock $key set by $pid\n" );
 
    return 1;
 }

@@ -1,7 +1,10 @@
 Revision history for IPC::SRLock
 
-0.4.147 - 2010-09-22
+0.4.149 - 2010-09-22
         - Switch to using M::B for install
+        - Now uses Try::Tiny
+
+0.4.147 - 2010-09-22
         - Stringify key so we can pass io objects *
         - Now uses TryCatch
         - Updated ensure_class_loaded

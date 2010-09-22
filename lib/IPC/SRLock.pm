@@ -13,7 +13,7 @@ use Date::Format;
 use English qw(-no_match_vars);
 use IPC::SRLock::ExceptionClass;
 use Time::Elapsed qw(elapsed);
-use TryCatch;
+use Try::Tiny;
 
 my %ATTRS = ( debug    => 0,
               log      => undef,
@@ -30,21 +30,17 @@ sub new {
    my ($self, @rest) = @_;
 
    my $args  = $self->_arg_list( @rest );
-   my $attrs = $self->_hash_merge( \%ATTRS, $args );
+   my $attrs = __hash_merge( \%ATTRS, $args );
    my $class = __PACKAGE__.q(::).(ucfirst $attrs->{type});
 
    $self->_ensure_class_loaded( $class ); # Load factory subclass
 
-   my $new   = bless $attrs, $class;
+   my $new = bless $attrs, $class;
 
    $new->log  ( $new->log || Class::Null->new() );
    $new->pid  ( $PID );
    $new->_init( $args ); # Initialise factory subclass
    return $new;
-}
-
-sub catch {
-   my ($self, @rest) = @_; return IPC::SRLock::ExceptionClass->catch( @rest );
 }
 
 sub get_table {
@@ -64,11 +60,14 @@ sub get_table {
                  values => [] };
 
    for my $lock (@{ $self->list }) {
-      my $flds       = {};
+      my $flds = {};
+
       $flds->{id   } = $lock->{key};
       $flds->{pid  } = $lock->{pid};
       $flds->{stime} = time2str( q(%Y-%m-%d %H:%M:%S), $lock->{stime} );
-      my $tleft      = $lock->{stime} + $lock->{timeout} - time;
+
+      my $tleft = $lock->{stime} + $lock->{timeout} - time;
+
       $flds->{tleft} = $tleft > 0 ? elapsed( $tleft ) : 'Expired';
       $flds->{class}->{tleft}
                      = $tleft < 1 ? q(error dataValue) : q(odd dataValue);
@@ -87,7 +86,7 @@ sub list {
 sub reset {
    my ($self, @rest) = @_; my $args = $self->_arg_list( @rest );
 
-   $self->throw( 'No key specified' ) unless (my $key = $args->{k});
+   my $key = $args->{k} or $self->throw( 'No key specified' );
 
    return $self->_reset( q().$key );
 }
@@ -95,11 +94,8 @@ sub reset {
 sub set {
    my ($self, @rest) = @_; my $args = $self->_arg_list( @rest );
 
-   $self->throw( 'No key specified' ) unless (my $key = $args->{k});
-
-   my $pid = $args->{p} || $self->pid;
-
-   $self->throw( 'No pid specified' ) unless ($pid);
+   my $key = $args->{k} or $self->throw( 'No key specified' );
+   my $pid = $args->{p} || $self->pid or $self->throw( 'No pid specified' );
 
    return $self->_set( q().$key, $pid, $args->{t} || $self->time_out );
 }
@@ -120,11 +116,9 @@ sub timeout_error {
 # Private methods
 
 sub _arg_list {
-   my ($self, @rest) = @_;
+   my ($self, @rest) = @_; $rest[ 0 ] or return {};
 
-   return {} unless ($rest[0]);
-
-   return ref $rest[0] ? $rest[0] : { @rest };
+   return ref $rest[ 0 ] ? $rest[ 0 ] : { @rest };
 }
 
 sub _ensure_class_loaded {
@@ -132,21 +126,17 @@ sub _ensure_class_loaded {
 
    my $package_defined = sub { Class::MOP::is_class_loaded( $class ) };
 
-   return 1 if (not $opts->{ignore_loaded} and $package_defined->());
+   not $opts->{ignore_loaded} and $package_defined->() and return 1;
 
-   try        { Class::MOP::load_class( $class ) }
-   catch ($e) { $self->throw( $e ) }
+   try   { Class::MOP::load_class( $class ) }
+   catch { $self->throw( $_ ) };
 
-   return 1 if ($package_defined->());
+   $package_defined->() and return 1;
 
    my $e = 'Class [_1] loaded but package undefined';
 
    $self->throw( error => $e, args => [ $class ] );
    return; # Never reached
-}
-
-sub _hash_merge {
-   my ($self, $l, $r) = @_; return { %{ $l }, %{ $r || {} } };
 }
 
 sub _init {
@@ -175,6 +165,12 @@ sub _set {
    $self->throw( error => 'Method [_1] not overridden in [_2]',
                  args  => [ q(_set), ref $self || $self ] );
    return;
+}
+
+# Private subroutines
+
+sub __hash_merge {
+   return { %{ $_[ 0 ] }, %{ $_[ 1 ] || {} } };
 }
 
 1;
@@ -329,9 +325,9 @@ parameters
 
 Require the requested class, throw an error if it doesn't load
 
-=head2 _hash_merge
+=head2 __hash_merge
 
-   my $hash = $self->_hash_merge( { key1 => val1 }, { key2 => val2 } );
+   my $hash = __hash_merge( { key1 => val1 }, { key2 => val2 } );
 
 Simplistic merging of two hashes
 

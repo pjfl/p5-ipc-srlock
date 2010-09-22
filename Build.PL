@@ -38,7 +38,7 @@ my $build = Module::Build->new
         'Storable'              => '2.15',
         'Time::Elapsed'         => '0.10',
         'Time::HiRes'           => '1.9711',
-        'TryCatch'              => '1.002000', },
+        'Try::Tiny'             => '0.06', },
      sign               => 1, );
 
 $build->create_build_script();
