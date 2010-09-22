@@ -4,7 +4,7 @@ package IPC::SRLock::ExceptionClass;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev$ =~ /\d+/gmx );
 use Exception::Class
    ( 'IPC::SRLock::Exception' => { fields => [qw(args out rv)] } );
 use base qw(IPC::SRLock::Exception);
@@ -82,7 +82,7 @@ IPC::SRLock::ExceptionClass - Exception base class
 
 =head1 Version
 
-0.3.$Revision$
+0.4.$Revision$
 
 =head1 Synopsis
 

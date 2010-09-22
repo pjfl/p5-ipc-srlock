@@ -1,6 +1,6 @@
 Revision history for IPC::SRLock
 
-0.4
+0.4.147 - 2010-09-22
         - Switch to using M::B for install
         - Stringify key so we can pass io objects *
         - Now uses TryCatch
