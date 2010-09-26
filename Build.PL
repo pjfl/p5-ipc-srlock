@@ -4,9 +4,16 @@ use strict;
 use warnings;
 use version; our $VERSION = qv( sprintf '0.5.%d', q$Rev$ =~ /\d+/gmx );
 
+use English qw( -no_match_vars );
 use Module::Build;
 
-my $build = Module::Build->new
+sub whimper { my $text = shift; print {*STDOUT} $text."\n"; exit 0 }
+
+BEGIN {
+   eval { require 5.008; }; $EVAL_ERROR and whimper 'Perl minimum 5.8';
+}
+
+Module::Build->new
    ( add_to_cleanup     => [ q(Debian_CPANTS.txt), q(IPC-SRLock-*),
                              map { ( '*/' x $_ ) . '*~' } 0..5 ],
      build_requires     => { 'Exception::Class' => q(1.23),
@@ -39,9 +46,7 @@ my $build = Module::Build->new
         'Time::Elapsed'         => '0.10',
         'Time::HiRes'           => '1.9711',
         'Try::Tiny'             => '0.06', },
-     sign               => 1, );
-
-$build->create_build_script();
+     sign               => 1, )->create_build_script;
 
 # Local Variables:
 # mode: perl
