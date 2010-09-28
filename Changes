@@ -1,5 +1,8 @@
 Revision history for IPC::SRLock
 
+0.5.154 - 2010-09-28
+        - Removed execute permission from Build.PL
+
 0.5.150 - 2010-09-22
         - Switch to using M::B for install
         - Now uses Try::Tiny
