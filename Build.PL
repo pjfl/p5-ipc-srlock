@@ -5,6 +5,9 @@ use warnings;
 
 use English qw(-no_match_vars);
 
+sub testing { !! ($ENV{AUTOMATED_TESTING} || $ENV{PERL_CR_SMOKER_CURRENT}
+              || ($ENV{PERL5OPT} || q()) =~ m{ CPAN-Reporter }mx) }
+
 sub whimper { print {*STDOUT} $_[ 0 ]."\n"; exit 0 }
 
 BEGIN {
@@ -23,12 +26,14 @@ Module::Build->new
                              'Test::More'       => 0.74, },
      configure_requires => { 'Module::Build'    => 0.32,
                              'version'          => 0.74, },
+     create_license     => 1,
      create_packlist    => 0,
      create_readme      => 1,
      dist_version_from  => q(lib/IPC/SRLock.pm),
      license            => q(perl),
      module_name        => q(IPC::SRLock),
-     no_index           => { directory => [ qw(t) ] },
+     no_index           => { directory  => [ qw(t) ], },
+     notes              => { stop_tests => testing,   },
      requires           => {
         'perl'                  => '5.008',
         'parent'                => '0.221',
