@@ -7,12 +7,13 @@ use warnings;
 use version; our $VERSION = qv( sprintf '0.5.%d', q$Rev$ =~ /\d+/gmx );
 use parent qw(IPC::SRLock);
 
+use English        qw(-no_match_vars);
 use IPC::ShareLite qw(:lock);
-use IPC::SysV      qw(IPC_CREAT);
 use Storable       qw(freeze thaw);
 use Time::HiRes    qw(usleep);
+use Try::Tiny;
 
-my %ATTRS = ( lockfile => 12244237, mode => oct q(0666), size => 65_536,
+my %ATTRS = ( lockfile => 12244237, mode => q(0666), size => 65_536,
               _share   => undef );
 
 __PACKAGE__->mk_accessors( keys %ATTRS );
@@ -20,33 +21,39 @@ __PACKAGE__->mk_accessors( keys %ATTRS );
 # Private methods
 
 sub _init {
-   my $self = shift;
+   my $self = shift; my $share;
 
-   for (grep { ! defined $self->{ $_ } } keys %ATTRS) {
+   for (grep { not defined $self->{ $_ } } keys %ATTRS) {
       $self->{ $_ } = $ATTRS{ $_ };
    }
 
-   my $share = IPC::ShareLite->new( '-key'    => $self->lockfile,
-                                    '-create' => 1,
-                                    '-mode'   => $self->mode,
-                                    '-size'   => $self->size );
+   try   { $self->_share( IPC::ShareLite->new( '-key'     => $self->lockfile,
+                                               '-create'  => 1,
+                                               '-mode'    => oct $self->mode,
+                                               '-size'    => $self->size ) ) }
+   catch { $self->throw( "$ERRNO: $_" ) };
 
-   $share or $self->throw( error => 'No shared memory [_1]',
-                           args  => [ $self->lockfile ] );
-   $self->_share( $share );
    return;
 }
 
+sub _fetch_share_data {
+   my ($self, $for_update) = @_; my $data;
+
+   defined $self->_share->lock( $for_update ? LOCK_EX : LOCK_SH )
+      or $self->throw( 'Failed to set semaphore' );
+
+   try   { $data = $self->_share->fetch }
+   catch { $self->throw( "$ERRNO: $_" ) };
+
+   not $for_update and $self->_unlock_share;
+
+   return $data ? thaw( $data ) : {};
+}
+
 sub _list {
-   my $self = shift; my $list = [];
-
-   $self->_share->lock( LOCK_SH );
-
-   my $data = $self->_share->fetch;
-
-   $self->_share->unlock;
-
-   my $hash = $data ? thaw( $data ) : {};
+   my $self = shift;
+   my $hash = $self->_fetch_share_data;
+   my $list = [];
 
    while (my ($key, $lock) = each %{ $hash }) {
       push @{ $list }, { key     => $key,
@@ -59,17 +66,14 @@ sub _list {
 }
 
 sub _reset {
-   my ($self, $key) = @_;
+   my ($self, $key) = @_; my $hash = $self->_fetch_share_data( 1 ); my $found;
 
-   $self->_share->lock( LOCK_EX );
+   if ($found = delete $hash->{ $key }) {
+      try   { $self->_share->store( freeze( $hash ) ) }
+      catch { $self->throw( "$ERRNO: $_" ) };
+   }
 
-   my $data  = $self->_share->fetch;
-   my $hash  = $data ? thaw( $data ) : {};
-   my $found = delete $hash->{ $key };
-
-   $found and $self->_share->store( freeze( $hash ) );
-
-   $self->_share->unlock;
+   $self->_unlock_share;
 
    $found or $self->throw( error => 'Lock [_1] not set', args => [ $key ] );
 
@@ -79,14 +83,10 @@ sub _reset {
 sub _set {
    my ($self, $key, $pid, $timeout) = @_; my $lock_set; my $start = time;
 
-   while (!$lock_set) {
+   while (not $lock_set) {
       my ($lock, $lpid, $ltime, $ltimeout);
       my $found = 0; my $now = time; my $timedout = 0;
-
-      $self->_share->lock( LOCK_EX );
-
-      my $data = $self->_share->fetch;
-      my $hash = $data ? thaw( $data ) : {};
+      my $hash  = $self->_fetch_share_data( 1 );
 
       if (exists $hash->{ $key } and $lock = $hash->{ $key }) {
          $lpid     = $lock->{pid    };
@@ -103,7 +103,7 @@ sub _set {
          $lock_set = $self->_set_lock( $hash, $key, $pid, $now, $timeout );
       }
 
-      $self->_share->unlock;
+      $self->_unlock_share;
 
       if ($timedout) {
          my $text = $self->timeout_error( $key, $lpid, $ltime, $ltimeout );
@@ -127,8 +127,18 @@ sub _set_lock {
 
    $hash->{ $key } = { pid => $pid, stime => $now, timeout => $timeout };
 
-   $self->_share->store( freeze( $hash ) );
+   try   { $self->_share->store( freeze( $hash ) ) }
+   catch { $self->throw( "$ERRNO: $_" ) };
+
    return 1;
+}
+
+sub _unlock_share {
+   my $self = shift;
+
+   defined $self->_share->unlock or $self->throw( 'Failed to unset semaphore' );
+
+   return;
 }
 
 1;

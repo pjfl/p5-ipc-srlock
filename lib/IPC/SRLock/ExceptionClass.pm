@@ -1,51 +1,52 @@
 # @(#)$Id$
 
-package IPC::SRLock::ExceptionClass;
+package IPC::SRLock::Exception;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.5.%d', q$Rev$ =~ /\d+/gmx );
+
 use Exception::Class
-   ( 'IPC::SRLock::Exception' => { fields => [qw(args out rv)] } );
-use base qw(IPC::SRLock::Exception);
+   'IPC::SRLock::Exception::Base' => { fields => [qw(args out rv)] };
+
+use overload '""' => sub { shift->to_string }, fallback => 1;
+use version; our $VERSION = qv( sprintf '0.5.%d', q$Rev$ =~ /\d+/gmx );
+use base qw(IPC::SRLock::Exception::Base);
 
 use Carp;
-use English qw(-no_match_vars);
-
-my $NUL = q();
+use English      qw(-no_match_vars);
+use Scalar::Util qw(blessed);
+use MRO::Compat;
 
 our $IGNORE = [ __PACKAGE__ ];
 
-sub catch {
-   my ($self, @rest) = @_; my $e;
+my $NUL = q();
 
-   return $e if ($e = $self->caught( @rest ));
+sub new {
+   my ($self, @rest) = @_;
 
-   return $self->new( args           => [],
-                      ignore_package => $IGNORE,
-                      out            => $NUL,
-                      rv             => 1,
-                      show_trace     => 0,
-                      error          => $EVAL_ERROR ) if ($EVAL_ERROR);
-
-   return;
+   return $self->next::method( args           => [],
+                               error          => 'Error unknown',
+                               ignore_package => $IGNORE,
+                               out            => $NUL,
+                               rv             => 1,
+                               @rest );
 }
 
-sub as_string {
-   my ($self, $verbosity, $offset) = @_; $verbosity ||= 1; $offset ||= 1;
+sub catch {
+   my ($self, $e) = @_; $e ||= $EVAL_ERROR;
 
-   my ($l_no, %seen); my $text = $NUL.$self->message;
+   $e and blessed $e and $e->isa( __PACKAGE__ ) and return $e;
 
-   return $text if ($verbosity < 2 and not $self->show_trace);
+   return $e ? $self->new( error => $NUL.$e ) : undef;
+}
 
-   my $i = $verbosity > 2 ? 0 : $offset; my $frame = undef;
+sub stacktrace {
+   my $self = shift; my ($frame, $l_no, %seen, $text); my $i = 1;
 
    while (defined ($frame = $self->trace->frame( $i++ ))) {
-      my $line = "\n".$frame->package.' line '.$frame->line;
+      next if ($l_no = $seen{ $frame->package } and $l_no == $frame->line);
 
-      if ($verbosity > 2) { $text .= $line; next }
-
-      last if (($l_no = $seen{ $frame->package }) && $l_no == $frame->line);
+      $text .= $frame->package.' line '.$frame->line."\n";
 
       $seen{ $frame->package } = $frame->line;
    }
@@ -54,20 +55,32 @@ sub as_string {
 }
 
 sub throw {
-   my ($self, @rest) = @_;
+   my ($self, @rest) = @_; my $e = $rest[ 0 ];
 
-   croak $rest[ 0 ] if ($rest[ 0 ] and ref $rest[ 0 ]);
+   $e and blessed $e and $e->isa( __PACKAGE__ ) and croak $e;
 
-   my @args = @rest == 1 ? ( error => $rest[0] ) : @rest;
+   croak $self->new( @rest == 1 ? ( error => $NUL.$e ) : @rest );
+}
 
-   croak $self->new( args           => [],
-                     ignore_package => $IGNORE,
-                     out            => $NUL,
-                     rv             => 1,
-                     show_trace     => 0,
-                     @args );
+sub throw_on_error {
+   my ($self, @rest) = @_; my $e;
+
+   $e = $self->catch( @rest ) and $self->throw( $e );
 
    return;
+}
+
+sub to_string {
+   my $self = shift; my $text = $self->error or return;
+
+   # Expand positional parameters of the form [_<n>]
+   0 > index $text, '[_' and return $text;
+
+   my @args = @{ $self->args }; push @args, map { $NUL } 0 .. 10;
+
+   $text =~ s{ \[ _ (\d+) \] }{$args[ $1 - 1 ]}gmx;
+
+   return $text;
 }
 
 1;
@@ -78,7 +91,7 @@ __END__
 
 =head1 Name
 
-IPC::SRLock::ExceptionClass - Exception base class
+IPC::SRLock::Exception - Exception class
 
 =head1 Version
 
@@ -88,53 +101,52 @@ IPC::SRLock::ExceptionClass - Exception base class
 
 =head1 Description
 
-Implements try (by way of an eval), throw, and catch error
-semantics. Inherits from Exception::Class
+Implements throw and catch error semantics. Inherits from
+L<Exception::Class>
 
 =head1 Subroutines/Methods
 
+=head2 new
+
+Create an exception object. You probably do not want to call this directly,
+but indirectly through L</catch> and L</throw>
+
 =head2 catch
 
+   $e = IPC::SRLock::Exception->catch( $error );
+
 Catches and returns a thrown exception or generates a new exception if
-EVAL_ERROR has been set
+I<EVAL_ERROR> has been set
 
-=head2 as_string
+=head2 stacktrace
 
-   warn $e->as_string( $verbosity, $offset );
+   $lines = $e->stacktrace;
 
-Serialise the exception to a string. The passed parameters; B<verbosity>
-and B<offset> determine how much output is returned
-
-The B<verbosity> parameter can be:
-
-=over 3
-
-=item 1
-
-The default value. Only show a stack trace if C<< $self->show_trace >>
-is true
-
-=item 2
-
-Always show the stack trace and start at frame B<offset> which
-defaults to 1. The stack trace stops when the first duplicate output
-line is detected
-
-=item 3
-
-Always shows the complete stack trace starting at frame 0
-
-=back
+Return the stack trace
 
 =head2 throw
+
+   IPC::SRLock::Exception->throw( $error );
 
 Create (or re-throw) an exception to be caught by the catch above. If
 the passed parameter is a reference it is re-thrown. If a single scalar
 is passed it is taken to be an error message code, a new exception is
 created with all other parameters taking their default values. If more
 than one parameter is passed the it is treated as a list and used to
-instantiate the new exception. The B<error> parameter must be provided
+instantiate the new exception. The 'error' parameter must be provided
 in this case
+
+=head2 throw_on_error
+
+   IPC::SRLock::Exception->throw_on_error( $error );
+
+Calls L</catch> and if the was an exception L</throw>s it
+
+=head2 to_string
+
+   $printable_string = $e->to_string
+
+What an instance of this class stringifies to
 
 =head1 Diagnostics
 
@@ -149,9 +161,11 @@ should be suppressed in the stack trace output
 
 =over 3
 
+=item L<overload>
+
 =item L<Exception::Class>
 
-=item L<List::Util>
+=item L<Scalar::Util>
 
 =back
 
@@ -172,7 +186,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2008 Peter Flanigan. All rights reserved
+Copyright (c) 2010 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

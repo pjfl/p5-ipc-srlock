@@ -11,7 +11,7 @@ use Class::MOP;
 use Class::Null;
 use Date::Format;
 use English qw(-no_match_vars);
-use IPC::SRLock::ExceptionClass;
+use IPC::SRLock::Exception;
 use Time::Elapsed qw(elapsed);
 use Try::Tiny;
 
@@ -101,7 +101,7 @@ sub set {
 }
 
 sub throw {
-   my ($self, @rest) = @_; return IPC::SRLock::ExceptionClass->throw( @rest );
+   my ($self, @rest) = @_; return IPC::SRLock::Exception->throw( @rest );
 }
 
 sub timeout_error {

@@ -30,7 +30,7 @@ __PACKAGE__->mk_accessors( keys %ATTRS );
 sub _init {
    my $self = shift; my $path;
 
-   for (grep { !defined $self->{ $_ } } keys %ATTRS) {
+   for (grep { not defined $self->{ $_ } } keys %ATTRS) {
       $self->{ $_ } = $ATTRS{ $_ };
    }
 
