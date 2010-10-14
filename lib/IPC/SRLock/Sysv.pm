@@ -27,10 +27,10 @@ sub _init {
       $self->{ $_ } = $ATTRS{ $_ };
    }
 
-   try   { $self->_share( IPC::ShareLite->new( '-key'     => $self->lockfile,
-                                               '-create'  => 1,
-                                               '-mode'    => oct $self->mode,
-                                               '-size'    => $self->size ) ) }
+   try   { $self->_share( IPC::ShareLite->new( '-key'    => $self->lockfile,
+                                               '-create' => 1,
+                                               '-mode'   => oct $self->mode,
+                                               '-size'   => $self->size ) ) }
    catch { $self->throw( "$ERRNO: $_" ) };
 
    return;
