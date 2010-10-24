@@ -9,7 +9,7 @@ use parent qw(IPC::SRLock);
 
 use English        qw(-no_match_vars);
 use IPC::ShareLite qw(:lock);
-use Storable       qw(freeze thaw);
+use Storable       qw(nfreeze thaw);
 use Time::HiRes    qw(usleep);
 use Try::Tiny;
 
@@ -69,7 +69,7 @@ sub _reset {
    my ($self, $key) = @_; my $hash = $self->_fetch_share_data( 1 ); my $found;
 
    if ($found = delete $hash->{ $key }) {
-      try   { $self->_share->store( freeze( $hash ) ) }
+      try   { $self->_share->store( nfreeze( $hash ) ) }
       catch { $self->throw( "$ERRNO: $_" ) };
    }
 
@@ -127,7 +127,7 @@ sub _set_lock {
 
    $hash->{ $key } = { pid => $pid, stime => $now, timeout => $timeout };
 
-   try   { $self->_share->store( freeze( $hash ) ) }
+   try   { $self->_share->store( nfreeze( $hash ) ) }
    catch { $self->throw( "$ERRNO: $_" ) };
 
    return 1;
