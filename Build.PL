@@ -6,7 +6,8 @@ use warnings;
 use English qw(-no_match_vars);
 
 sub testing { !! ($ENV{AUTOMATED_TESTING} || $ENV{PERL_CR_SMOKER_CURRENT}
-              || ($ENV{PERL5OPT} || q()) =~ m{ CPAN-Reporter }mx) }
+              || ($ENV{PERL5OPT} || q()) =~ m{ CPAN-Reporter }mx
+              || ($ENV{PERL5LIB} || q()) =~ m{ \A /home/sand }mx) }
 
 sub whimper { print {*STDOUT} $_[ 0 ]."\n"; exit 0 }
 
@@ -14,7 +15,7 @@ BEGIN {
    eval { require 5.008; }; $EVAL_ERROR and whimper 'Perl minimum 5.8';
 }
 
-use version; our $VERSION = qv( sprintf '0.5.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.6.%d', q$Rev$ =~ /\d+/gmx );
 
 use Module::Build;
 
