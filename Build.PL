@@ -2,9 +2,7 @@
 
 use strict;
 use warnings;
-use lib q(inc); # Contains Bob the Module::Build subclass
-
-use Bob;
+use inc::Bob; # Module::Build subclass
 
 use version; our $VERSION = qv( sprintf '0.6.%d', q$Rev$ =~ /\d+/gmx );
 
