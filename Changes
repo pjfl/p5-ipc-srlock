@@ -1,5 +1,7 @@
 Revision history for IPC::SRLock
 
+        - Moved boilerplate M::B subclass code to inc/Bob.pm
+
 0.6.165 - 2011-02-22
         - Suppressed Konig CPAN testing again
 

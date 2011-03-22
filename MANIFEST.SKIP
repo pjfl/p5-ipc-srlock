@@ -6,15 +6,17 @@
 \B\.cvsignore$
 
 # Avoid Makemaker generated and utility files.
-\bMakefile$
 \bblib
+\bblibdirs$
+\bMakefile$
 \bMakeMaker-\d
 \bpm_to_blib$
-\bblibdirs$
+^Debian_CPANTS.txt$
 ^MANIFEST\.skip$
 ^MANIFEST\.SKIP$
+^MYMETA\.json$
+^MYMETA\.yml$
 ^SIGNATURE$
-^Debian_CPANTS.txt$
 
 # Avoid Module::Build generated and utility files.
 \bBuild$
@@ -38,9 +40,10 @@
 \B\.DS_Store
 #   Mac OSX SMB mount metadata files
 \B\._
-#
+# IDE Meta data
 TAGS
+# M$ image cache
 Thumbs.db
+
 # Avoid archives of this distribution
 \bIPC-SRLock-[\d\.\_]+
-^MYMETA.yml$
