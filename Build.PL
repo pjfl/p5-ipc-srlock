@@ -3,7 +3,6 @@
 use strict;
 use warnings;
 use inc::Bob; # Module::Build subclass
-
 use version; our $VERSION = qv( sprintf '0.6.%d', q$Rev$ =~ /\d+/gmx );
 
 Bob->new( {
