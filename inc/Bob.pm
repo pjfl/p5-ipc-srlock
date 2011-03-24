@@ -29,7 +29,6 @@ sub new {
    my $distname   = $module; $distname =~ s{ :: }{-}gmx;
    my $class_path = catfile( q(lib), split m{ :: }mx, $module.q(.pm) );
    my $resources  = { license => q(http://dev.perl.org/licenses/) };
-   my $notes      = __set_notes( $params );
 
    $home_page and $resources->{homepage  } = $home_page;
    $tracker   and $resources->{bugtracker} = $tracker.$distname;
@@ -49,7 +48,7 @@ sub new {
         meta_merge         => { resources  => $resources, },
         module_name        => $module,
         no_index           => { directory  => [ qw(examples inc t) ], },
-        notes              => $notes,
+        notes              => __set_notes( $params ),
         recommends         => $params->{recommends},
         requires           => $params->{requires},
         sign               => $params->{sign}, );
@@ -60,7 +59,8 @@ sub new {
 sub __set_notes {
    my $params = shift; my $notes = $params->{notes} || {};
 
-   $params->{stop_tests} and $notes->{stop_tests} = __testing();
+   $notes->{stop_tests} = $params->{stop_tests} && __testing()
+                        ? 'CPAN Testing stopped' : 0;
 
    return $notes;
 }
