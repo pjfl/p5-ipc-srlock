@@ -29,11 +29,12 @@ sub new {
    my $distname   = $module; $distname =~ s{ :: }{-}gmx;
    my $class_path = catfile( q(lib), split m{ :: }mx, $module.q(.pm) );
    my $resources  = { license => q(http://dev.perl.org/licenses/) };
+   my $notes      = __set_notes( $params );
 
    $home_page and $resources->{homepage  } = $home_page;
    $tracker   and $resources->{bugtracker} = $tracker.$distname;
 
-   -f q(MANIFEST.SKIP) and _set_repository( $resources );
+   -f q(MANIFEST.SKIP) and __set_repository( $resources );
 
    return Module::Build->new
       ( add_to_cleanup     => [ q(Debian_CPANTS.txt), $distname.q(-*),
@@ -47,9 +48,8 @@ sub new {
         license            => $params->{license},
         meta_merge         => { resources  => $resources, },
         module_name        => $module,
-        no_index           => { directory  => [ qw(inc t) ], },
-        notes              => {
-           stop_tests      => $params->{stop_tests} ? _testing() : 0, },
+        no_index           => { directory  => [ qw(examples inc t) ], },
+        notes              => $notes,
         recommends         => $params->{recommends},
         requires           => $params->{requires},
         sign               => $params->{sign}, );
@@ -57,7 +57,15 @@ sub new {
 
 # Private subroutines
 
-sub _set_repository {
+sub __set_notes {
+   my $params = shift; my $notes = $params->{notes} || {};
+
+   $params->{stop_tests} and $notes->{stop_tests} = __testing();
+
+   return $notes;
+}
+
+sub __set_repository {
    # Accessor for the SVN repository information
    my $resources = shift;
 
@@ -71,8 +79,8 @@ sub _set_repository {
    return;
 }
 
-sub _testing { !! ($ENV{AUTOMATED_TESTING} || $ENV{PERL_CR_SMOKER_CURRENT}
-               || ($ENV{PERL5OPT} || q()) =~ m{ CPAN-Reporter }mx) }
+sub __testing { !! ($ENV{AUTOMATED_TESTING} || $ENV{PERL_CR_SMOKER_CURRENT}
+                || ($ENV{PERL5OPT} || q()) =~ m{ CPAN-Reporter }mx) }
 
 1;
 
