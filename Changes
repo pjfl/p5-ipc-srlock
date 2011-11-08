@@ -1,5 +1,7 @@
 Revision history for IPC::SRLock
 
+        - Updated inc::Bob
+
 0.6.174 - 2011-04-12
         - Suppressed dcollins CPAN testing
         - Moved boilerplate M::B subclass code to inc/Bob.pm
