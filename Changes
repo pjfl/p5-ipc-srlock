@@ -1,5 +1,8 @@
 Revision history for IPC::SRLock
 
+0.6.176 - 2012-02-24
+        - Explicitley stopped Nigel Horne from testing my modules, see
+          db033f8e-5e4e-11e1-952b-9fe4e7658155
         - Updated inc::Bob
 
 0.6.174 - 2011-04-12
