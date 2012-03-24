@@ -22,6 +22,7 @@ Bob->new( {
       'IO::File'              => 1.14,
       'IPC::ShareLite'        => 0.17,
       'List::Util'            => 1.19,
+      'Moose'                 => 2.0402,
       'Storable'              => 2.15,
       'Time::Elapsed'         => 0.10,
       'Time::HiRes'           => 1.9711,

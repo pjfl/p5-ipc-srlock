@@ -1,5 +1,8 @@
 Revision history for IPC::SRLock
 
+0.6.179 - 2012-03-24
+        - Re-added Moose as a dependecy as it contains Class::MOP
+
 0.6.178 - 2012-03-24
         - Enhanced error messages
         - Updated Moose / Class::MOP / MRO::Compat dependencies
