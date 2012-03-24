@@ -373,7 +373,7 @@ the lock record at the debug level
 
 =head1 Incompatibilities
 
-The B<sysv> subclass will not work on cygwin
+The B<sysv> subclass will not work on MSWin32 and cygwin platforms
 
 =head1 Bugs and Limitations
 

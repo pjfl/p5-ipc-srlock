@@ -6,7 +6,6 @@ use inc::Bob; # Module::Build subclass
 use version; our $VERSION = qv( sprintf '0.6.%d', q$Rev$ =~ /\d+/gmx );
 
 Bob->new( {
-   stop_tests => 1,
    module     => q(IPC::SRLock),
    home_page  => q(http://www.roxsoft.co.uk),
    requires   => {
@@ -23,7 +22,6 @@ Bob->new( {
       'IO::File'              => 1.14,
       'IPC::ShareLite'        => 0.17,
       'List::Util'            => 1.19,
-      'Moose'                 => 2.0402,
       'Storable'              => 2.15,
       'Time::Elapsed'         => 0.10,
       'Time::HiRes'           => 1.9711,

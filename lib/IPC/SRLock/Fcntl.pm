@@ -8,8 +8,7 @@ use version; our $VERSION = qv( sprintf '0.6.%d', q$Rev$ =~ /\d+/gmx );
 use parent qw(IPC::SRLock);
 
 use Data::Serializer;
-use File::Spec;
-use File::Spec::Functions;
+use File::Spec::Functions qw(catfile);
 use Fcntl qw(:flock);
 use IO::AtomicFile;
 use IO::File;
@@ -36,12 +35,16 @@ sub _init {
 
    unless ($self->lockfile) {
       $path = catfile( $self->tempdir, $self->name.q(.lck) );
-      $self->lockfile( $path =~ m{ \A ([ -\.\/\w.]+) \z }mx ? $1 : q() );
+      $self->lockfile( $path =~ m{ \A ([ \-\.\/\\\w.]+) \z }mx ? $1 : q() );
+      $self->lockfile or $self->throw( error => 'Path [_1] cannot untaint',
+                                       args  => [ $self->lockfile ] );
    }
 
    unless ($self->shmfile) {
       $path = catfile( $self->tempdir, $self->name.q(.shm) );
-      $self->shmfile( $path =~ m{ \A ([ -\.\/\w.]+) \z }mx ? $1 : q() );
+      $self->shmfile( $path =~ m{ \A ([ \-\.\/\\\w.]+) \z }mx ? $1 : q() );
+      $self->shmfile or $self->throw( error => 'Path [_1] cannot untaint',
+                                      args  => [ $self->shmfile ] );
    }
 
    $self->serializer( Data::Serializer->new( serializer => q(Storable) ) );
@@ -70,7 +73,7 @@ sub _read_shmfile {
    umask $self->umask;
 
    unless ($lock = IO::File->new( $self->lockfile, q(w), $self->mode )) {
-      $self->throw( error => 'File [_1] cannot write',
+      $self->throw( error => 'Path [_1] cannot open for writing',
                     args  => [ $self->lockfile ] );
    }
 
@@ -145,7 +148,7 @@ sub _write_shmfile {
 
    unless ($wtr = IO::AtomicFile->new( $self->shmfile, q(w), $self->mode )) {
       $self->_release( $lock_file );
-      $self->throw( error => 'File [_1] cannot write',
+      $self->throw( error => 'Path [_1] cannot write',
                     args  => [ $self->shmfile ] );
    }
 
