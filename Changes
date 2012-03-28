@@ -1,15 +1,17 @@
 Revision history for IPC::SRLock
 
+0.6.180 - 2012-03-28
+        - Stopped Bingos from testing see 603281a2-78ac-11e1-9d6f-f6dbfa7543f5
+
 0.6.179 - 2012-03-24
-        - Re-added Moose as a dependecy as it contains Class::MOP
+        - Re-added Moose as a dependency as it contains Class::MOP
 
 0.6.178 - 2012-03-24
         - Enhanced error messages
         - Updated Moose / Class::MOP / MRO::Compat dependencies
 
 0.6.176 - 2012-02-24
-        - Explicitley stopped Nigel Horne from testing my modules, see
-          db033f8e-5e4e-11e1-952b-9fe4e7658155
+        - Stopped Horne from testing see db033f8e-5e4e-11e1-952b-9fe4e7658155
         - Updated inc::Bob
 
 0.6.174 - 2011-04-12
