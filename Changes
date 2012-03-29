@@ -1,6 +1,8 @@
 Revision history for IPC::SRLock
 
-         - Upped min Perl ver to 5.10
+0.7.185 - 2012-03-29
+        - Updated inc::Bob to 1.2
+        - Upped min Perl ver to 5.10
 
 0.6.181 - 2012-03-28
         - Stopped Bingos from testing see 603281a2-78ac-11e1-9d6f-f6dbfa7543f5
