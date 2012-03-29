@@ -3,13 +3,13 @@
 use strict;
 use warnings;
 use inc::Bob; # Module::Build subclass
-use version; our $VERSION = qv( sprintf '0.6.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.7.%d', q$Rev$ =~ /\d+/gmx );
 
 Bob->new( {
    module     => q(IPC::SRLock),
    home_page  => q(http://www.roxsoft.co.uk),
    requires   => {
-      'perl'                  => 5.008,
+      'perl'                  => 5.010,
       'parent'                => 0.221,
       'version'               => 0.74,
       'Cache::Memcached'      => 1.24,
