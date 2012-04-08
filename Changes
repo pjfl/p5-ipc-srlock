@@ -1,7 +1,9 @@
 Revision history for IPC::SRLock
 
-0.7.190 - 2012-04-07
+0.7.191 - 2012-04-08
         - Turning CPAN testing on again
+
+0.7.190 - 2012-04-07
         - Giving Konig and dcollins a second chance
         - Stopped mirbsd and netbsd for not installing Moose / Class::MOP
 
