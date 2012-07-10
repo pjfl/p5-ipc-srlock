@@ -1,5 +1,7 @@
 Revision history for IPC::SRLock
 
+        - Made Cache::Memcached a recommends not a requires. Refusing to do
+          the same for IPC::ShareLite
         - Updated inc::Bob to 1.3
 
 0.7.191 - 2012-04-08

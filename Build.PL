@@ -12,7 +12,6 @@ Bob->new( {
       'perl'                  => 5.010,
       'parent'                => 0.221,
       'version'               => 0.74,
-      'Cache::Memcached'      => 1.24,
       'Class::Accessor::Fast' => 0.31,
       'Class::Null'           => 1.09,
       'Data::Serializer'      => 0.46,
@@ -27,6 +26,8 @@ Bob->new( {
       'Time::Elapsed'         => 0.10,
       'Time::HiRes'           => 1.9711,
       'Try::Tiny'             => 0.06, },
+   recommends                 => {
+      'Cache::Memcached'      => 1.24, },
    configure_requires => { 'Module::Build'    => 0.32,
                            'version'          => 0.74, },
    build_requires     => { 'Exception::Class' => 1.23,
