@@ -5,18 +5,27 @@ package CPANTesting;
 use strict;
 use warnings;
 
-my $uname = qx(uname -a);
+my $osname = lc $^O; my $uname = qx(uname -a);
 
-sub broken_toolchain {
+sub should_abort {
    return 0;
 }
 
-sub exceptions {
-   lc $^O eq q(mirbsd)      and return 'Mirbsd not supported';
-   lc $^O eq q(netbsd)      and return 'Netbsd not supported';
-   $uname =~ m{ slack64 }mx and return 'Stopped Bingos slack64';
+sub test_exceptions {
+   my $p = shift; __is_testing() or return 0;
+
+   $p->{stop_tests} and return 'CPAN Testing stopped in Build.PL';
+
+   $osname eq q(mirbsd)      and return 'Mirbsd OS unsupported';
+   $osname eq q(netbsd)      and return 'Netbsd OS unsupported';
+   $uname  =~ m{ slack64 }mx and return 'Stopped Bingos slack64';
    return 0;
 }
+
+# Private functions
+
+sub __is_testing { !! ($ENV{AUTOMATED_TESTING} || $ENV{PERL_CR_SMOKER_CURRENT}
+                   || ($ENV{PERL5OPT} || q()) =~ m{ CPAN-Reporter }mx) }
 
 1;
 
