@@ -17,7 +17,6 @@ sub test_exceptions {
    $p->{stop_tests} and return 'CPAN Testing stopped in Build.PL';
 
    $osname eq q(mirbsd)      and return 'Mirbsd OS unsupported';
-   $osname eq q(netbsd)      and return 'Netbsd OS unsupported';
    $uname  =~ m{ slack64 }mx and return 'Stopped Bingos slack64';
    return 0;
 }

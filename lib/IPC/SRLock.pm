@@ -212,37 +212,37 @@ This class defines accessors and mutators for these attributes:
 
 =over 3
 
-=item debug
+=item C<debug>
 
 Turns on debug output. Defaults to 0
 
-=item log
+=item C<log>
 
 If set to a log object, it's C<debug> method is called if debugging is
 turned on. Defaults to L<Class::Null>
 
-=item name
+=item C<name>
 
 Used as the lock file names. Defaults to I<ipc_srlock>
 
-=item nap_time
+=item C<nap_time>
 
 How long to wait between polls of the lock table. Defaults to 0.5 seconds
 
-=item patience
+=item C<patience>
 
 Time in seconds to wait for a lock before giving up. If set to 0 waits
 forever. Defaults to 0
 
-=item pid
+=item C<pid>
 
 The process id doing the locking. Defaults to this processes id
 
-=item time_out
+=item C<time_out>
 
 Time in seconds before a lock is deemed to have expired. Defaults to 300
 
-=item type
+=item C<type>
 
 Determines which factory subclass is loaded. Defaults to I<fcntl>
 
@@ -325,12 +325,6 @@ parameters
 
 Require the requested class, throw an error if it doesn't load
 
-=head2 __hash_merge
-
-   my $hash = __hash_merge( { key1 => val1 }, { key2 => val2 } );
-
-Simplistic merging of two hashes
-
 =head2 _init
 
 Called by the constructor. Optionally overridden in the factory
@@ -348,9 +342,15 @@ Should be overridden in the factory subclass
 
 Should be overridden in the factory subclass
 
+=head2 __hash_merge
+
+   my $hash = __hash_merge( { key1 => val1 }, { key2 => val2 } );
+
+Simplistic merging of two hashes
+
 =head1 Diagnostics
 
-Setting B<debug> to true will cause the C<set> methods to log
+Setting C<debug> to true will cause the C<set> methods to log
 the lock record at the debug level
 
 =head1 Dependencies
@@ -373,7 +373,7 @@ the lock record at the debug level
 
 =head1 Incompatibilities
 
-The B<sysv> subclass will not work on MSWin32 and cygwin platforms
+The C<Sysv> subclass will not work on C<MSWin32> and C<cygwin> platforms
 
 =head1 Bugs and Limitations
 

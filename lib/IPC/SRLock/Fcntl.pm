@@ -193,24 +193,24 @@ This class defines accessors and mutators for these attributes:
 
 =over 3
 
-=item lockfile
+=item C<lockfile>
 
 Path to the file used by fcntl
 
-=item mode
+=item C<mode>
 
 File mode to use when creating the lock table file. Defaults to 0666
 
-=item shmfile
+=item C<shmfile>
 
 Path to the lock table file
 
-=item tempdir
+=item C<tempdir>
 
 Path to the directory where the lock files reside. Defaults to
 C<File::Spec-E<gt>tmpdir>
 
-=item umask
+=item C<umask>
 
 The umask to set when creating the lock table file. Defaults to 0
 
@@ -278,7 +278,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2008 Peter Flanigan. All rights reserved
+Copyright (c) 2012 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>
