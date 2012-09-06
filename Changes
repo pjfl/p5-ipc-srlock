@@ -1,5 +1,8 @@
 Revision history for IPC::SRLock
 
+0.8.197 - 2012-09-06
+        - Added MSWin32 and Cygwin back into the stop tests lists
+
 0.8.195 - 2012-09-05
         - Added POD spelling test
         - Updated inc::Bob to 1.5
