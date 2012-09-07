@@ -1,5 +1,10 @@
 Revision history for IPC::SRLock
 
+0.8.198 - 2012-09-07
+        - Remove shared memory segment and semaphore set after tests
+        - Added Bingos falco smoker to skip tests
+          8625b420-f89e-11e1-8d3a-af090e115ead
+
 0.8.197 - 2012-09-06
         - Added MSWin32 and Cygwin back into the stop tests lists
 

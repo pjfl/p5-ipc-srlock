@@ -61,6 +61,9 @@ unless ($OSNAME eq q(MSWin32) or $OSNAME eq q(cygwin)) {
 
    ok ! (first { $_ eq $PROGRAM_NAME }
          map   { $_->{key} } @{ $lock->list() }), 'Reset ipc';
+
+   qx{ ipcrm -M 0x00bad50d };
+   qx{ ipcrm -S 0x00bad50d };
 }
 
 # Need a memcached server to run these tests
