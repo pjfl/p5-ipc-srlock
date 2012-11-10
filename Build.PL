@@ -36,6 +36,8 @@ Bob->new( {
 } )->create_build_script; # Goal!
 
 # Local Variables:
+# eval: (load-project-state "ipc-srlock")
 # mode: perl
+# tab-title: SRLock
 # tab-width: 3
 # End:

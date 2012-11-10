@@ -51,7 +51,7 @@ sub get_table {
                              stime => 'right',
                              tleft => 'right'},
                  count  => $count,
-                 flds   => [ qw(id pid stime tleft) ],
+                 fields => [ qw(id pid stime tleft) ],
                  hclass => { id => q(most) },
                  labels => { id    => 'Key',
                              pid   => 'PID',
@@ -60,18 +60,18 @@ sub get_table {
                  values => [] };
 
    for my $lock (@{ $self->list }) {
-      my $flds = {};
+      my $fields = {};
 
-      $flds->{id   } = $lock->{key};
-      $flds->{pid  } = $lock->{pid};
-      $flds->{stime} = time2str( q(%Y-%m-%d %H:%M:%S), $lock->{stime} );
+      $fields->{id   } = $lock->{key};
+      $fields->{pid  } = $lock->{pid};
+      $fields->{stime} = time2str( q(%Y-%m-%d %H:%M:%S), $lock->{stime} );
 
       my $tleft = $lock->{stime} + $lock->{timeout} - time;
 
-      $flds->{tleft} = $tleft > 0 ? elapsed( $tleft ) : 'Expired';
-      $flds->{class}->{tleft}
-                     = $tleft < 1 ? q(error dataValue) : q(odd dataValue);
-      push @{ $data->{values} }, $flds;
+      $fields->{tleft} = $tleft > 0 ? elapsed( $tleft ) : 'Expired';
+      $fields->{class}->{tleft}
+                       = $tleft < 1 ? q(error dataValue) : q(odd dataValue);
+      push @{ $data->{values} }, $fields;
       $count++;
    }
 

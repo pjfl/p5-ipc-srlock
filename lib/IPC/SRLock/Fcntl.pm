@@ -68,11 +68,10 @@ sub _list {
 }
 
 sub _read_shmfile {
-   my $self = shift; my ($e, $lock, $ref);
-
-   umask $self->umask;
+   my $self = shift; my $old_umask = umask $self->umask; my ($e, $lock, $ref);
 
    unless ($lock = IO::File->new( $self->lockfile, q(w), $self->mode )) {
+      umask $old_umask;
       $self->throw( error => 'Path [_1] cannot open for writing',
                     args  => [ $self->lockfile ] );
    }
@@ -81,10 +80,11 @@ sub _read_shmfile {
 
    if (-f $self->shmfile) {
       try   { $ref = $self->serializer->retrieve( $self->shmfile ) }
-      catch { $self->_release( $lock ); $self->throw( $_ ) };
+      catch { umask $old_umask; $self->_release( $lock ); $self->throw( $_ ) };
    }
    else { $ref = {} }
 
+   umask $old_umask;
    return ($lock, $ref);
 }
 

@@ -1,5 +1,10 @@
 Revision history for IPC::SRLock
 
+0.8.200 2012-11-10
+        - Changed get_table attribute name from flds to fields
+        - Cache and reset the umask in Fcntl::_read_shm_file
+        - Updated inc::Bob to 1.6
+
 0.8.199 - 2012-09-07
         - Remove shared memory segment and semaphore set after tests
         - Added Bingos falco smoker to skip tests
@@ -73,7 +78,7 @@ Revision history for IPC::SRLock
         - Now uses TryCatch
         - Updated ensure_class_loaded
 
-0.3.137 27/06/2006
+0.3.137 27/06/2009
         - Fixed key used to sign distro
         - Use Class::MOP in ensure_class_loaded
 
