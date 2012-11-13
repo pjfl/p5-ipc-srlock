@@ -11,14 +11,3 @@ sub ACTION_distmeta {
 
    return $self->SUPER::ACTION_distmeta;
 }
-
-sub _normalize_prereqs {
-   my $self = shift; my $osname = lc $^O;
-
-   my $prereqs = $self->SUPER::_normalize_prereqs;
-
-   ($osname eq 'mswin32' or $osname eq 'cygwin')
-      and delete $prereqs->{requires}->{ 'IPC::ShareLite' };
-
-   return $prereqs;
-}

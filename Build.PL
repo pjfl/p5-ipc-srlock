@@ -6,6 +6,7 @@ use inc::Bob; # Module::Build subclass
 use version; our $VERSION = qv( sprintf '0.8.%d', q$Rev$ =~ /\d+/gmx );
 
 Bob->new( {
+   create_readme_pod => 1,
    module     => q(IPC::SRLock),
    home_page  => q(http://www.roxsoft.co.uk),
    requires   => {

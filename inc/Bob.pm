@@ -87,7 +87,7 @@ sub __get_no_index {
 sub __get_notes {
    my $p = shift; my $notes = exists $p->{notes} ? $p->{notes} : {};
 
-   $notes->{create_readme_pod} = $p->{create_readme_pod} // 0;
+   $notes->{create_readme_pod} = $p->{create_readme_pod} || 0;
    $notes->{is_cpan_testing  } = CPANTesting::is_testing();
    $notes->{stop_tests       } = CPANTesting::test_exceptions( $p );
    $notes->{version          } = $VERSION;
