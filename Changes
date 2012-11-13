@@ -1,5 +1,7 @@
 Revision history for IPC::SRLock
 
+        - Updated inc::Bob to 1.7
+
 0.8.207 2012-11-13
         - Modified M::B::_normalize_prereqs in inc::Bob. Now have a conditional
           dependency on IPC::ShareLite !!!!

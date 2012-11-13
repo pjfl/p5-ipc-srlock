@@ -10,9 +10,9 @@ sub whimper { print {*STDOUT} $_[ 0 ]."\n"; exit 0 }
 
 BEGIN { my $reason; $reason = CPANTesting::should_abort and whimper $reason; }
 
-use version; our $VERSION = qv( '1.6.1' );
+use version; our $VERSION = qv( '1.7' );
 
-use File::Spec::Functions;
+use File::Spec::Functions qw(catfile);
 use Module::Build;
 
 sub new {
@@ -49,29 +49,15 @@ sub new {
 sub __get_build_class { # Which subclass of M::B should we create?
    my $p = shift; exists $p->{build_class} and return $p->{build_class};
 
-   return Module::Build->subclass( code => q{
-      use Pod::Select;
+   my $path = catfile( qw(inc SubClass.pm) );
 
-      sub ACTION_distmeta {
-         my $self = shift;
+   -f $path or return 'Module::Build';
 
-         $self->notes->{create_readme_pod} and podselect( {
-            -output => q(README.pod) }, $self->dist_version_from );
+   open( my $fh, '<', $path ) or whimper "File ${path} cannot open: ${!}";
 
-         return $self->SUPER::ACTION_distmeta;
-      }
+   my $code = do { local $/ = undef; <$fh> }; close( $fh );
 
-      sub _normalize_prereqs {
-         my $self = shift; my $osname = lc $^O;
-
-         my $prereqs = $self->SUPER::_normalize_prereqs;
-
-         ($osname eq 'mswin32' or $osname eq 'cygwin')
-            and delete $prereqs->{requires}->{ 'IPC::ShareLite' };
-
-         return $prereqs;
-      }
-   } );
+   return Module::Build->subclass( code => $code );
 }
 
 sub __get_cleanup_list {
