@@ -1,5 +1,8 @@
 Revision history for IPC::SRLock
 
+0.8.205 2012-11-13
+        - Readded _normalize_prereqs to inc/SubClass
+
 0.8.203 2012-11-13
         - Updated inc::Bob to 1.7. Removed defined ors
 
