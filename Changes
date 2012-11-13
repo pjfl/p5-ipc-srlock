@@ -1,5 +1,9 @@
 Revision history for IPC::SRLock
 
+0.8.207 2012-11-13
+        - Modified M::B::_normalize_prereqs in inc::Bob. Now have a conditional
+          dependency on IPC::ShareLite !!!!
+
 0.8.200 2012-11-10
         - Changed get_table attribute name from flds to fields
         - Cache and reset the umask in Fcntl::_read_shm_file

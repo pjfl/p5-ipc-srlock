@@ -10,7 +10,7 @@ sub whimper { print {*STDOUT} $_[ 0 ]."\n"; exit 0 }
 
 BEGIN { my $reason; $reason = CPANTesting::should_abort and whimper $reason; }
 
-use version; our $VERSION = qv( '1.6' );
+use version; our $VERSION = qv( '1.6.1' );
 
 use File::Spec::Functions;
 use Module::Build;
@@ -59,6 +59,17 @@ sub __get_build_class { # Which subclass of M::B should we create?
             -output => q(README.pod) }, $self->dist_version_from );
 
          return $self->SUPER::ACTION_distmeta;
+      }
+
+      sub _normalize_prereqs {
+         my $self = shift; my $osname = lc $^O;
+
+         my $prereqs = $self->SUPER::_normalize_prereqs;
+
+         ($osname eq 'mswin32' or $osname eq 'cygwin')
+            and delete $prereqs->{requires}->{ 'IPC::ShareLite' };
+
+         return $prereqs;
       }
    } );
 }

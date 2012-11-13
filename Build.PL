@@ -28,7 +28,7 @@ Bob->new( {
       'Try::Tiny'             => 0.06, },
    recommends                 => {
       'Cache::Memcached'      => 1.24, },
-   configure_requires => { 'Module::Build'    => 0.32,
+   configure_requires => { 'Module::Build'    => 0.38,
                            'version'          => 0.74, },
    build_requires     => { 'Exception::Class' => 1.23,
                            'List::Util'       => 1.19,
