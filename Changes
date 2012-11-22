@@ -1,5 +1,8 @@
 Revision history for IPC::SRLock
 
+0.8.206 2012-11-22
+        - Adjusted path untaint pattern for mswin32. Added a colon
+
 0.8.205 2012-11-13
         - Readded _normalize_prereqs to inc/SubClass
 

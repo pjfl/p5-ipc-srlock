@@ -35,14 +35,14 @@ sub _init {
 
    unless ($self->lockfile) {
       $path = catfile( $self->tempdir, $self->name.q(.lck) );
-      $self->lockfile( $path =~ m{ \A ([ \-\.\/\\\w.]+) \z }mx ? $1 : q() );
+      $self->lockfile( $path =~ m{ \A ([ \:\-\.\/\\\w.]+) \z }mx ? $1 : q() );
       $self->lockfile or $self->throw( error => 'Path [_1] cannot untaint',
                                        args  => [ $self->lockfile ] );
    }
 
    unless ($self->shmfile) {
       $path = catfile( $self->tempdir, $self->name.q(.shm) );
-      $self->shmfile( $path =~ m{ \A ([ \-\.\/\\\w.]+) \z }mx ? $1 : q() );
+      $self->shmfile( $path =~ m{ \A ([ \:\-\.\/\\\w.]+) \z }mx ? $1 : q() );
       $self->shmfile or $self->throw( error => 'Path [_1] cannot untaint',
                                       args  => [ $self->shmfile ] );
    }
