@@ -45,7 +45,8 @@ sub full_message {
    # Expand positional parameters of the form [_<n>]
    0 > index $text, '[_' and return $text;
 
-   my @args = @{ $self->args }; push @args, map { '[?]' } 0 .. 10;
+   my @args = map { defined $_ ? $_ : '[?]' } @{ $self->args },
+              map { '[?]' } 0 .. 9;
 
    $text =~ s{ \[ _ (\d+) \] }{$args[ $1 - 1 ]}gmx;
 

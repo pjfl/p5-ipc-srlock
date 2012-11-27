@@ -1,5 +1,8 @@
 Revision history for IPC::SRLock
 
+0.8.207 2012-11-27
+        - Another attempt at finding the magic mswin32 path untaint regex
+
 0.8.206 2012-11-22
         - Adjusted path untaint pattern for mswin32. Added a colon
 
