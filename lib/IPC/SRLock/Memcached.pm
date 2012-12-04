@@ -4,7 +4,7 @@ package IPC::SRLock::Memcached;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.8.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.9.%d', q$Rev$ =~ /\d+/gmx );
 use parent qw(IPC::SRLock);
 
 use Cache::Memcached;
@@ -81,10 +81,11 @@ sub _reset {
 }
 
 sub _set {
-   my ($self, $key, $pid, $timeout) = @_;
-   my (@flds, $lock_set, $now, $rec, $recs, $start, $text);
+   my ($self, $args) = @_; my $start = time;
 
-   $start = time;
+   my $key = $args->{k}; my $pid = $args->{p}; my $timeout = $args->{t};
+
+   my (@flds, $lock_set, $now, $rec, $recs, $text);
 
    while (1) {
       $now = time;
@@ -118,6 +119,7 @@ sub _set {
             $self->debug and $self->log->debug( "Lock $key set by $pid\n" );
             return 1;
          }
+         elsif ($args->{async}) { return 0 }
       }
 
       $self->_sleep_or_throw( $start, $now, $self->lockfile );
@@ -147,7 +149,7 @@ IPC::SRLock::Memcached - Set/reset locks using libmemcache
 
 =head1 Version
 
-0.8.$Revision$
+0.9.$Revision$
 
 =head1 Synopsis
 

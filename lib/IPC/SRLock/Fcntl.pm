@@ -4,7 +4,7 @@ package IPC::SRLock::Fcntl;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.8.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.9.%d', q$Rev$ =~ /\d+/gmx );
 use parent qw(IPC::SRLock);
 
 use Data::Serializer;
@@ -17,7 +17,7 @@ use Try::Tiny;
 
 my %ATTRS = ( lockfile   => undef,
               mode       => oct q(0666),
-              pattern    => qr{ \A ([ :+./\-\\\w]+) \z }msx,
+              pattern    => qr{ \A ([ ~:+./\-\\\w]+) \z }msx,
               serializer => undef,
               shmfile    => undef,
               tempdir    => File::Spec->tmpdir,
@@ -103,10 +103,11 @@ sub _reset {
 }
 
 sub _set {
-   my ($self, $key, $pid, $timeout) = @_;
-   my ($lock, $lock_file, $lock_ref, $now, $start);
+   my ($self, $args) = @_;
 
-   $lock_ref = {}; $start = time;
+   my $key = $args->{k}; my $pid = $args->{p}; my $timeout = $args->{t};
+
+   my $lock_ref = {}; my $start = time; my ($lock, $lock_file, $now);
 
    while (!$now || $lock_ref->{ $key }) {
       ($lock_file, $lock_ref) = $self->_read_shmfile; $now = time;
@@ -122,7 +123,7 @@ sub _set {
       }
 
       if ($lock) {
-         $self->_release( $lock_file );
+         $self->_release( $lock_file ); $args->{async} and return 0;
 
          if ($self->patience && $now - $start > $self->patience) {
             $self->throw( error => 'Lock [_1] timed out', args => [ $key ] );
@@ -136,7 +137,7 @@ sub _set {
                            stime   => $now,
                            timeout => $timeout };
    $self->_write_shmfile( $lock_file, $lock_ref );
-   $self->log->debug( "Lock $key set by $pid\n" ) if ($self->debug);
+   $self->debug and $self->log->debug( "Lock $key set by $pid\n" );
    return 1;
 }
 
@@ -168,7 +169,7 @@ IPC::SRLock::Fcntl - Set/reset locks using fcntl
 
 =head1 Version
 
-0.8.$Revision$
+0.9.$Revision$
 
 =head1 Synopsis
 

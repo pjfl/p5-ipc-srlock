@@ -1,5 +1,9 @@
 Revision history for IPC::SRLock
 
+0.9.208 2012-12-04
+        - Added async set
+        - Another attempt at finding the magic mswin32 path untaint regex
+
 0.8.207 2012-11-27
         - Another attempt at finding the magic mswin32 path untaint regex
 

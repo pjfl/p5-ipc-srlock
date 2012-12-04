@@ -4,7 +4,7 @@ package IPC::SRLock::Sysv;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.8.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.9.%d', q$Rev$ =~ /\d+/gmx );
 use parent qw(IPC::SRLock);
 
 use English        qw(-no_match_vars);
@@ -81,7 +81,9 @@ sub _reset {
 }
 
 sub _set {
-   my ($self, $key, $pid, $timeout) = @_; my $lock_set; my $start = time;
+   my ($self, $args) = @_; my $lock_set; my $start = time;
+
+   my $key = $args->{k}; my $pid = $args->{p}; my $timeout = $args->{t};
 
    while (not $lock_set) {
       my ($lock, $lpid, $ltime, $ltimeout);
@@ -104,6 +106,8 @@ sub _set {
       }
 
       $self->_unlock_share;
+
+      not $lock_set and $args->{async} and return 0;
 
       if ($timedout) {
          my $text = $self->timeout_error( $key, $lpid, $ltime, $ltimeout );
@@ -153,7 +157,7 @@ IPC::SRLock::Sysv - Set/reset locks using System V IPC
 
 =head1 Version
 
-0.8.$Revision$
+0.9.$Revision$
 
 =head1 Synopsis
 

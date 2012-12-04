@@ -4,7 +4,7 @@ package IPC::SRLock;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.8.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.9.%d', q$Rev$ =~ /\d+/gmx );
 use parent qw(Class::Accessor::Fast);
 
 use Class::MOP;
@@ -94,10 +94,11 @@ sub reset {
 sub set {
    my ($self, @rest) = @_; my $args = $self->_arg_list( @rest );
 
-   my $key = $args->{k} or $self->throw( 'No key specified' );
-   my $pid = $args->{p} || $self->pid or $self->throw( 'No pid specified' );
+   $args->{k}   = q().$args->{k} or $self->throw( 'No key specified' );
+   $args->{p} ||= $self->pid; $args->{p} or $self->throw( 'No pid specified' );
+   $args->{t} ||= $self->time_out;
 
-   return $self->_set( q().$key, $pid, $args->{t} || $self->time_out );
+   return $self->_set( $args );
 }
 
 sub throw {
@@ -185,7 +186,7 @@ IPC::SRLock - Set/reset locking semantics to single thread processes
 
 =head1 Version
 
-0.8.$Revision$
+0.9.$Revision$
 
 =head1 Synopsis
 
