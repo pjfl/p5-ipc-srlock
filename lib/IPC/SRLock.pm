@@ -388,7 +388,7 @@ Patches are welcome
 
 =head1 Author
 
-Peter Flanigan, C<< @ <Support at RoxSoft dot co dot uk> >>
+Peter Flanigan, C<< <pjfl@cpan.org> >>
 
 =head1 License and Copyright
 
@@ -407,3 +407,4 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE
 # mode: perl
 # tab-width: 3
 # End:
+

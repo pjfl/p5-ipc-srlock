@@ -1,4 +1,4 @@
-# @(#)$Id$
+# @(#)Ident: Bob.pm 2013-04-15 15:23 pjf ;
 
 package Bob;
 
@@ -10,7 +10,7 @@ sub whimper { print {*STDOUT} $_[ 0 ]."\n"; exit 0 }
 
 BEGIN { my $reason; $reason = CPANTesting::should_abort and whimper $reason; }
 
-use version; our $VERSION = qv( '1.7' );
+use version; our $VERSION = qv( '1.12' );
 
 use File::Spec::Functions qw(catfile);
 use Module::Build;
@@ -41,10 +41,15 @@ sub new {
         notes              => __get_notes( $p ),
         recommends         => $p->{recommends},
         requires           => $p->{requires},
-        sign               => defined $p->{sign} ? $p->{sign} : 1, );
+        sign               => defined $p->{sign} ? $p->{sign} : 1,
+        share_dir          => __get_share_dir( $p ), );
 }
 
 # Private functions
+
+sub __is_src { # Is this the developer authoring a module?
+   return -f q(MANIFEST.SKIP);
+}
 
 sub __get_build_class { # Which subclass of M::B should we create?
    my $p = shift; exists $p->{build_class} and return $p->{build_class};
@@ -53,9 +58,9 @@ sub __get_build_class { # Which subclass of M::B should we create?
 
    -f $path or return 'Module::Build';
 
-   open( my $fh, '<', $path ) or whimper "File ${path} cannot open: ${!}";
+   open my $fh, '<', $path or whimper "File ${path} cannot open: ${!}";
 
-   my $code = do { local $/ = undef; <$fh> }; close( $fh );
+   my $code = do { local $/ = undef; <$fh> }; close $fh;
 
    return Module::Build->subclass( code => $code );
 }
@@ -68,28 +73,29 @@ sub __get_cleanup_list {
 }
 
 sub __get_git_repository {
-   my ($info, $repo, $vcs); require Git::Class;
-
-   $vcs = Git::Class::Worktree->new( path => q(.) )
-      and $info = $vcs->git( q(remote) )
-      and $repo = ($info !~ m{ \A file: }mx) ? $info : undef
-      and return $repo;
-
-   return;
+   return (split q( ), (map  { s{ : }{/}mx; s{ @ }{://}mx; $_ }
+                        grep { m{ \A origin }mx }
+                           qx{ git remote -v 2>/dev/null })[ 0 ] || q())[ 1 ];
 }
 
 sub __get_no_index {
    my $p = shift;
 
-   return { directory => $p->{no_index_dir} || [ qw(examples inc t) ] };
+   return { directory => $p->{no_index_dir} || [ qw(examples inc share t) ] };
 }
 
 sub __get_notes {
    my $p = shift; my $notes = exists $p->{notes} ? $p->{notes} : {};
 
+   # Optionally create README.md and / or README.pod files
+   $notes->{create_readme_md } = defined $p->{create_readme_md}
+                               ? $p->{create_readme_md } :  1;
    $notes->{create_readme_pod} = $p->{create_readme_pod} || 0;
    $notes->{is_cpan_testing  } = CPANTesting::is_testing();
+   # Add a note to stop CPAN testing if requested in Build.PL
    $notes->{stop_tests       } = CPANTesting::test_exceptions( $p );
+   $notes->{url_prefix       } = defined $p->{url_prefix} ? $p->{url_prefix}
+                               : q(https://metacpan.org/module/);
    $notes->{version          } = $VERSION;
    return $notes;
 }
@@ -97,8 +103,8 @@ sub __get_notes {
 sub __get_repository { # Accessor for the VCS repository information
    my $repo;
 
-   -d q(.svn) and $repo = __get_svn_repository() and return $repo;
    -d q(.git) and $repo = __get_git_repository() and return $repo;
+   -d q(.svn) and $repo = __get_svn_repository() and return $repo;
 
    return;
 }
@@ -110,28 +116,28 @@ sub __get_resources {
                  ? $p->{bugtracker}
                  : q(http://rt.cpan.org/NoAuth/Bugs.html?Dist=);
    my $resources = $p->{resources} || {};
-   my $repo;
 
    $tracker and $resources->{bugtracker} = $tracker.$distname;
    $p->{home_page} and $resources->{homepage} = $p->{home_page};
    $resources->{license} ||= q(http://dev.perl.org/licenses/);
 
    # Only get repository info when authoring a distribution
-   -f q(MANIFEST.SKIP) and $repo = __get_repository
+   my $repo; __is_src and $repo = __get_repository
       and $resources->{repository} = $repo;
 
    return { resources => $resources };
 }
 
+sub __get_share_dir {
+   my $p = shift; defined $p->{share_dir} and return $p->{share_dir};
+
+   return -d q(share) ? q(share) : undef;
+}
+
 sub __get_svn_repository {
-   my ($info, $repo, $vcs); require SVN::Class;
-
-   $vcs = SVN::Class::svn_dir( q(.) )
-      and $info = $vcs->info
-      and $repo = ($info->root !~ m{ \A file: }mx) ? $info->root : undef
-      and return $repo;
-
-   return;
+   return (grep { ! m{ \A file: }mx }
+           (split q( ), (grep { m{ \A URL: }mx }
+                            qx{ svn info })[ 0 ])[ 1 ])[ 0 ];
 }
 
 1;
