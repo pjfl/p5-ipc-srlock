@@ -1,5 +1,8 @@
 Revision history for IPC::SRLock
 
+0.9.212 2013-04-16
+        - Switched to is from ok in tests. Added more tests
+
 0.9.210 2013-04-15
         - Added Stauner cc06993e-a5e9-11e2-83b7-87183f85d660 to list of
           CPAN Testers who should pack up and go home

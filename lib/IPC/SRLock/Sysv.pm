@@ -31,7 +31,7 @@ sub _init {
                                                '-create' => 1,
                                                '-mode'   => oct $self->mode,
                                                '-size'   => $self->size ) ) }
-   catch { $self->throw( "$ERRNO: $_" ) };
+   catch { $self->throw( "$_: $OS_ERROR" ) };
 
    return;
 }
@@ -43,7 +43,7 @@ sub _fetch_share_data {
       or $self->throw( 'Failed to set semaphore' );
 
    try   { $data = $self->_share->fetch }
-   catch { $self->throw( "$ERRNO: $_" ) };
+   catch { $self->throw( "$_: $OS_ERROR" ) };
 
    not $for_update and $self->_unlock_share;
 
@@ -70,7 +70,7 @@ sub _reset {
 
    if ($found = delete $hash->{ $key }) {
       try   { $self->_share->store( nfreeze( $hash ) ) }
-      catch { $self->throw( "$ERRNO: $_" ) };
+      catch { $self->throw( "$_: $OS_ERROR" ) };
    }
 
    $self->_unlock_share;
@@ -132,7 +132,7 @@ sub _set_lock {
    $hash->{ $key } = { pid => $pid, stime => $now, timeout => $timeout };
 
    try   { $self->_share->store( nfreeze( $hash ) ) }
-   catch { $self->throw( "$ERRNO: $_" ) };
+   catch { $self->throw( "$_: $OS_ERROR" ) };
 
    return 1;
 }
@@ -245,7 +245,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2012 Peter Flanigan. All rights reserved
+Copyright (c) 2013 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

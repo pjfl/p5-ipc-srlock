@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 use version; our $VERSION = qv( sprintf '0.9.%d', q$Rev$ =~ /\d+/gmx );
-use File::Spec::Functions qw(catdir catfile tmpdir updir);
+use File::Spec::Functions qw(catdir catfile updir);
 use FindBin qw( $Bin );
 use lib catdir( $Bin, updir, q(lib) );
 
@@ -21,17 +21,16 @@ BEGIN {
 
 use English qw( -no_match_vars );
 use Exception::Class ( q(TestException) => { fields => [ qw(args) ] } );
-use List::Util qw(first);
 
-use_ok q(IPC::SRLock);
+use_ok 'IPC::SRLock';
 
-my $lock = IPC::SRLock->new( { type => q(fcntl) } ); my $e;
+my $lock = IPC::SRLock->new( { tempdir => q(t), type => q(fcntl) } ); my $e;
 
 eval { $lock->reset( k => $PROGRAM_NAME ) };
 
 if ($e = Exception::Class->caught()) {
-   ok $e->error eq q(Lock [_1] not set), 'Error not set';
-   ok $e->args->[0] eq $PROGRAM_NAME, 'Error args';
+   ok $e->error eq 'Lock [_1] not set', 'Error not set';
+   ok $e->args->[ 0 ] eq $PROGRAM_NAME, 'Error args';
 }
 else {
    ok 0, 'Expected error missing';
@@ -39,28 +38,27 @@ else {
 
 $lock->set( k => $PROGRAM_NAME );
 
-ok !! (first { $_ eq $PROGRAM_NAME }
-       map   { $_->{key} } @{ $lock->list() }), 'Set fcntl';
+is [ map { $_->{key} } @{ $lock->list() } ]->[ 0 ], $PROGRAM_NAME, 'Set fcntl';
 
 $lock->reset( k => $PROGRAM_NAME );
 
-ok ! (first { $_ eq $PROGRAM_NAME }
-      map   { $_->{key} } @{ $lock->list() }), 'Reset fcntl';
+is [ map { $_->{key} } @{ $lock->list() } ]->[ 0 ], undef, 'Reset fcntl';
 
-unlink catfile( tmpdir, q(ipc_srlock.lck) );
-unlink catfile( tmpdir, q(ipc_srlock.shm) );
+ok -f catfile( qw(t ipc_srlock.lck) ), 'Lock file exists';
+ok -f catfile( qw(t ipc_srlock.shm) ), 'Shm file exists';
+
+unlink catfile( qw(t ipc_srlock.lck) );
+unlink catfile( qw(t ipc_srlock.shm) );
 
 unless ($OSNAME eq q(MSWin32) or $OSNAME eq q(cygwin)) {
    $lock = IPC::SRLock->new( { type => q(sysv) } );
    $lock->set( k => $PROGRAM_NAME );
 
-   ok !! (first { $_ eq $PROGRAM_NAME }
-          map   { $_->{key} } @{ $lock->list() }), 'Set ipc';
+   is [ map { $_->{key} } @{ $lock->list() } ]->[ 0 ], $PROGRAM_NAME, 'Set ipc';
 
    $lock->reset( k => $PROGRAM_NAME );
 
-   ok ! (first { $_ eq $PROGRAM_NAME }
-         map   { $_->{key} } @{ $lock->list() }), 'Reset ipc';
+   is [ map { $_->{key} } @{ $lock->list() } ]->[ 0 ], undef, 'Reset ipc';
 
    qx{ ipcrm -M 0x00bad50d };
    qx{ ipcrm -S 0x00bad50d };
@@ -71,13 +69,12 @@ if ($current and $current->notes->{have_memcached}) {
    $lock = IPC::SRLock->new( { patience => 10, type => q(memcached) } );
    $lock->set( k => $PROGRAM_NAME );
 
-   ok !! (first { $_ eq $PROGRAM_NAME }
-          map   { $_->{key} } @{ $lock->list() }), 'Set memcached';
+   is [ map { $_->{key} } @{ $lock->list() } ]->[ 0 ], $PROGRAM_NAME,
+      'Set memcached';
 
    $lock->reset( k => $PROGRAM_NAME );
 
-   ok ! (first { $_ eq $PROGRAM_NAME }
-         map   { $_->{key} } @{ $lock->list() }), 'Reset memcached';
+   is [ map { $_->{key} } @{ $lock->list() } ]->[ 0 ], undef, 'Reset memcached';
 }
 
 done_testing;

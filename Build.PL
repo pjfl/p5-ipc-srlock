@@ -31,7 +31,6 @@ Bob->new( {
    configure_requires => { 'Module::Build'    => 0.38,
                            'version'          => 0.74, },
    build_requires     => { 'Exception::Class' => 1.23,
-                           'List::Util'       => 1.19,
                            'Test::More'       => 0.74, },
 } )->create_build_script; # Goal!
 
