@@ -1,4 +1,4 @@
-# @(#)Ident: SubClass.pm 2013-04-03 17:42 pjf ;
+# @(#)Ident: SubClass.pm 2013-04-18 20:33 pjf ;
 # Bob-Version: 1.11
 
 use Pod::Select;
@@ -61,11 +61,11 @@ sub _my_resolve_link {
 
 sub _normalize_prereqs {
    my $self = shift; my $osname = lc $^O;
- 
+
    my $prereqs = $self->SUPER::_normalize_prereqs;
- 
+
    ($osname eq 'mswin32' or $osname eq 'cygwin')
       and delete $prereqs->{requires}->{ 'IPC::ShareLite' };
- 
+
    return $prereqs;
 }
