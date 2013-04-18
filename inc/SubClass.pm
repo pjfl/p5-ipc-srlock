@@ -58,3 +58,14 @@ sub _my_resolve_link {
 
    return sprintf '%s<%s>', $cmd, $arg;
 }
+
+sub _normalize_prereqs {
+   my $self = shift; my $osname = lc $^O;
+ 
+   my $prereqs = $self->SUPER::_normalize_prereqs;
+ 
+   ($osname eq 'mswin32' or $osname eq 'cygwin')
+      and delete $prereqs->{requires}->{ 'IPC::ShareLite' };
+ 
+   return $prereqs;
+}
