@@ -180,13 +180,15 @@ __END__
 
 =pod
 
+=encoding utf-8
+
 =head1 Name
 
 IPC::SRLock - Set/reset locking semantics to single thread processes
 
 =head1 Version
 
-0.9.$Revision$
+This documents version 0.9.$Revision$ of L<IPC::SRLock>
 
 =head1 Synopsis
 
