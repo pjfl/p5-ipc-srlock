@@ -1,5 +1,7 @@
 Revision history for IPC::SRLock
 
+        - Fixed POD encoding
+
 0.9.215 2013-04-20
         - Readded _normalize_prereqs to inc::SubClass
 
