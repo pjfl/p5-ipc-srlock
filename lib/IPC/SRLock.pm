@@ -1,10 +1,10 @@
-# @(#)$Ident: SRLock.pm 2013-05-05 10:03 pjf ;
+# @(#)$Ident: SRLock.pm 2013-05-05 11:10 pjf ;
 
 package IPC::SRLock;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.10.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.10.%d', q$Rev: 2 $ =~ /\d+/gmx );
 use parent qw(Class::Accessor::Fast);
 
 use Class::MOP;
@@ -188,7 +188,7 @@ IPC::SRLock - Set/reset locking semantics to single thread processes
 
 =head1 Version
 
-This documents version v0.10.$Rev: 1 $ of L<IPC::SRLock>
+This documents version v0.10.$Rev: 2 $ of L<IPC::SRLock>
 
 =head1 Synopsis
 
@@ -226,7 +226,7 @@ turned on. Defaults to L<Class::Null>
 
 =item C<name>
 
-Used as the lock file names. Defaults to I<ipc_srlock>
+Used as the lock file names. Defaults to C<ipc_srlock>
 
 =item C<nap_time>
 
@@ -247,7 +247,7 @@ Time in seconds before a lock is deemed to have expired. Defaults to 300
 
 =item C<type>
 
-Determines which factory subclass is loaded. Defaults to I<fcntl>
+Determines which factory subclass is loaded. Defaults to C<fcntl>
 
 =back
 
@@ -280,7 +280,7 @@ Returns an array of hash refs that represent the current lock table
 
    $lock_obj->reset( k => q(some_resource_key) );
 
-Resets the lock referenced by the B<k> attribute.
+Resets the lock referenced by the C<k> attribute.
 
 =head2 set
 
@@ -290,16 +290,16 @@ Sets the specified lock. Attributes are:
 
 =over 3
 
-=item B<k>
+=item C<k>
 
 Unique key to identify the lock. Mandatory no default
 
-=item B<p>
+=item C<p>
 
 Explicitly set the process id associated with the lock. Defaults to
 the current process id
 
-=item B<t>
+=item C<t>
 
 Set the time to live for this lock. Defaults to five minutes. Setting
 it to zero makes the lock last indefinitely
@@ -380,9 +380,9 @@ The C<Sysv> subclass will not work on C<MSWin32> and C<cygwin> platforms
 
 =head1 Bugs and Limitations
 
-Testing of the B<memcached> subclass is skipped on all platforms as it
+Testing of the C<memcached> subclass is skipped on all platforms as it
 requires C<memcached> to be listening on the localhost's default
-memcached port I<localhost:11211>
+memcached port C<localhost:11211>
 
 There are no known bugs in this module.
 Please report problems to the address below.

@@ -1,5 +1,5 @@
-# @(#)Ident: SubClass.pm 2013-04-18 20:33 pjf ;
-# Bob-Version: 1.11
+# @(#)Ident: SubClass.pm 2013-05-05 10:09 pjf ;
+# Bob-Version: 1.12
 
 use Pod::Select;
 
@@ -12,6 +12,12 @@ sub ACTION_distmeta {
       -output => q(README.pod) }, $self->dist_version_from );
 
    return $self->SUPER::ACTION_distmeta;
+}
+
+sub ACTION_test {
+   my $self = shift; delete $ENV{AUTHOR_TESTING};
+
+   return $self->SUPER::ACTION_test;
 }
 
 # Private methods

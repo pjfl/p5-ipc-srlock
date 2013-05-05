@@ -1,24 +1,24 @@
-# @(#)$Ident: Fcntl.pm 2013-05-05 10:03 pjf ;
+# @(#)$Ident: Fcntl.pm 2013-05-05 11:01 pjf ;
 
 package IPC::SRLock::Fcntl;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.10.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.10.%d', q$Rev: 2 $ =~ /\d+/gmx );
 use parent qw(IPC::SRLock);
 
-use Data::Serializer;
+use English               qw(-no_match_vars);
 use File::Spec::Functions qw(catfile);
-use Fcntl qw(:flock);
+use Fcntl                 qw(:flock);
 use IO::AtomicFile;
 use IO::File;
-use Time::HiRes qw(usleep);
+use Storable              qw(nfreeze thaw);
+use Time::HiRes           qw(usleep);
 use Try::Tiny;
 
 my %ATTRS = ( lockfile   => undef,
               mode       => oct q(0666),
               pattern    => qr{ \A ([ ~:+./\-\\\w]+) \z }msx,
-              serializer => undef,
               shmfile    => undef,
               tempdir    => File::Spec->tmpdir,
               umask      => 0, );
@@ -43,8 +43,6 @@ sub _init {
    $self->shmfile( $path =~ $self->pattern ? $1 : q() );
    $self->shmfile or $self->throw( error => 'Path [_1] cannot untaint',
                                    args  => [ $path ] );
-
-   $self->serializer( Data::Serializer->new( serializer => q(Storable) ) );
    return;
 }
 
@@ -69,14 +67,14 @@ sub _read_shmfile {
 
    unless ($lock = IO::File->new( $self->lockfile, q(w), $self->mode )) {
       umask $old_umask;
-      $self->throw( error => 'Path [_1] cannot open for writing',
+      $self->throw( error => 'Path [_1] cannot open: ${OS_ERROR}',
                     args  => [ $self->lockfile ] );
    }
 
    flock $lock, LOCK_EX;
 
    if (-f $self->shmfile) {
-      try   { $ref = $self->serializer->retrieve( $self->shmfile ) }
+      try   { $ref = $self->_serializer_retrieve( $self->shmfile ) }
       catch { umask $old_umask; $self->_release( $lock ); $self->throw( $_ ) };
    }
    else { $ref = {} }
@@ -100,6 +98,26 @@ sub _reset {
    delete $lock_ref->{ $key };
    $self->_write_shmfile( $lock_file, $lock_ref );
    return 1;
+}
+
+sub _serializer_retrieve {
+   my ($self, $file) = @_;
+
+   open my $in, '<', $file or $self->throw
+      ( error => 'Path [_1] cannot open: ${OS_ERROR}', args => [ $file ] );
+
+   my $data = do { local $RS = undef; <$in> }; close $in;
+
+   return thaw $data;
+}
+
+sub _serializer_store {
+   my ($self, $data, $wtr) = @_;
+
+   print ${wtr} nfreeze $data
+      or $self->throw( error => "Path [_1] cannot write: ${OS_ERROR}",
+                       args  => [ $self->shmfile ] );
+   return;
 }
 
 sub _set {
@@ -146,11 +164,11 @@ sub _write_shmfile {
 
    unless ($wtr = IO::AtomicFile->new( $self->shmfile, q(w), $self->mode )) {
       $self->_release( $lock_file );
-      $self->throw( error => 'Path [_1] cannot write',
+      $self->throw( error => 'Path [_1] cannot open: ${OS_ERROR}',
                     args  => [ $self->shmfile ] );
    }
 
-   try   { $self->serializer->store( $lock_ref, $wtr ) }
+   try   { $self->_serializer_store( $lock_ref, $wtr ) }
    catch { $wtr->delete; $self->_release( $lock_file ); $self->throw( $_ ) };
 
    $wtr->close; $self->_release( $lock_file );
@@ -169,7 +187,7 @@ IPC::SRLock::Fcntl - Set/reset locks using fcntl
 
 =head1 Version
 
-This documents version v0.10.$Rev: 1 $
+This documents version v0.10.$Rev: 2 $
 
 =head1 Synopsis
 
@@ -182,7 +200,7 @@ This documents version v0.10.$Rev: 1 $
 =head1 Description
 
 Uses L<Fcntl> to lock access to a disk based file which is
-read/written by L<Data::Serializer>. This is the default type for
+read/written in L<Storable> format. This is the default type for
 L<IPC::SRLock>.
 
 =head1 Configuration and Environment
@@ -254,9 +272,9 @@ None
 
 =item L<IPC::SRLock>
 
-=item L<Data::Serializer>
-
 =item L<IO::AtomicFile>
+
+=item L<Storable>
 
 =back
 
