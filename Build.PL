@@ -1,9 +1,9 @@
-# @(#)$Id$
+# @(#)$Ident: Build.PL 2013-05-05 10:01 pjf ;
 
 use strict;
 use warnings;
 use inc::Bob; # Module::Build subclass
-use version; our $VERSION = qv( sprintf '0.9.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.10.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 Bob->new( {
    module     => q(IPC::SRLock),
@@ -35,8 +35,8 @@ Bob->new( {
 } )->create_build_script; # Goal!
 
 # Local Variables:
-# eval: (load-project-state "ipc-srlock")
 # mode: perl
+# eval: (load-project-state "ipc-srlock")
 # tab-title: SRLock
 # tab-width: 3
 # End:

@@ -1,10 +1,10 @@
-# @(#)$Id$
+# @(#)$Ident: SRLock.pm 2013-05-05 10:03 pjf ;
 
 package IPC::SRLock;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.9.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.10.%d', q$Rev: 1 $ =~ /\d+/gmx );
 use parent qw(Class::Accessor::Fast);
 
 use Class::MOP;
@@ -188,7 +188,7 @@ IPC::SRLock - Set/reset locking semantics to single thread processes
 
 =head1 Version
 
-This documents version 0.9.$Revision$ of L<IPC::SRLock>
+This documents version v0.10.$Rev: 1 $ of L<IPC::SRLock>
 
 =head1 Synopsis
 

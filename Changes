@@ -1,157 +1,160 @@
 Revision history for IPC::SRLock
 
-        - Fixed POD encoding
+0.10.1    2013-05-05 11:07:58
+          - Switched from SVN to Git
 
-0.9.215 2013-04-20
-        - Readded _normalize_prereqs to inc::SubClass
+0.9.215   2013-04-20
+          - Fixed POD encoding
+          - Readded _normalize_prereqs to inc::SubClass
 
-0.9.212 2013-04-16
-        - Switched to is from ok in tests. Added more tests
+0.9.212   2013-04-16
+          - Switched to is from ok in tests. Added more tests
 
-0.9.210 2013-04-15
-        - Added Stauner cc06993e-a5e9-11e2-83b7-87183f85d660 to list of
-          CPAN Testers who should pack up and go home
-        - Updated inc::Bob to v1.12
+0.9.210   2013-04-15
+          - Added Stauner cc06993e-a5e9-11e2-83b7-87183f85d660 to list of
+            CPAN Testers who should pack up and go home
+          - Updated inc::Bob to v1.12
 
-0.9.208 2012-12-04
-        - Added async set
-        - Another attempt at finding the magic mswin32 path untaint regex
+0.9.208   2012-12-04
+          - Added async set
+          - Another attempt at finding the magic mswin32 path untaint regex
 
-0.8.207 2012-11-27
-        - Another attempt at finding the magic mswin32 path untaint regex
+0.8.207   2012-11-27
+          - Another attempt at finding the magic mswin32 path untaint regex
 
-0.8.206 2012-11-22
-        - Adjusted path untaint pattern for mswin32. Added a colon
+0.8.206   2012-11-22
+          - Adjusted path untaint pattern for mswin32. Added a colon
 
-0.8.205 2012-11-13
-        - Readded _normalize_prereqs to inc/SubClass
+0.8.205   2012-11-13
+          - Readded _normalize_prereqs to inc/SubClass
 
-0.8.203 2012-11-13
-        - Updated inc::Bob to 1.7. Removed defined ors
+0.8.203   2012-11-13
+          - Updated inc::Bob to 1.7. Removed defined ors
 
-0.8.201 2012-11-13
-        - Modified M::B::_normalize_prereqs in inc::Bob. Now have a conditional
-          dependency on IPC::ShareLite !!!!
+0.8.201   2012-11-13
+          - Modified M::B::_normalize_prereqs in inc::Bob. Now have
+            a conditional dependency on IPC::ShareLite !!!!
 
-0.8.200 2012-11-10
-        - Changed get_table attribute name from flds to fields
-        - Cache and reset the umask in Fcntl::_read_shm_file
-        - Updated inc::Bob to 1.6
+0.8.200   2012-11-10
+          - Changed get_table attribute name from flds to fields
+          - Cache and reset the umask in Fcntl::_read_shm_file
+          - Updated inc::Bob to 1.6
 
-0.8.199 - 2012-09-07
-        - Remove shared memory segment and semaphore set after tests
-        - Added Bingos falco smoker to skip tests
-          8625b420-f89e-11e1-8d3a-af090e115ead
+0.8.199   2012-09-07
+          - Remove shared memory segment and semaphore set after tests
+          - Added Bingos falco smoker to skip tests
+            8625b420-f89e-11e1-8d3a-af090e115ead
 
-0.8.197 - 2012-09-06
-        - Added MSWin32 and Cygwin back into the stop tests lists
+0.8.197   2012-09-06
+          - Added MSWin32 and Cygwin back into the stop tests lists
 
-0.8.195 - 2012-09-05
-        - Added POD spelling test
-        - Updated inc::Bob to 1.5
+0.8.195   2012-09-05
+          - Added POD spelling test
+          - Updated inc::Bob to 1.5
 
-0.8.194 - 2012-08-05
-        - Updated inc::Bob to 1.4
-        - Made Cache::Memcached a recommends not a requires. Refusing to do
-          the same for IPC::ShareLite
-        - Updated inc::Bob to 1.3
+0.8.194   2012-08-05
+          - Updated inc::Bob to 1.4
+          - Made Cache::Memcached a recommends not a requires. Refusing to do
+            the same for IPC::ShareLite
+          - Updated inc::Bob to 1.3
 
-0.7.191 - 2012-04-08
-        - Turning CPAN testing on again
+0.7.191   2012-04-08
+          - Turning CPAN testing on again
 
-0.7.190 - 2012-04-07
-        - Giving Konig and dcollins a second chance
-        - Stopped mirbsd and netbsd for not installing Moose / Class::MOP
+0.7.190   2012-04-07
+          - Giving Konig and dcollins a second chance
+          - Stopped mirbsd and netbsd for not installing Moose / Class::MOP
 
-0.7.188 - 2012-04-04
-        - Stopped CPAN testing, no point in allowing it to continue
-        - Updated inc::CPANTesting
+0.7.188   2012-04-04
+          - Stopped CPAN testing, no point in allowing it to continue
+          - Updated inc::CPANTesting
 
-0.7.185 - 2012-03-29
-        - Updated inc::Bob to 1.2
-        - Upped min Perl ver to 5.10
+0.7.185   2012-03-29
+          - Updated inc::Bob to 1.2
+          - Upped min Perl ver to 5.10
 
-0.6.181 - 2012-03-28
-        - Stopped Bingos from testing see 603281a2-78ac-11e1-9d6f-f6dbfa7543f5
+0.6.181   2012-03-28
+          - Stopped Bingos from testing see 603281a2-78ac-11e1-9d6f-f6dbfa7543f5
 
-0.6.179 - 2012-03-24
-        - Re-added Moose as a dependency as it contains Class::MOP
+0.6.179   2012-03-24
+          - Re-added Moose as a dependency as it contains Class::MOP
 
-0.6.178 - 2012-03-24
-        - Enhanced error messages
-        - Updated Moose / Class::MOP / MRO::Compat dependencies
+0.6.178   2012-03-24
+          - Enhanced error messages
+          - Updated Moose / Class::MOP / MRO::Compat dependencies
 
-0.6.176 - 2012-02-24
-        - Stopped Horne from testing see db033f8e-5e4e-11e1-952b-9fe4e7658155
-        - Updated inc::Bob
+0.6.176   2012-02-24
+          - Stopped Horne from testing see db033f8e-5e4e-11e1-952b-9fe4e7658155
+          - Updated inc::Bob
 
-0.6.174 - 2011-04-12
-        - Suppressed dcollins CPAN testing
-        - Moved boilerplate M::B subclass code to inc/Bob.pm
+0.6.174   2011-04-12
+          - Suppressed dcollins CPAN testing
+          - Moved boilerplate M::B subclass code to inc/Bob.pm
 
-0.6.165 - 2011-02-22
-        - Suppressed Konig CPAN testing again
+0.6.165   2011-02-22
+          - Suppressed Konig CPAN testing again
 
-0.6.164 - 2010-12-18
-        - Suppressed Konig CPAN testing
-        - Switched to Storable::nfreeze to be like Ovid
-        - Added subroutine names to stack trace
-        - Updated exception handling class
-        - Fixed error handling in Sysv subclass
+0.6.164   2010-12-18
+          - Suppressed Konig CPAN testing
+          - Switched to Storable::nfreeze to be like Ovid
+          - Added subroutine names to stack trace
+          - Updated exception handling class
+          - Fixed error handling in Sysv subclass
 
-0.5.154 - 2010-09-28
-        - Removed execute permission from Build.PL
+0.5.154   2010-09-28
+          - Removed execute permission from Build.PL
 
-0.5.150 - 2010-09-22
-        - Switch to using M::B for install
-        - Now uses Try::Tiny
+0.5.150   2010-09-22
+          - Switch to using M::B for install
+          - Now uses Try::Tiny
 
-0.4.147 - 2010-09-22
-        - Stringify key so we can pass io objects *
-        - Now uses TryCatch
-        - Updated ensure_class_loaded
+0.4.147   2010-09-22
+          - Stringify key so we can pass io objects *
+          - Now uses TryCatch
+          - Updated ensure_class_loaded
 
-0.3.137 27/06/2009
-        - Fixed key used to sign distro
-        - Use Class::MOP in ensure_class_loaded
+0.3.137   27/06/2009
+          - Fixed key used to sign distro
+          - Use Class::MOP in ensure_class_loaded
 
-0.3.125 13/06/2009
-        - Added more tests
+0.3.125   13/06/2009
+          - Added more tests
 
-0.2.118 06/06/2009
-        - Updated exception class
-        - Replaced mnemonics in errors
+0.2.118   06/06/2009
+          - Updated exception class
+          - Replaced mnemonics in errors
 
-0.2.114 05/06/2009
-        - Changed exception class API
-        - Improved testing idioms
-        - Upated POD Coverage Kwalitee tests
+0.2.114   05/06/2009
+          - Changed exception class API
+          - Improved testing idioms
+          - Upated POD Coverage Kwalitee tests
 
-0.2.103 05/04/2009
-        - More crap for CPAN testing
+0.2.103   05/04/2009
+          - More crap for CPAN testing
 
-0.2.100 28/02/2009
-        - Removed table_data method
+0.2.100   28/02/2009
+          - Removed table_data method
 
-0.2.99  12/02/2009
-        - Dropped the singleton pattern from the construtor
+0.2.99    12/02/2009
+          - Dropped the singleton pattern from the construtor
 
-0.2.92  26/01/2009
-        - No longer depends on Readonly
-        - Now uses IPC::ShareLite in SysV store
-        - Added hclass table attribute to set key field to occupy most
-          space
+0.2.92    26/01/2009
+          - No longer depends on Readonly
+          - Now uses IPC::ShareLite in SysV store
+          - Added hclass table attribute to set key field to occupy most
+            space
 
-0.1.82  21/11/2008
-        - Removed circular dependency on Exception::Class
+0.1.82    21/11/2008
+          - Removed circular dependency on Exception::Class
 
-0.1.80  15/11/2008
-        - New approach to CPAN testing
+0.1.80    15/11/2008
+          - New approach to CPAN testing
 
-0.1.78  19/10/2008
-        - Another attempt to find the off swith for CPAN testers
+0.1.78    19/10/2008
+          - Another attempt to find the off swith for CPAN testers
 
-0.1.75  15/10/2008
-        - Exempted automated testing due to continued inaccurate
-          reporting
-        - Minor performance improvements
+0.1.75    15/10/2008
+          - Exempted automated testing due to continued inaccurate
+            reporting
+          - Minor performance improvements
+
