@@ -1,123 +1,106 @@
-# @(#)$Ident: Fcntl.pm 2013-05-05 11:01 pjf ;
+# @(#)$Ident: Fcntl.pm 2013-05-06 13:33 pjf ;
 
 package IPC::SRLock::Fcntl;
 
-use strict;
-use warnings;
-use version; our $VERSION = qv( sprintf '0.10.%d', q$Rev: 2 $ =~ /\d+/gmx );
-use parent qw(IPC::SRLock);
+use namespace::autoclean;
+use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev: 0 $ =~ /\d+/gmx );
 
-use English               qw(-no_match_vars);
-use File::Spec::Functions qw(catfile);
-use Fcntl                 qw(:flock);
-use IO::AtomicFile;
-use IO::File;
-use Storable              qw(nfreeze thaw);
-use Time::HiRes           qw(usleep);
+use Moose;
+use English                        qw(-no_match_vars);
+use MooseX::Types::Common::Numeric qw(PositiveInt);
+use MooseX::Types::Common::String  qw(NonEmptySimpleStr);
+use MooseX::Types::Moose           qw(RegexpRef);
+use File::DataClass::Constraints   qw(Directory Path);
+use Storable                       qw(nfreeze thaw);
+use Time::HiRes                    qw(usleep);
 use Try::Tiny;
 
-my %ATTRS = ( lockfile   => undef,
-              mode       => oct q(0666),
-              pattern    => qr{ \A ([ ~:+./\-\\\w]+) \z }msx,
-              shmfile    => undef,
-              tempdir    => File::Spec->tmpdir,
-              umask      => 0, );
+extends q(IPC::SRLock::Base);
 
-__PACKAGE__->mk_accessors( keys %ATTRS );
+# Public attributes
+has 'mode'    => is => 'ro', isa => PositiveInt, default => oct q(0666);
+
+has 'pattern' => is => 'ro', isa => RegexpRef,
+   default    => sub { qr{ \A ([ ~:+./\-\\\w]+) \z }msx };
+
+has 'tempdir' => is => 'ro', isa => Directory, coerce => 1,
+   default    => sub { File::Spec->tmpdir };
+
+has 'umask'   => is => 'ro', isa => PositiveInt, default => 0;
+
+# Private attributes
+has '_lockfile'      => is => 'ro', isa => Path, coerce => 1,
+   builder           => '_build__lockfile', lazy => 1;
+
+has '_lockfile_name' => is => 'ro', isa => NonEmptySimpleStr,
+   init_arg          => 'lockfile';
+
+has '_shmfile'       => is => 'ro', isa => Path, coerce => 1,
+   builder           => '_build__shmfile', lazy => 1;
+
+has '_shmfile_name'  => is => 'ro', isa => NonEmptySimpleStr,
+   init_arg          => 'shmfile';
 
 # Private methods
+sub _build__lockfile {
+   my $self = shift; my $path = $self->_lockfile_name;
 
-sub _init {
-   my $self = shift; my $path;
+   $path ||= $self->tempdir->catfile( $self->name.'.lck' );
+   $path =~ $self->pattern or $self->throw( error => 'Path [_1] cannot untaint',
+                                            args  => [ $path ] );
+   return $path;
+}
 
-   for (grep { not defined $self->{ $_ } } keys %ATTRS) {
-      $self->{ $_ } = $ATTRS{ $_ };
-   }
+sub _build__shmfile {
+   my $self = shift; my $path = $self->_shmfile_name;
 
-   $path = $self->lockfile || catfile( $self->tempdir, $self->name.q(.lck) );
-   $self->lockfile( $path =~ $self->pattern ? $1 : q() );
-   $self->lockfile or $self->throw( error => 'Path [_1] cannot untaint',
-                                    args  => [ $path ] );
-
-   $path = $self->shmfile  || catfile( $self->tempdir, $self->name.q(.shm) );
-   $self->shmfile( $path =~ $self->pattern ? $1 : q() );
-   $self->shmfile or $self->throw( error => 'Path [_1] cannot untaint',
-                                   args  => [ $path ] );
-   return;
+   $path ||= $self->tempdir->catfile( $self->name.'.shm' );
+   $path =~ $self->pattern or $self->throw( error => 'Path [_1] cannot untaint',
+                                            args  => [ $path ] );
+   return $path;
 }
 
 sub _list {
    my $self = shift; my $list = [];
 
-   my ($lock_file, $lock_ref) = $self->_read_shmfile;
+   my ($lock_file, $lock_content) = $self->_read_shmfile; $lock_file->close;
 
-   while (my ($key, $hash) = each %{ $lock_ref }) {
+   while (my ($key, $info) = each %{ $lock_content }) {
       push @{ $list }, { key     => $key,
-                         pid     => $hash->{spid},
-                         stime   => $hash->{stime},
-                         timeout => $hash->{timeout} };
+                         pid     => $info->{spid},
+                         stime   => $info->{stime},
+                         timeout => $info->{timeout} };
    }
 
-   $self->_release( $lock_file );
    return $list;
 }
 
 sub _read_shmfile {
-   my $self = shift; my $old_umask = umask $self->umask; my ($e, $lock, $ref);
+   my $self = shift; my $old_umask = umask $self->umask; my ($file, $content);
 
-   unless ($lock = IO::File->new( $self->lockfile, q(w), $self->mode )) {
-      umask $old_umask;
-      $self->throw( error => 'Path [_1] cannot open: ${OS_ERROR}',
-                    args  => [ $self->lockfile ] );
+   try   { $file = $self->_lockfile->lock->assert_open( q(w), $self->mode ) }
+   catch { umask $old_umask; $self->throw( $_ ) };
+
+   if ($self->_shmfile->exists) {
+      try   { $content = thaw $self->_shmfile->all }
+      catch { umask $old_umask; $file->close; $self->throw( $_ ) };
    }
-
-   flock $lock, LOCK_EX;
-
-   if (-f $self->shmfile) {
-      try   { $ref = $self->_serializer_retrieve( $self->shmfile ) }
-      catch { umask $old_umask; $self->_release( $lock ); $self->throw( $_ ) };
-   }
-   else { $ref = {} }
+   else { $content = {} }
 
    umask $old_umask;
-   return ($lock, $ref);
-}
-
-sub _release {
-   my ($self, $lock) = @_; flock $lock, LOCK_UN; $lock->close; return;
+   return ($file, $content);
 }
 
 sub _reset {
-   my ($self, $key) = @_; my ($lock_file, $lock_ref) = $self->_read_shmfile;
+   my ($self, $key) = @_; my $found;
 
-   unless (exists $lock_ref->{ $key }) {
-      $self->_release( $lock_file );
-      $self->throw( error => 'Lock [_1] not set', args => [ $key ] );
-   }
+   my ($lock_file, $lock_content) = $self->_read_shmfile;
 
-   delete $lock_ref->{ $key };
-   $self->_write_shmfile( $lock_file, $lock_ref );
+   $found = exists $lock_content->{ $key } and delete $lock_content->{ $key };
+   $found and $self->_write_shmfile( $lock_file, $lock_content );
+   $lock_file->close;
+   $found or $self->throw( error => 'Lock [_1] not set', args => [ $key ] );
    return 1;
-}
-
-sub _serializer_retrieve {
-   my ($self, $file) = @_;
-
-   open my $in, '<', $file or $self->throw
-      ( error => 'Path [_1] cannot open: ${OS_ERROR}', args => [ $file ] );
-
-   my $data = do { local $RS = undef; <$in> }; close $in;
-
-   return thaw $data;
-}
-
-sub _serializer_store {
-   my ($self, $data, $wtr) = @_;
-
-   print ${wtr} nfreeze $data
-      or $self->throw( error => "Path [_1] cannot write: ${OS_ERROR}",
-                       args  => [ $self->shmfile ] );
-   return;
 }
 
 sub _set {
@@ -125,23 +108,23 @@ sub _set {
 
    my $key = $args->{k}; my $pid = $args->{p}; my $timeout = $args->{t};
 
-   my $lock_ref = {}; my $start = time; my ($lock, $lock_file, $now);
+   my $lock_content = {}; my $start = time; my ($lock, $lock_file, $now);
 
-   while (!$now || $lock_ref->{ $key }) {
-      ($lock_file, $lock_ref) = $self->_read_shmfile; $now = time;
+   while (!$now || $lock_content->{ $key }) {
+      ($lock_file, $lock_content) = $self->_read_shmfile; $now = time;
 
-      if (($lock = $lock_ref->{ $key })
+      if (($lock = $lock_content->{ $key })
           && ($now > $lock->{stime} + $lock->{timeout})) {
          $self->log->error( $self->timeout_error( $key,
                                                   $lock->{spid   },
                                                   $lock->{stime  },
                                                   $lock->{timeout} ) );
-         delete $lock_ref->{ $key };
+         delete $lock_content->{ $key };
          $lock = 0;
       }
 
       if ($lock) {
-         $self->_release( $lock_file ); $args->{async} and return 0;
+         $lock_file->close; $args->{async} and return 0;
 
          if ($self->patience && $now - $start > $self->patience) {
             $self->throw( error => 'Lock [_1] timed out', args => [ $key ] );
@@ -151,27 +134,23 @@ sub _set {
       }
    }
 
-   $lock_ref->{ $key } = { spid    => $pid,
-                           stime   => $now,
-                           timeout => $timeout };
-   $self->_write_shmfile( $lock_file, $lock_ref );
-   $self->debug and $self->log->debug( "Lock $key set by $pid\n" );
+   $lock_content->{ $key }
+      = { spid => $pid, stime => $now, timeout => $timeout };
+   $self->_write_shmfile( $lock_file, $lock_content );
+   $self->debug and $self->log->debug( "Lock ${key} set by ${pid}\n" );
    return 1;
 }
 
 sub _write_shmfile {
-   my ($self, $lock_file, $lock_ref) = @_; my ($e, $wtr);
+   my ($self, $file, $content) = @_; my $wtr;
 
-   unless ($wtr = IO::AtomicFile->new( $self->shmfile, q(w), $self->mode )) {
-      $self->_release( $lock_file );
-      $self->throw( error => 'Path [_1] cannot open: ${OS_ERROR}',
-                    args  => [ $self->shmfile ] );
-   }
+   try   { $wtr = $self->_shmfile->atomic->assert_open( q(w), $self->mode ) }
+   catch { $file->close; $self->throw( $_ ) };
 
-   try   { $self->_serializer_store( $lock_ref, $wtr ) }
-   catch { $wtr->delete; $self->_release( $lock_file ); $self->throw( $_ ) };
+   try   { $wtr->print( nfreeze $content ) }
+   catch { $wtr->delete; $file->close; $self->throw( $_ ) };
 
-   $wtr->close; $self->_release( $lock_file );
+   $wtr->close; $file->close;
    return;
 }
 
@@ -187,7 +166,7 @@ IPC::SRLock::Fcntl - Set/reset locks using fcntl
 
 =head1 Version
 
-This documents version v0.10.$Rev: 2 $
+This documents version v0.11.$Rev: 0 $
 
 =head1 Synopsis
 
@@ -205,7 +184,7 @@ L<IPC::SRLock>.
 
 =head1 Configuration and Environment
 
-This class defines accessors and mutators for these attributes:
+This class defines accessors for these attributes:
 
 =over 3
 
@@ -234,10 +213,6 @@ The umask to set when creating the lock table file. Defaults to 0
 
 =head1 Subroutines/Methods
 
-=head2 _init
-
-Initialise the object
-
 =head2 _list
 
 List the contents of the lock table
@@ -245,10 +220,6 @@ List the contents of the lock table
 =head2 _read_shmfile
 
 Read the file containing the lock table from disk
-
-=head2 _release
-
-Release the exclusive flock on the lock file
 
 =head2 _reset
 
@@ -268,13 +239,23 @@ None
 
 =head1 Dependencies
 
-=over 4
+=over 3
 
-=item L<IPC::SRLock>
+=item L<File::DataClass>
 
-=item L<IO::AtomicFile>
+=item L<IPC::SRLock::Base>
+
+=item L<Moose>
+
+=item L<MooseX::Types::Common>
+
+=item L<MooseX::Types::Moose>
 
 =item L<Storable>
+
+=item L<Time::HiRes>
+
+=item L<Try::Tiny>
 
 =back
 
@@ -290,7 +271,7 @@ Patches are welcome
 
 =head1 Author
 
-Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
+Peter Flanigan, C<< <pjfl@cpan.org> >>
 
 =head1 License and Copyright
 

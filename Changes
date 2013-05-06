@@ -1,5 +1,10 @@
 Revision history for IPC::SRLock
 
+0.11.0    2013-05-05 23:39:00
+          - Updated POD
+          - Passes tests
+          - Moosified
+
 0.10.2    2013-05-05 12:11:12
           - Replace Data::Serializer with Storable
           - Updated inc::Bob to v1.13

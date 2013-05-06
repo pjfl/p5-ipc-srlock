@@ -1,90 +1,15 @@
-# @(#)$Ident: Exception.pm 2013-05-05 10:02 pjf ;
+# @(#)$Ident: Exception.pm 2013-05-06 13:32 pjf ;
 
 package IPC::SRLock::Exception;
 
-use strict;
-use warnings;
-use version; our $VERSION = qv( sprintf '0.10.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use namespace::autoclean;
+use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev: 0 $ =~ /\d+/gmx );
 
-use Exception::Class
-   'IPC::SRLock::Exception::Base' => { fields => [qw(args out rv)] };
+use Moose;
 
-use base qw(IPC::SRLock::Exception::Base);
+extends q(File::DataClass::Exception);
 
-use Carp;
-use English      qw(-no_match_vars);
-use Scalar::Util qw(blessed);
-use MRO::Compat;
-
-our $IGNORE = [ __PACKAGE__ ];
-
-my $NUL = q();
-
-sub new {
-   my ($self, @rest) = @_;
-
-   return $self->next::method( args           => [],
-                               error          => 'Error unknown',
-                               ignore_package => $IGNORE,
-                               out            => $NUL,
-                               rv             => 1,
-                               @rest );
-}
-
-sub catch {
-   my ($self, $e) = @_; $e ||= $EVAL_ERROR;
-
-   $e and blessed $e and $e->isa( __PACKAGE__ ) and return $e;
-
-   return $e ? $self->new( error => $NUL.$e ) : undef;
-}
-
-sub full_message {
-   my $self = shift; my $text = $self->error or return;
-
-   # Expand positional parameters of the form [_<n>]
-   0 > index $text, '[_' and return $text;
-
-   my @args = map { defined $_ ? $_ : '[?]' } @{ $self->args },
-              map { '[?]' } 0 .. 9;
-
-   $text =~ s{ \[ _ (\d+) \] }{$args[ $1 - 1 ]}gmx;
-
-   return $text;
-}
-
-sub stacktrace {
-   my ($self, $skip) = @_; my ($l_no, @lines, %seen, $subr);
-
-   for my $frame (reverse $self->trace->frames) {
-      unless ($l_no = $seen{ $frame->package } and $l_no == $frame->line) {
-         $subr and push @lines, join q( ), $subr, 'line', $frame->line;
-         $seen{ $frame->package } = $frame->line;
-      }
-
-      $subr = $frame->subroutine;
-   }
-
-   defined $skip or $skip = 1; pop @lines while ($skip--);
-
-   return (join "\n", reverse @lines)."\n";
-}
-
-sub throw {
-   my ($self, @rest) = @_; my $e = $rest[ 0 ];
-
-   $e and blessed $e and $e->isa( __PACKAGE__ ) and croak $e;
-
-   croak $self->new( @rest == 1 ? ( error => $NUL.$e ) : @rest );
-}
-
-sub throw_on_error {
-   my ($self, @rest) = @_; my $e;
-
-   $e = $self->catch( @rest ) and $self->throw( $e );
-
-   return;
-}
+has '+class' => default => __PACKAGE__;
 
 1;
 
@@ -98,77 +23,70 @@ IPC::SRLock::Exception - Exception class
 
 =head1 Version
 
-This documents version v0.10.$Rev: 1 $
+This documents version v0.11.$Rev: 0 $
 
 =head1 Synopsis
+
+   use IPC::SRLock::Exception;
+
+   IPC::SRLock::Exception->throw( 'This is going to die' );
 
 =head1 Description
 
 Implements throw and catch error semantics. Inherits from
-L<Exception::Class>
+L<File::DataClass::Exception>
+
+=head1 Configuration and Environment
 
 =head1 Subroutines/Methods
 
-=head2 new
+=head2 as_string
 
-Create an exception object. You probably do not want to call this directly,
-but indirectly through L</catch> and L</throw>
-
-=head2 catch
-
-   $e = IPC::SRLock::Exception->catch( $error );
-
-Catches and returns a thrown exception or generates a new exception if
-I<EVAL_ERROR> has been set
-
-=head2 full_message
-
-   $printable_string = $e->full_message
+   $printable_string = $e->as_string
 
 What an instance of this class stringifies to
+
+=head2 caught
+
+   $e = IPC::SRLock::Exception->caught( $error );
+
+Catches and returns a thrown exception or generates a new exception if
+C<EVAL_ERROR> has been set or if an error string was passed in
 
 =head2 stacktrace
 
    $lines = $e->stacktrace( $num_lines_to_skip );
 
-Return the stack trace. Defaults to skipping one (the first) line of output
+Return the stack trace. Defaults to skipping zero lines of output
+Skips anonymous stack frames, minimalist
 
 =head2 throw
 
    IPC::SRLock::Exception->throw( $error );
 
-Create (or re-throw) an exception to be caught by the catch above. If
+Create (or re-throw) an exception to be caught by the L</caught> method. If
 the passed parameter is a reference it is re-thrown. If a single scalar
 is passed it is taken to be an error message code, a new exception is
 created with all other parameters taking their default values. If more
 than one parameter is passed the it is treated as a list and used to
-instantiate the new exception. The 'error' parameter must be provided
+instantiate the new exception. The C<error> attribute must be provided
 in this case
 
 =head2 throw_on_error
 
    IPC::SRLock::Exception->throw_on_error( $error );
 
-Calls L</catch> and if the was an exception L</throw>s it
+Calls L</caught> and if the was an exception L</throw>s it
 
 =head1 Diagnostics
 
 None
 
-=head1 Configuration and Environment
-
-The C<$IGNORE> package variable is list of methods whose presence
-should be suppressed in the stack trace output
-
 =head1 Dependencies
 
 =over 3
 
-=item L<Exception::Class>
-
-=item L<MRO::Compat>
-
-=item L<Scalar::Util>
+=item L<File::DataClass::Exception>
 
 =back
 
@@ -185,7 +103,7 @@ Patches are welcome
 
 =head1 Author
 
-Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
+Peter Flanigan, C<< <pjfl@cpan.org> >>
 
 =head1 License and Copyright
 

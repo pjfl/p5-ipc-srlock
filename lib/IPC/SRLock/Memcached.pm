@@ -1,36 +1,35 @@
-# @(#)$Ident: Memcached.pm 2013-05-05 10:03 pjf ;
+# @(#)$Ident: Memcached.pm 2013-05-06 13:33 pjf ;
 
 package IPC::SRLock::Memcached;
 
-use strict;
-use warnings;
-use version; our $VERSION = qv( sprintf '0.10.%d', q$Rev: 1 $ =~ /\d+/gmx );
-use parent qw(IPC::SRLock);
+use namespace::autoclean;
+use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev: 0 $ =~ /\d+/gmx );
 
+use Moose;
 use Cache::Memcached;
-use Time::HiRes qw(usleep);
+use MooseX::Types::Common::String qw(NonEmptySimpleStr);
+use MooseX::Types::Moose          qw(ArrayRef Object);
+use Time::HiRes                   qw(usleep);
 
-my %ATTRS = ( lockfile  => q(_lockfile),
-              memd      => undef,
-              servers   => [ q(localhost:11211) ],
-              shmfile   => q(_shmfile), );
+extends q(IPC::SRLock::Base);
 
-__PACKAGE__->mk_accessors( keys %ATTRS );
+# Public attributes
+has 'lockfile' => is => 'ro', isa => NonEmptySimpleStr, default => '_lockfile';
+
+has 'servers'  => is => 'ro', isa => ArrayRef,
+   default     => sub { [ q(localhost:11211) ] };
+
+has 'shmfile'  => is => 'ro', isa => NonEmptySimpleStr, default => '_shmfile';
+
+# Private attributes
+has '_memd'    => is => 'ro', isa => Object, builder => '_build_memd',
+   init_arg    => undef,     lazy => 1,       reader => 'memd';
 
 # Private methods
-
-sub _init {
-   my $self = shift;
-
-   for (grep { not defined $self->{ $_ } } keys %ATTRS) {
-      $self->{ $_ } = $ATTRS{ $_ };
-   }
-
-   $self->memd( $self->memd
-                || Cache::Memcached->new( debug     => $self->debug,
-                                          namespace => $self->name,
-                                          servers   => $self->servers ) );
-   return;
+sub _build_memd {
+   return Cache::Memcached->new( debug     => $_[ 0 ]->debug,
+                                 namespace => $_[ 0 ]->name,
+                                 servers   => $_[ 0 ]->servers );
 }
 
 sub _list {
@@ -116,7 +115,7 @@ sub _set {
          $self->memd->delete( $self->lockfile );
 
          if ($lock_set) {
-            $self->debug and $self->log->debug( "Lock $key set by $pid\n" );
+            $self->debug and $self->log->debug( "Lock ${key} set by ${pid}\n" );
             return 1;
          }
          elsif ($args->{async}) { return 0 }
@@ -149,13 +148,13 @@ IPC::SRLock::Memcached - Set/reset locks using libmemcache
 
 =head1 Version
 
-This documents version v0.10.$Rev: 1 $
+This documents version v0.11.$Rev: 0 $
 
 =head1 Synopsis
 
    use IPC::SRLock;
 
-   my $config = { tempdir => q(path_to_tmp_directory), type => q(memcached) };
+   my $config = { type => q(memcached) };
 
    my $lock_obj = IPC::SRLock->new( $config );
 
@@ -165,33 +164,25 @@ Uses L<Cache::Memcached> to implement a distributed lock manager
 
 =head1 Configuration and Environment
 
-This class defines accessors and mutators for these attributes:
+This class defines accessors for these attributes:
 
 =over 3
 
 =item C<lockfile>
 
-Name of the key to the lock file record. Defaults to I<_lockfile>
-
-=item C<memd>
-
-An instance of L<Cache::Memcached> with it's namespace set to I<ipc_srlock>
+Name of the key to the lock file record. Defaults to C<_lockfile>
 
 =item C<servers>
 
-An array ref of servers to connect to. Defaults to I<localhost:11211>
+An array ref of servers to connect to. Defaults to C<localhost:11211>
 
 =item C<shmfile>
 
-Name of the key to the lock table record. Defaults to I<_shmfile>
+Name of the key to the lock table record. Defaults to C<_shmfile>
 
 =back
 
 =head1 Subroutines/Methods
-
-=head2 _init
-
-Initialise the object
 
 =head2 _list
 
@@ -217,9 +208,17 @@ None
 
 =over 4
 
-=item L<IPC::SRLock>
-
 =item L<Cache::Memcached>
+
+=item L<IPC::SRLock::Base>
+
+=item L<Moose>
+
+=item L<MooseX::Types::Common>
+
+=item L<MooseX::Types::Moose>
+
+=item L<Time::HiRes>
 
 =back
 
@@ -235,7 +234,7 @@ Patches are welcome
 
 =head1 Author
 
-Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
+Peter Flanigan, C<< <pjfl@cpan.org> >>
 
 =head1 License and Copyright
 

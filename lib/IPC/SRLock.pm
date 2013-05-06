@@ -1,177 +1,58 @@
-# @(#)$Ident: SRLock.pm 2013-05-05 11:10 pjf ;
+# @(#)$Ident: SRLock.pm 2013-05-06 13:38 pjf ;
 
 package IPC::SRLock;
 
-use strict;
-use warnings;
-use version; our $VERSION = qv( sprintf '0.10.%d', q$Rev: 2 $ =~ /\d+/gmx );
-use parent qw(Class::Accessor::Fast);
+use namespace::autoclean;
+use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev: 0 $ =~ /\d+/gmx );
 
-use Class::MOP;
-use Class::Null;
-use Date::Format;
-use English qw(-no_match_vars);
-use IPC::SRLock::Exception;
-use Time::Elapsed qw(elapsed);
-use Try::Tiny;
+use Moose;
+use Moose::Util::TypeConstraints;
+use MooseX::Types::LoadableClass qw(LoadableClass);
+use MooseX::Types::Moose         qw(HashRef Object);
 
-my %ATTRS = ( debug    => 0,
-              log      => undef,
-              name     => (lc join q(_), split m{ :: }mx, __PACKAGE__),
-              nap_time => 0.1,
-              patience => 0,
-              pid      => undef,
-              time_out => 300,
-              type     => q(fcntl), );
+enum __PACKAGE__.'::Type'   => qw(fcntl memcached sysv);
 
-__PACKAGE__->mk_accessors( keys %ATTRS );
+# Public attributes
+has 'type'                  => is => 'ro', isa => __PACKAGE__.'::Type',
+   default                  => 'fcntl';
 
-sub new {
-   my ($self, @rest) = @_;
+# Private attributes
+has '_implementation'       => is => 'ro', isa => Object,
+   builder                  => '_build__implementation',
+   handles                  => [ qw(get_table list reset set) ],
+   init_arg                 => undef, lazy => 1;
 
-   my $args  = $self->_arg_list( @rest );
-   my $attrs = __hash_merge( \%ATTRS, $args );
-   my $class = __PACKAGE__.q(::).(ucfirst $attrs->{type});
+has '_implementation_attr'  => is => 'ro', isa => HashRef,
+   default                  => sub { {} };
 
-   $self->_ensure_class_loaded( $class ); # Load factory subclass
+has '_implementation_class' => is => 'ro', isa => LoadableClass, coerce => 1,
+   builder                  => '_build__implementation_class',
+   init_arg                 => undef, lazy => 1;
 
-   my $new = bless $attrs, $class;
+# Construction
+around 'BUILDARGS' => sub {
+   my ($next, $self, @args) = @_; my $attr = $self->$next( @args );
 
-   $new->log  ( $new->log || Class::Null->new() );
-   $new->pid  ( $PID );
-   $new->_init( $args ); # Initialise factory subclass
-   return $new;
-}
+   my $type = delete $attr->{type}; $attr = { _implementation_attr => $attr };
 
-sub get_table {
-   my $self  = shift;
-   my $count = 0;
-   my $data  = { align  => { id    => 'left',
-                             pid   => 'right',
-                             stime => 'right',
-                             tleft => 'right'},
-                 count  => $count,
-                 fields => [ qw(id pid stime tleft) ],
-                 hclass => { id => q(most) },
-                 labels => { id    => 'Key',
-                             pid   => 'PID',
-                             stime => 'Lock Time',
-                             tleft => 'Time Left' },
-                 values => [] };
+   $type and $attr->{type} = $type; return $attr;
+};
 
-   for my $lock (@{ $self->list }) {
-      my $fields = {};
-
-      $fields->{id   } = $lock->{key};
-      $fields->{pid  } = $lock->{pid};
-      $fields->{stime} = time2str( q(%Y-%m-%d %H:%M:%S), $lock->{stime} );
-
-      my $tleft = $lock->{stime} + $lock->{timeout} - time;
-
-      $fields->{tleft} = $tleft > 0 ? elapsed( $tleft ) : 'Expired';
-      $fields->{class}->{tleft}
-                       = $tleft < 1 ? q(error dataValue) : q(odd dataValue);
-      push @{ $data->{values} }, $fields;
-      $count++;
-   }
-
-   $data->{count} = $count;
-   return $data;
-}
-
-sub list {
-   my $self = shift; return $self->_list;
-}
-
-sub reset {
-   my ($self, @rest) = @_; my $args = $self->_arg_list( @rest );
-
-   my $key = $args->{k} or $self->throw( 'No key specified' );
-
-   return $self->_reset( q().$key );
-}
-
-sub set {
-   my ($self, @rest) = @_; my $args = $self->_arg_list( @rest );
-
-   $args->{k}   = q().$args->{k} or $self->throw( 'No key specified' );
-   $args->{p} ||= $self->pid; $args->{p} or $self->throw( 'No pid specified' );
-   $args->{t} ||= $self->time_out;
-
-   return $self->_set( $args );
-}
-
-sub throw {
-   my ($self, @rest) = @_; return IPC::SRLock::Exception->throw( @rest );
-}
-
-sub timeout_error {
-   my ($self, $key, $pid, $when, $after) = @_; my $text;
-
-   $text  = 'Timed out '.$key.' set by '.$pid;
-   $text .= ' on '.time2str( q(%Y-%m-%d at %H:%M), $when );
-   $text .= ' after '.$after.' seconds'."\n";
-   return $text;
+sub BUILD {
+   my $self = shift; $self->_implementation; return;
 }
 
 # Private methods
-
-sub _arg_list {
-   my ($self, @rest) = @_; $rest[ 0 ] or return {};
-
-   return ref $rest[ 0 ] ? $rest[ 0 ] : { @rest };
-}
-
-sub _ensure_class_loaded {
-   my ($self, $class, $opts) = @_; $opts ||= {};
-
-   my $package_defined = sub { Class::MOP::is_class_loaded( $class ) };
-
-   not $opts->{ignore_loaded} and $package_defined->() and return 1;
-
-   try   { Class::MOP::load_class( $class ) }
-   catch { $self->throw( $_ ) };
-
-   $package_defined->() and return 1;
-
-   my $e = 'Class [_1] loaded but package undefined';
-
-   $self->throw( error => $e, args => [ $class ] );
-   return; # Never reached
-}
-
-sub _init {
-   return;
-}
-
-sub _list {
+sub _build__implementation {
    my $self = shift;
+   my $attr = { name => (lc join '_', split m{ :: }mx, __PACKAGE__),
+                %{ $self->_implementation_attr }, };
 
-   $self->throw( error => 'Method [_1] not overridden in [_2]',
-                 args  => [ q(_list), ref $self || $self ] );
-   return;
+   return $self->_implementation_class->new( $attr );
 }
 
-sub _reset {
-   my $self = shift;
-
-   $self->throw( error => 'Method [_1] not overridden in [_2]',
-                 args  => [ q(_reset), ref $self || $self ] );
-   return;
-}
-
-sub _set {
-   my $self = shift;
-
-   $self->throw( error => 'Method [_1] not overridden in [_2]',
-                 args  => [ q(_set), ref $self || $self ] );
-   return;
-}
-
-# Private subroutines
-
-sub __hash_merge {
-   return { %{ $_[ 0 ] }, %{ $_[ 1 ] || {} } };
+sub _build__implementation_class {
+   my $self = shift; return __PACKAGE__.'::'.(ucfirst $self->type);
 }
 
 1;
@@ -188,21 +69,21 @@ IPC::SRLock - Set/reset locking semantics to single thread processes
 
 =head1 Version
 
-This documents version v0.10.$Rev: 2 $ of L<IPC::SRLock>
+This documents version v0.11.$Rev: 0 $ of L<IPC::SRLock>
 
 =head1 Synopsis
 
    use IPC::SRLock;
 
-   my $config   = { tempdir => q(path_to_tmp_directory), type => q(fcntl) };
+   my $config   = { tempdir => 'path_to_tmp_directory', type => 'fcntl' };
 
    my $lock_obj = IPC::SRLock->new( $config );
 
-   $lock_obj->set( k => q(some_resource_identfier) );
+   $lock_obj->set( k => 'some_resource_identfier' );
 
    # This critical region of code is guaranteed to be single threaded
 
-   $lock_obj->reset( k => q(some_resource_identfier) );
+   $lock_obj->reset( k => 'some_resource_identfier' );
 
 =head1 Description
 
@@ -211,56 +92,23 @@ of code to run single threaded
 
 =head1 Configuration and Environment
 
-This class defines accessors and mutators for these attributes:
+Defines the following attributes;
 
 =over 3
 
-=item C<debug>
-
-Turns on debug output. Defaults to 0
-
-=item C<log>
-
-If set to a log object, it's C<debug> method is called if debugging is
-turned on. Defaults to L<Class::Null>
-
-=item C<name>
-
-Used as the lock file names. Defaults to C<ipc_srlock>
-
-=item C<nap_time>
-
-How long to wait between polls of the lock table. Defaults to 0.5 seconds
-
-=item C<patience>
-
-Time in seconds to wait for a lock before giving up. If set to 0 waits
-forever. Defaults to 0
-
-=item C<pid>
-
-The process id doing the locking. Defaults to this processes id
-
-=item C<time_out>
-
-Time in seconds before a lock is deemed to have expired. Defaults to 300
-
 =item C<type>
 
-Determines which factory subclass is loaded. Defaults to C<fcntl>
+Determines which factory subclass is loaded. Defaults to C<fcntl>, can
+be; C<fcntl>, C<memcached>, or C<sysv>
 
 =back
 
 =head1 Subroutines/Methods
 
-=head2 new
+=head2 BUILD
 
-This constructor implements the singleton pattern, ensures that the
-factory subclass is loaded in initialises it
-
-=head2 catch
-
-Expose the C<catch> method in L<IPC::SRLock::ExceptionClass>
+Called after an instance is created this subroutine triggers the lazy
+evaluation of the concreate subclass
 
 =head2 get_table
 
@@ -278,13 +126,13 @@ Returns an array of hash refs that represent the current lock table
 
 =head2 reset
 
-   $lock_obj->reset( k => q(some_resource_key) );
+   $lock_obj->reset( k => 'some_resource_key' );
 
 Resets the lock referenced by the C<k> attribute.
 
 =head2 set
 
-   $lock_obj->set( k => q(some_resource_key) );
+   $lock_obj->set( k => 'some_resource_key' );
 
 Sets the specified lock. Attributes are:
 
@@ -306,51 +154,6 @@ it to zero makes the lock last indefinitely
 
 =back
 
-=head2 throw
-
-Expose the C<throw> method in C<IPC::SRLock::ExceptionClass>
-
-=head2 timeout_error
-
-Return the text of the the timeout message
-
-=head2 _arg_list
-
-   my $args = $self->_arg_list( @rest );
-
-Returns a hash ref containing the passed parameter list. Enables
-methods to be called with either a list or a hash ref as it's input
-parameters
-
-=head2 _ensure_class_loaded
-
-   $self->_ensure_class_loaded( $some_class );
-
-Require the requested class, throw an error if it doesn't load
-
-=head2 _init
-
-Called by the constructor. Optionally overridden in the factory
-subclass. This allows subclass specific initialisation
-
-=head2 _list
-
-Should be overridden in the factory subclass
-
-=head2 _reset
-
-Should be overridden in the factory subclass
-
-=head2 _set
-
-Should be overridden in the factory subclass
-
-=head2 __hash_merge
-
-   my $hash = __hash_merge( { key1 => val1 }, { key2 => val2 } );
-
-Simplistic merging of two hashes
-
 =head1 Diagnostics
 
 Setting C<debug> to true will cause the C<set> methods to log
@@ -360,27 +163,23 @@ the lock record at the debug level
 
 =over 3
 
-=item L<Class::Accessor::Fast>
+=item L<Moose>
 
-=item L<Class::MOP>
+=item L<Moose::Util::TypeConstraints>
 
-=item L<Class::Null>
+=item L<MooseX::Types::LoadableClass>
 
-=item L<Date::Format>
-
-=item L<IPC::SRLock::ExceptionClass>
-
-=item L<Time::Elapsed>
+=item L<MooseX::Types::Moose>
 
 =back
 
 =head1 Incompatibilities
 
-The C<Sysv> subclass will not work on C<MSWin32> and C<cygwin> platforms
+The C<sysv> subclass type will not work on C<MSWin32> and C<cygwin> platforms
 
 =head1 Bugs and Limitations
 
-Testing of the C<memcached> subclass is skipped on all platforms as it
+Testing of the C<memcached> subclass type is skipped on all platforms as it
 requires C<memcached> to be listening on the localhost's default
 memcached port C<localhost:11211>
 

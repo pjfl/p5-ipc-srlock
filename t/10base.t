@@ -1,8 +1,8 @@
-# @(#)$Id$
+# @(#)$Ident: 10base.t 2013-05-06 12:55 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.10.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev: 0 $ =~ /\d+/gmx );
 use File::Spec::Functions qw(catdir catfile updir);
 use FindBin qw( $Bin );
 use lib catdir( $Bin, updir, q(lib) );
@@ -14,13 +14,12 @@ my $current;
 
 BEGIN {
    $current = eval { Module::Build->current };
-
    $current and $current->notes->{stop_tests}
             and plan skip_all => $current->notes->{stop_tests};
 }
 
 use English qw( -no_match_vars );
-use Exception::Class ( q(TestException) => { fields => [ qw(args) ] } );
+use File::DataClass::Exception;
 
 use_ok 'IPC::SRLock';
 
@@ -28,7 +27,7 @@ my $lock = IPC::SRLock->new( { tempdir => q(t), type => q(fcntl) } ); my $e;
 
 eval { $lock->reset( k => $PROGRAM_NAME ) };
 
-if ($e = Exception::Class->caught()) {
+if ($e = File::DataClass::Exception->caught()) {
    ok $e->error eq 'Lock [_1] not set', 'Error not set';
    ok $e->args->[ 0 ] eq $PROGRAM_NAME, 'Error args';
 }
@@ -65,7 +64,7 @@ unless ($OSNAME eq q(MSWin32) or $OSNAME eq q(cygwin)) {
 }
 
 # Need a memcached server to run these tests
-if ($current and $current->notes->{have_memcached}) {
+if ($ENV{AUTHOR_TESTING} and $ENV{HAVE_MEMCACHED}) {
    $lock = IPC::SRLock->new( { patience => 10, type => q(memcached) } );
    $lock->set( k => $PROGRAM_NAME );
 

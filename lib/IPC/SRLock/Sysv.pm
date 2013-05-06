@@ -1,39 +1,44 @@
-# @(#)$Ident: Sysv.pm 2013-05-05 10:04 pjf ;
+# @(#)$Ident: Sysv.pm 2013-05-06 13:36 pjf ;
 
 package IPC::SRLock::Sysv;
 
-use strict;
-use warnings;
-use version; our $VERSION = qv( sprintf '0.10.%d', q$Rev: 1 $ =~ /\d+/gmx );
-use parent qw(IPC::SRLock);
+use namespace::autoclean;
+use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev: 0 $ =~ /\d+/gmx );
 
-use English        qw(-no_match_vars);
-use IPC::ShareLite qw(:lock);
-use Storable       qw(nfreeze thaw);
-use Time::HiRes    qw(usleep);
+use Moose;
+use English                        qw(-no_match_vars);
+use IPC::ShareLite                 qw(:lock);
+use MooseX::Types::Common::Numeric qw(PositiveInt);
+use MooseX::Types::Common::String  qw(NonEmptySimpleStr);
+use MooseX::Types::Moose           qw(Object);
+use Storable                       qw(nfreeze thaw);
+use Time::HiRes                    qw(usleep);
 use Try::Tiny;
 
-my %ATTRS = ( lockfile => 12244237, mode => q(0666), size => 65_536,
-              _share   => undef );
+extends q(IPC::SRLock::Base);
 
-__PACKAGE__->mk_accessors( keys %ATTRS );
+# Public attributes
+has 'lockfile' => is => 'ro', isa => PositiveInt,       default => 12244237;
+
+has 'mode'     => is => 'ro', isa => NonEmptySimpleStr, default => q(0666);
+
+has 'size'     => is => 'ro', isa => PositiveInt,       default => 65_536;
+
+# Private attributes
+has '_share'   => is => 'ro', isa => Object,
+   builder     => '_build__share', init_arg => undef, lazy => 1;
 
 # Private methods
-
-sub _init {
+sub _build__share {
    my $self = shift; my $share;
 
-   for (grep { not defined $self->{ $_ } } keys %ATTRS) {
-      $self->{ $_ } = $ATTRS{ $_ };
-   }
+   try   { $share = IPC::ShareLite->new( '-key'    => $self->lockfile,
+                                         '-create' => 1,
+                                         '-mode'   => oct $self->mode,
+                                         '-size'   => $self->size ) }
+   catch { $self->throw( "${_}: ${OS_ERROR}" ) };
 
-   try   { $self->_share( IPC::ShareLite->new( '-key'    => $self->lockfile,
-                                               '-create' => 1,
-                                               '-mode'   => oct $self->mode,
-                                               '-size'   => $self->size ) ) }
-   catch { $self->throw( "$_: $OS_ERROR" ) };
-
-   return;
+   return $share;
 }
 
 sub _fetch_share_data {
@@ -42,41 +47,34 @@ sub _fetch_share_data {
    defined $self->_share->lock( $for_update ? LOCK_EX : LOCK_SH )
       or $self->throw( 'Failed to set semaphore' );
 
-   try   { $data = $self->_share->fetch }
-   catch { $self->throw( "$_: $OS_ERROR" ) };
+   try   { $data = $self->_share->fetch; $data = $data ? thaw( $data ) : {} }
+   catch { $self->throw( "${_}: ${OS_ERROR}" ) };
 
    not $for_update and $self->_unlock_share;
-
-   return $data ? thaw( $data ) : {};
+   return $data;
 }
 
 sub _list {
-   my $self = shift;
-   my $hash = $self->_fetch_share_data;
-   my $list = [];
+   my $self = shift; my $data = $self->_fetch_share_data; my $list = [];
 
-   while (my ($key, $lock) = each %{ $hash }) {
+   while (my ($key, $info) = each %{ $data }) {
       push @{ $list }, { key     => $key,
-                         pid     => $lock->{pid    },
-                         stime   => $lock->{stime  },
-                         timeout => $lock->{timeout} };
+                         pid     => $info->{pid    },
+                         stime   => $info->{stime  },
+                         timeout => $info->{timeout} };
    }
 
    return $list;
 }
 
 sub _reset {
-   my ($self, $key) = @_; my $hash = $self->_fetch_share_data( 1 ); my $found;
+   my ($self, $key) = @_; my $data = $self->_fetch_share_data( 1 );
 
-   if ($found = delete $hash->{ $key }) {
-      try   { $self->_share->store( nfreeze( $hash ) ) }
-      catch { $self->throw( "$_: $OS_ERROR" ) };
-   }
+   my $found = delete $data->{ $key } and $self->_store_share_data( $data );
 
    $self->_unlock_share;
 
    $found or $self->throw( error => 'Lock [_1] not set', args => [ $key ] );
-
    return 1;
 }
 
@@ -88,21 +86,25 @@ sub _set {
    while (not $lock_set) {
       my ($lock, $lpid, $ltime, $ltimeout);
       my $found = 0; my $now = time; my $timedout = 0;
-      my $hash  = $self->_fetch_share_data( 1 );
+      my $data  = $self->_fetch_share_data( 1 );
 
-      if (exists $hash->{ $key } and $lock = $hash->{ $key }) {
+      if (exists $data->{ $key } and $lock = $data->{ $key }) {
          $lpid     = $lock->{pid    };
          $ltime    = $lock->{stime  };
          $ltimeout = $lock->{timeout};
 
          if ($now > $ltime + $ltimeout) {
-            $lock_set = $self->_set_lock( $hash, $key, $pid, $now, $timeout );
+            $data->{ $key } = { pid     => $pid,
+                                stime   => $now,
+                                timeout => $timeout };
+            $lock_set = $self->_store_share_data( $data );
             $timedout = 1;
          }
          else { $found = 1 }
       }
       else {
-         $lock_set = $self->_set_lock( $hash, $key, $pid, $now, $timeout );
+         $data->{ $key } = { pid => $pid, stime => $now, timeout => $timeout };
+         $lock_set = $self->_store_share_data( $data );
       }
 
       $self->_unlock_share;
@@ -121,18 +123,15 @@ sub _set {
       $found and usleep( 1_000_000 * $self->nap_time );
    }
 
-   $self->debug and $self->log->debug( "Lock $key set by $pid\n" );
-
+   $self->debug and $self->log->debug( "Lock ${key} set by ${pid}\n" );
    return 1;
 }
 
-sub _set_lock {
-   my ($self, $hash, $key, $pid, $now, $timeout) = @_;
+sub _store_share_data {
+   my ($self, $data) = @_;
 
-   $hash->{ $key } = { pid => $pid, stime => $now, timeout => $timeout };
-
-   try   { $self->_share->store( nfreeze( $hash ) ) }
-   catch { $self->throw( "$_: $OS_ERROR" ) };
+   try   { $self->_share->store( nfreeze $data ) }
+   catch { $self->throw( "${_}: ${OS_ERROR}" ) };
 
    return 1;
 }
@@ -157,7 +156,7 @@ IPC::SRLock::Sysv - Set/reset locks using System V IPC
 
 =head1 Version
 
-This documents version v0.10.$Rev: 1 $
+This documents version v0.11.$Rev: 0 $
 
 =head1 Synopsis
 
@@ -173,7 +172,7 @@ Uses System V semaphores to lock access to a shared memory file
 
 =head1 Configuration and Environment
 
-This class defines accessors and mutators for these attributes:
+This class defines accessors for these attributes:
 
 =over 3
 
@@ -192,10 +191,6 @@ Maximum size of a shared memory segment. Defaults to 65_536
 =back
 
 =head1 Subroutines/Methods
-
-=head2 _init
-
-Initialise the object
 
 =head2 _list
 
@@ -217,15 +212,21 @@ None
 
 =over 3
 
-=item L<IPC::SRLock>
-
 =item L<IPC::ShareLite>
+
+=item L<IPC::SRLock::Base>
+
+=item L<Moose>
+
+=item L<MooseX::Types::Common>
+
+=item L<MooseX::Types::Moose>
 
 =item L<Storable>
 
-=item L<IPC::SysV>
-
 =item L<Time::HiRes>
+
+=item L<Try::Tiny>
 
 =back
 
@@ -241,7 +242,7 @@ Patches are welcome
 
 =head1 Author
 
-Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
+Peter Flanigan, C<< <pjfl@cpan.org> >>
 
 =head1 License and Copyright
 
