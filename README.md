@@ -4,7 +4,7 @@ IPC::SRLock - Set/reset locking semantics to single thread processes
 
 # Version
 
-This documents version v0.11.$Rev: 0 $ of [IPC::SRLock](https://metacpan.org/module/IPC::SRLock)
+This documents version v0.11.$Rev: 4 $ of [IPC::SRLock](https://metacpan.org/module/IPC::SRLock)
 
 # Synopsis
 
@@ -28,6 +28,10 @@ of code to run single threaded
 # Configuration and Environment
 
 Defines the following attributes;
+
+- `debug`
+
+    Mutable attribute if true will log lock set events at the debug level
 
 - `type`
 

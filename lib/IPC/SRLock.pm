@@ -1,9 +1,9 @@
-# @(#)$Ident: SRLock.pm 2013-05-06 14:16 pjf ;
+# @(#)$Ident: SRLock.pm 2013-05-06 14:25 pjf ;
 
 package IPC::SRLock;
 
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev: 3 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev: 4 $ =~ /\d+/gmx );
 
 use Moose;
 use Moose::Util::TypeConstraints;
@@ -69,7 +69,7 @@ IPC::SRLock - Set/reset locking semantics to single thread processes
 
 =head1 Version
 
-This documents version v0.11.$Rev: 3 $ of L<IPC::SRLock>
+This documents version v0.11.$Rev: 4 $ of L<IPC::SRLock>
 
 =head1 Synopsis
 
@@ -95,6 +95,10 @@ of code to run single threaded
 Defines the following attributes;
 
 =over 3
+
+=item C<debug>
+
+Mutable attribute if true will log lock set events at the debug level
 
 =item C<type>
 
