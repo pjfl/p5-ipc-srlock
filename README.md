@@ -39,7 +39,7 @@ Defines the following attributes;
 ## BUILD
 
 Called after an instance is created this subroutine triggers the lazy
-evaluation of the concreate subclass
+evaluation of the concrete subclass
 
 ## get\_table
 

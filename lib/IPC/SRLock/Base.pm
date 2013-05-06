@@ -1,4 +1,4 @@
-# @(#)Ident: Base.pm 2013-05-06 13:22 pjf ;
+# @(#)Ident: Base.pm 2013-05-06 14:11 pjf ;
 
 package IPC::SRLock::Base;
 
@@ -11,15 +11,15 @@ use English                        qw(-no_match_vars);
 use IPC::SRLock::Exception;
 use MooseX::Types::Common::Numeric qw(PositiveInt);
 use MooseX::Types::Common::String  qw(NonEmptySimpleStr);
-use MooseX::Types::Moose           qw(Bool Num);
+use MooseX::Types::Moose           qw(Bool Num Object);
 use MooseX::Types::LoadableClass   qw(LoadableClass);
 use Time::Elapsed                  qw(elapsed);
 
 # Public attributes
-has 'debug'    => is => 'ro', isa => Bool, default => 0;
+has 'debug'    => is => 'rw', isa => Bool, default => 0;
 
-has 'log'      => is => 'ro', isa => LoadableClass, coerce => 1,
-   default     => sub { 'Class::Null' }, lazy => 1;
+has 'log'      => is => 'ro', isa => Object,
+   default     => sub { $_[ 0 ]->_null_class->new }, lazy => 1;
 
 has 'name'     => is => 'ro', isa => NonEmptySimpleStr, required => 1;
 
@@ -30,6 +30,10 @@ has 'patience' => is => 'ro', isa => PositiveInt, default => 0;
 has 'pid'      => is => 'ro', isa => PositiveInt, default => $PID;
 
 has 'time_out' => is => 'ro', isa => PositiveInt, default => 300;
+
+# Private attributes
+has '_null_class' => is => 'ro', isa => LoadableClass, coerce => 1,
+   default        => sub { 'Class::Null' }, init_arg => undef, lazy => 1;
 
 # Public methods
 sub get_table {

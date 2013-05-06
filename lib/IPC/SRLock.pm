@@ -1,4 +1,4 @@
-# @(#)$Ident: SRLock.pm 2013-05-06 13:38 pjf ;
+# @(#)$Ident: SRLock.pm 2013-05-06 14:12 pjf ;
 
 package IPC::SRLock;
 
@@ -19,7 +19,7 @@ has 'type'                  => is => 'ro', isa => __PACKAGE__.'::Type',
 # Private attributes
 has '_implementation'       => is => 'ro', isa => Object,
    builder                  => '_build__implementation',
-   handles                  => [ qw(get_table list reset set) ],
+   handles                  => [ qw(debug get_table list reset set) ],
    init_arg                 => undef, lazy => 1;
 
 has '_implementation_attr'  => is => 'ro', isa => HashRef,
@@ -108,7 +108,7 @@ be; C<fcntl>, C<memcached>, or C<sysv>
 =head2 BUILD
 
 Called after an instance is created this subroutine triggers the lazy
-evaluation of the concreate subclass
+evaluation of the concrete subclass
 
 =head2 get_table
 
