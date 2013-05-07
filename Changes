@@ -1,7 +1,9 @@
 Revision history for IPC::SRLock
 
-0.11.5    2013-05-07 01:15:20
+0.11.6    2013-05-07 13:49:11
+          - Loosed type constraint on umask
           - Loosed type constraint on patience
+          - Bumped version on MooseX::Types::Common
           - Updated POD
           - Bumped patch number
           - Passes tests

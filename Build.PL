@@ -1,9 +1,9 @@
-# @(#)$Ident: Build.PL 2013-05-06 12:50 pjf ;
+# @(#)$Ident: Build.PL 2013-05-07 12:46 pjf ;
 
 use strict;
 use warnings;
 use inc::Bob; # Module::Build subclass
-use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev: 0 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev: 6 $ =~ /\d+/gmx );
 
 Bob->new( {
    module    => q(IPC::SRLock),
@@ -18,7 +18,7 @@ Bob->new( {
       'IPC::ShareLite'               => 0.17,
       'Moose'                        => 2.0402,
       'MooseX::Types'                => 0.25,
-      'MooseX::Types::Common'        => 0.001002,
+      'MooseX::Types::Common'        => 0.001008,
       'MooseX::Types::LoadableClass' => 0.007,
       'Storable'                     => 2.39,
       'Time::Elapsed'                => 0.10,

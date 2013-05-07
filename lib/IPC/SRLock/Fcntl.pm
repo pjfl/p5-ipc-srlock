@@ -1,15 +1,15 @@
-# @(#)$Ident: Fcntl.pm 2013-05-06 13:33 pjf ;
+# @(#)$Ident: Fcntl.pm 2013-05-07 12:47 pjf ;
 
 package IPC::SRLock::Fcntl;
 
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev: 0 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev: 6 $ =~ /\d+/gmx );
 
 use Moose;
 use English                        qw(-no_match_vars);
 use MooseX::Types::Common::Numeric qw(PositiveInt);
 use MooseX::Types::Common::String  qw(NonEmptySimpleStr);
-use MooseX::Types::Moose           qw(RegexpRef);
+use MooseX::Types::Moose           qw(Int RegexpRef);
 use File::DataClass::Constraints   qw(Directory Path);
 use Storable                       qw(nfreeze thaw);
 use Time::HiRes                    qw(usleep);
@@ -26,7 +26,7 @@ has 'pattern' => is => 'ro', isa => RegexpRef,
 has 'tempdir' => is => 'ro', isa => Directory, coerce => 1,
    default    => sub { File::Spec->tmpdir };
 
-has 'umask'   => is => 'ro', isa => PositiveInt, default => 0;
+has 'umask'   => is => 'ro', isa => Int, default => 0;
 
 # Private attributes
 has '_lockfile'      => is => 'ro', isa => Path, coerce => 1,
@@ -166,7 +166,7 @@ IPC::SRLock::Fcntl - Set/reset locks using fcntl
 
 =head1 Version
 
-This documents version v0.11.$Rev: 0 $
+This documents version v0.11.$Rev: 6 $
 
 =head1 Synopsis
 
