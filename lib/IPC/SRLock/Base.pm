@@ -1,9 +1,9 @@
-# @(#)Ident: Base.pm 2013-05-06 14:11 pjf ;
+# @(#)Ident: Base.pm 2013-05-07 00:12 pjf ;
 
 package IPC::SRLock::Base;
 
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev: 0 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev: 5 $ =~ /\d+/gmx );
 
 use Moose;
 use Date::Format;
@@ -11,7 +11,7 @@ use English                        qw(-no_match_vars);
 use IPC::SRLock::Exception;
 use MooseX::Types::Common::Numeric qw(PositiveInt);
 use MooseX::Types::Common::String  qw(NonEmptySimpleStr);
-use MooseX::Types::Moose           qw(Bool Num Object);
+use MooseX::Types::Moose           qw(Bool Int Num Object);
 use MooseX::Types::LoadableClass   qw(LoadableClass);
 use Time::Elapsed                  qw(elapsed);
 
@@ -25,7 +25,7 @@ has 'name'     => is => 'ro', isa => NonEmptySimpleStr, required => 1;
 
 has 'nap_time' => is => 'ro', isa => Num, default => 0.1;
 
-has 'patience' => is => 'ro', isa => PositiveInt, default => 0;
+has 'patience' => is => 'ro', isa => Int, default => 0;
 
 has 'pid'      => is => 'ro', isa => PositiveInt, default => $PID;
 
@@ -138,7 +138,7 @@ IPC::SRLock::Base - Common lock object attributes and methods
 
 =head1 Version
 
-This documents version v0.11.$Rev: 0 $ of L<IPC::SRLock::Base>
+This documents version v0.11.$Rev: 5 $ of L<IPC::SRLock::Base>
 
 =head1 Description
 
