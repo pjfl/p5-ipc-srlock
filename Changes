@@ -1,6 +1,7 @@
 Revision history for IPC::SRLock
 
-0.11.8    2013-05-08 15:51:19
+0.11.9    2013-05-08 22:15:17
+          - Exception class depends on Unexected
           - Added out attr to Exception class
           - Exception class allows us to apply roles
           - Loosed type constraint on umask

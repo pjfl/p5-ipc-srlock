@@ -1,9 +1,9 @@
-# @(#)$Ident: SRLock.pm 2013-05-08 14:51 pjf ;
+# @(#)$Ident: SRLock.pm 2013-05-08 21:15 pjf ;
 
 package IPC::SRLock;
 
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev: 8 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev: 9 $ =~ /\d+/gmx );
 
 use Moose;
 use Moose::Util::TypeConstraints;
@@ -69,7 +69,7 @@ IPC::SRLock - Set/reset locking semantics to single thread processes
 
 =head1 Version
 
-This documents version v0.11.$Rev: 8 $ of L<IPC::SRLock>
+This documents version v0.11.$Rev: 9 $ of L<IPC::SRLock>
 
 =head1 Synopsis
 
