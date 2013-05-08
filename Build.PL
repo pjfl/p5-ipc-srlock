@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 use inc::Bob; # Module::Build subclass
-use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev: 6 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev: 7 $ =~ /\d+/gmx );
 
 Bob->new( {
    module    => q(IPC::SRLock),
@@ -14,7 +14,7 @@ Bob->new( {
       'version'                      => 0.74,
       'Class::Null'                  => 1.09,
       'Date::Format'                 => 2.22,
-      'File::DataClass'              => q(0.19.0),
+      'File::DataClass'              => q(0.20.0),
       'IPC::ShareLite'               => 0.17,
       'Moose'                        => 2.0402,
       'MooseX::Types'                => 0.25,
@@ -30,7 +30,7 @@ Bob->new( {
       'version'                      => 0.74,
       'Module::Build'                => 0.38, },
    build_requires                    => {
-      'File::DataClass'              => q(0.19.0),
+      'File::DataClass'              => q(0.20.0),
       'Test::More'                   => 0.74, },
 } )->create_build_script; # Goal!
 
