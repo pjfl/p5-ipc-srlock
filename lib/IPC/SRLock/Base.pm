@@ -1,9 +1,9 @@
-# @(#)Ident: Base.pm 2013-05-07 00:12 pjf ;
+# @(#)Ident: Base.pm 2013-05-09 15:50 pjf ;
 
 package IPC::SRLock::Base;
 
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev: 5 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev: 10 $ =~ /\d+/gmx );
 
 use Moose;
 use Date::Format;
@@ -11,25 +11,28 @@ use English                        qw(-no_match_vars);
 use IPC::SRLock::Exception;
 use MooseX::Types::Common::Numeric qw(PositiveInt);
 use MooseX::Types::Common::String  qw(NonEmptySimpleStr);
-use MooseX::Types::Moose           qw(Bool Int Num Object);
+use MooseX::Types::Moose           qw(Bool ClassName Int Num Object);
 use MooseX::Types::LoadableClass   qw(LoadableClass);
 use Time::Elapsed                  qw(elapsed);
 
 # Public attributes
-has 'debug'    => is => 'rw', isa => Bool, default => 0;
+has 'debug'           => is => 'rw', isa => Bool, default => 0;
 
-has 'log'      => is => 'ro', isa => Object,
-   default     => sub { $_[ 0 ]->_null_class->new }, lazy => 1;
+has 'exception_class' => is => 'ro', isa => ClassName,
+   default            => 'IPC::SRLock::Exception';
 
-has 'name'     => is => 'ro', isa => NonEmptySimpleStr, required => 1;
+has 'log'             => is => 'ro', isa => Object,
+   default            => sub { $_[ 0 ]->_null_class->new }, lazy => 1;
 
-has 'nap_time' => is => 'ro', isa => Num, default => 0.1;
+has 'name'            => is => 'ro', isa => NonEmptySimpleStr, required => 1;
 
-has 'patience' => is => 'ro', isa => Int, default => 0;
+has 'nap_time'        => is => 'ro', isa => Num, default => 0.1;
 
-has 'pid'      => is => 'ro', isa => PositiveInt, default => $PID;
+has 'patience'        => is => 'ro', isa => Int, default => 0;
 
-has 'time_out' => is => 'ro', isa => PositiveInt, default => 300;
+has 'pid'             => is => 'ro', isa => PositiveInt, default => $PID;
+
+has 'time_out'        => is => 'ro', isa => PositiveInt, default => 300;
 
 # Private attributes
 has '_null_class' => is => 'ro', isa => LoadableClass, coerce => 1,
@@ -95,7 +98,7 @@ sub set {
 }
 
 sub throw {
-   my ($self, @args) = @_; return IPC::SRLock::Exception->throw( @args );
+   my ($self, @args) = @_; return $self->exception_class->throw( @args );
 }
 
 sub timeout_error {
@@ -138,7 +141,7 @@ IPC::SRLock::Base - Common lock object attributes and methods
 
 =head1 Version
 
-This documents version v0.11.$Rev: 5 $ of L<IPC::SRLock::Base>
+This documents version v0.11.$Rev: 10 $ of L<IPC::SRLock::Base>
 
 =head1 Description
 
