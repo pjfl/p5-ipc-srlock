@@ -1,8 +1,8 @@
-# @(#)$Ident: 10base.t 2013-05-06 12:55 pjf ;
+# @(#)$Ident: 10base.t 2013-05-10 14:53 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev: 0 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev: 11 $ =~ /\d+/gmx );
 use File::Spec::Functions qw(catdir catfile updir);
 use FindBin qw( $Bin );
 use lib catdir( $Bin, updir, q(lib) );
@@ -19,7 +19,7 @@ BEGIN {
 }
 
 use English qw( -no_match_vars );
-use File::DataClass::Exception;
+use IPC::SRLock::Exception;
 
 use_ok 'IPC::SRLock';
 
@@ -27,7 +27,7 @@ my $lock = IPC::SRLock->new( { tempdir => q(t), type => q(fcntl) } ); my $e;
 
 eval { $lock->reset( k => $PROGRAM_NAME ) };
 
-if ($e = File::DataClass::Exception->caught()) {
+if ($e = IPC::SRLock::Exception->caught()) {
    ok $e->error eq 'Lock [_1] not set', 'Error not set';
    ok $e->args->[ 0 ] eq $PROGRAM_NAME, 'Error args';
 }
