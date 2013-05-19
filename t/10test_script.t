@@ -1,4 +1,4 @@
-# @(#)$Ident: 10base.t 2013-05-10 14:53 pjf ;
+# @(#)$Ident: 10test_script.t 2013-05-19 11:31 pjf ;
 
 use strict;
 use warnings;
@@ -10,16 +10,19 @@ use lib catdir( $Bin, updir, q(lib) );
 use Module::Build;
 use Test::More;
 
-my $current;
+my $reason;
 
 BEGIN {
-   $current = eval { Module::Build->current };
-   $current and $current->notes->{stop_tests}
-            and plan skip_all => $current->notes->{stop_tests};
+   my $builder = eval { Module::Build->current };
+
+   $builder and $reason = $builder->notes->{stop_tests};
+   $reason  and $reason =~ m{ \A TESTS: }mx and plan skip_all => $reason;
 }
 
 use English qw( -no_match_vars );
 use IPC::SRLock::Exception;
+
+my $is_win32 = ($OSNAME eq q(MSWin32)) || ($OSNAME eq q(cygwin));
 
 use_ok 'IPC::SRLock';
 
@@ -49,7 +52,9 @@ ok -f catfile( qw(t ipc_srlock.shm) ), 'Shm file exists';
 unlink catfile( qw(t ipc_srlock.lck) );
 unlink catfile( qw(t ipc_srlock.shm) );
 
-unless ($OSNAME eq q(MSWin32) or $OSNAME eq q(cygwin)) {
+SKIP: {
+   $is_win32 and skip 'tests: OS unsupported', 2;
+   $reason and $reason =~ m{ \A tests: }mx and skip $reason, 2;
    $lock = IPC::SRLock->new( { type => q(sysv) } );
    $lock->set( k => $PROGRAM_NAME );
 
@@ -59,12 +64,12 @@ unless ($OSNAME eq q(MSWin32) or $OSNAME eq q(cygwin)) {
 
    is [ map { $_->{key} } @{ $lock->list() } ]->[ 0 ], undef, 'Reset ipc';
 
-   qx{ ipcrm -M 0x00bad50d };
-   qx{ ipcrm -S 0x00bad50d };
+   qx{ ipcrm -M 0x00bad50d }; qx{ ipcrm -S 0x00bad50d };
 }
 
-# Need a memcached server to run these tests
-if ($ENV{AUTHOR_TESTING} and $ENV{HAVE_MEMCACHED}) {
+SKIP: {
+   ($ENV{AUTHOR_TESTING} and $ENV{HAVE_MEMCACHED})
+      or skip 'author tests: Needs a memcached server', 2;
    $lock = IPC::SRLock->new( { patience => 10, type => q(memcached) } );
    $lock->set( k => $PROGRAM_NAME );
 

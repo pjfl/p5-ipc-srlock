@@ -1,6 +1,8 @@
 Revision history for IPC::SRLock
 
-0.11.12   2013-05-11 13:45:16
+0.11.13   2013-05-19 12:46:52
+          - Skip CPAN Testing for David Cantrell
+            693dc200-c006-11e2-b7e8-40f1fec28264
           - Updated prereqs in Build.PL
           - Removed File::DataClass from tests
           - Added exception_class attr to ::Base

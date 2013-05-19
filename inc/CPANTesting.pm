@@ -1,5 +1,4 @@
-# @(#)$Id$
-# Bob-Version: 1.7
+# @(#)Ident: CPANTesting.pm 2013-05-19 11:40 pjf ;
 
 package CPANTesting;
 
@@ -16,17 +15,19 @@ sub should_abort {
    is_testing() or return 0;
 
    $host eq q(xphvmfred)
-      and return "Stauner ${host} - cc06993e-a5e9-11e2-83b7-87183f85d660";
+      and return "ABORT: ${host} - cc06993e-a5e9-11e2-83b7-87183f85d660";
    return 0;
 }
 
 sub test_exceptions {
    my $p = shift; is_testing() or return 0;
 
-   $p->{stop_tests}      and return 'CPAN Testing stopped in Build.PL';
-   $osname eq q(mirbsd)  and return 'Mirbsd OS unsupported';
-   $host   eq q(slack64) and return "Bingos ${host} - No space left on device";
-   $host   eq q(falco)   and return "Bingos ${host} - No space left on device";
+   $p->{stop_tests}       and return 'TESTS: CPAN Testing stopped in Build.PL';
+   $osname eq q(mirbsd)   and return 'TESTS: Mirbsd OS unsupported';
+   $host   eq q(slack64)  and return "tests: No space left on device";
+   $host   eq q(falco)    and return "tests: No space left on device";
+   $host =~ m{ pigsty }mx and return
+      "tests: 693dc200-c006-11e2-b7e8-40f1fec28264";
    return 0;
 }
 
