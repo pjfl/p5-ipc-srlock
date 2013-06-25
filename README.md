@@ -4,7 +4,7 @@ IPC::SRLock - Set/reset locking semantics to single thread processes
 
 # Version
 
-This documents version v0.11.$Rev: 14 $ of [IPC::SRLock](https://metacpan.org/module/IPC::SRLock)
+This documents version v0.12.$Rev: 1 $ of [IPC::SRLock](https://metacpan.org/module/IPC::SRLock)
 
 # Synopsis
 
@@ -39,6 +39,10 @@ Defines the following attributes;
     be; `fcntl`, `memcached`, or `sysv`
 
 # Subroutines/Methods
+
+## BUILDARGS
+
+Extracts the `type` attribute from those passed to the factory subclass
 
 ## BUILD
 
@@ -92,10 +96,9 @@ the lock record at the debug level
 
 # Dependencies
 
-- [Moose](https://metacpan.org/module/Moose)
-- [Moose::Util::TypeConstraints](https://metacpan.org/module/Moose::Util::TypeConstraints)
-- [MooseX::Types::LoadableClass](https://metacpan.org/module/MooseX::Types::LoadableClass)
-- [MooseX::Types::Moose](https://metacpan.org/module/MooseX::Types::Moose)
+- [Moo](https://metacpan.org/module/Moo)
+- [Type::Tiny](https://metacpan.org/module/Type::Tiny)
+- [Unexpected](https://metacpan.org/module/Unexpected)
 
 # Incompatibilities
 
