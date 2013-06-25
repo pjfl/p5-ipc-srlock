@@ -1,15 +1,14 @@
-# @(#)$Ident: Memcached.pm 2013-05-06 13:33 pjf ;
+# @(#)$Ident: Memcached.pm 2013-06-21 00:55 pjf ;
 
 package IPC::SRLock::Memcached;
 
-use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev: 0 $ =~ /\d+/gmx );
+use namespace::sweep;
+use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev: 14 $ =~ /\d+/gmx );
 
-use Moose;
 use Cache::Memcached;
-use MooseX::Types::Common::String qw(NonEmptySimpleStr);
-use MooseX::Types::Moose          qw(ArrayRef Object);
-use Time::HiRes                   qw(usleep);
+use Moo;
+use Unexpected::Types       qw( ArrayRef NonEmptySimpleStr Object );
+use Time::HiRes             qw( usleep );
 
 extends q(IPC::SRLock::Base);
 
@@ -22,8 +21,8 @@ has 'servers'  => is => 'ro', isa => ArrayRef,
 has 'shmfile'  => is => 'ro', isa => NonEmptySimpleStr, default => '_shmfile';
 
 # Private attributes
-has '_memd'    => is => 'ro', isa => Object, builder => '_build_memd',
-   init_arg    => undef,     lazy => 1,       reader => 'memd';
+has '_memd'    => is => 'lazy', isa => Object,
+   init_arg    => undef,     reader => 'memd';
 
 # Private methods
 sub _build_memd {
@@ -148,7 +147,7 @@ IPC::SRLock::Memcached - Set/reset locks using libmemcache
 
 =head1 Version
 
-This documents version v0.11.$Rev: 0 $
+This documents version v0.11.$Rev: 14 $
 
 =head1 Synopsis
 
@@ -212,13 +211,11 @@ None
 
 =item L<IPC::SRLock::Base>
 
-=item L<Moose>
-
-=item L<MooseX::Types::Common>
-
-=item L<MooseX::Types::Moose>
+=item L<Moo>
 
 =item L<Time::HiRes>
+
+=item L<Unexpected>
 
 =back
 

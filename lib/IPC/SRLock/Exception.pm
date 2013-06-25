@@ -1,12 +1,12 @@
-# @(#)$Ident: Exception.pm 2013-05-08 20:57 pjf ;
+# @(#)$Ident: Exception.pm 2013-06-21 01:05 pjf ;
 
 package IPC::SRLock::Exception;
 
-use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev: 9 $ =~ /\d+/gmx );
+use namespace::sweep;
+use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev: 14 $ =~ /\d+/gmx );
 
-use Moose;
-use MooseX::Types::Moose qw(Str);
+use Moo;
+use Unexpected::Types qw( Str );
 
 extends q(Unexpected);
 with    q(Unexpected::TraitFor::ErrorLeader);
@@ -14,8 +14,6 @@ with    q(Unexpected::TraitFor::ErrorLeader);
 has '+class' => default => __PACKAGE__;
 
 has 'out'    => is => 'ro', isa => Str, default => q();
-
-__PACKAGE__->meta->make_immutable;
 
 1;
 
@@ -31,7 +29,7 @@ IPC::SRLock::Exception - Exception class
 
 =head1 Version
 
-This documents version v0.11.$Rev: 9 $
+This documents version v0.11.$Rev: 14 $
 
 =head1 Synopsis
 
@@ -50,6 +48,10 @@ Overrides the C<class> attribute setting it's value to this class
 Defines these attributes;
 
 =over 3
+
+=item C<class>
+
+Overrides the default value with this package name
 
 =item C<out>
 
@@ -106,9 +108,7 @@ None
 
 =over 3
 
-=item L<Moose>
-
-=item L<Moose::Types::Moose>
+=item L<Moo>
 
 =item L<Unexpected>
 

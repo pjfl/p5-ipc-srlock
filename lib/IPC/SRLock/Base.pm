@@ -1,42 +1,40 @@
-# @(#)Ident: Base.pm 2013-05-09 15:50 pjf ;
+# @(#)Ident: Base.pm 2013-06-21 01:06 pjf ;
 
 package IPC::SRLock::Base;
 
-use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev: 10 $ =~ /\d+/gmx );
+use namespace::sweep;
+use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev: 14 $ =~ /\d+/gmx );
 
-use Moose;
 use Date::Format;
-use English                        qw(-no_match_vars);
+use English                 qw( -no_match_vars );
 use IPC::SRLock::Exception;
-use MooseX::Types::Common::Numeric qw(PositiveInt);
-use MooseX::Types::Common::String  qw(NonEmptySimpleStr);
-use MooseX::Types::Moose           qw(Bool ClassName Int Num Object);
-use MooseX::Types::LoadableClass   qw(LoadableClass);
-use Time::Elapsed                  qw(elapsed);
+use Moo;
+use Unexpected::Types       qw( Bool ClassName Int LoadableClass
+                                NonEmptySimpleStr Num Object PositiveInt );
+use Time::Elapsed           qw( elapsed );
 
 # Public attributes
-has 'debug'           => is => 'rw', isa => Bool, default => 0;
+has 'debug'           => is => 'rw',   isa => Bool, default => 0;
 
-has 'exception_class' => is => 'ro', isa => ClassName,
+has 'exception_class' => is => 'ro',   isa => ClassName,
    default            => 'IPC::SRLock::Exception';
 
-has 'log'             => is => 'ro', isa => Object,
-   default            => sub { $_[ 0 ]->_null_class->new }, lazy => 1;
+has 'log'             => is => 'lazy', isa => Object,
+   default            => sub { $_[ 0 ]->_null_class->new };
 
-has 'name'            => is => 'ro', isa => NonEmptySimpleStr, required => 1;
+has 'name'            => is => 'ro',   isa => NonEmptySimpleStr, required => 1;
 
-has 'nap_time'        => is => 'ro', isa => Num, default => 0.1;
+has 'nap_time'        => is => 'ro',   isa => Num, default => 0.1;
 
-has 'patience'        => is => 'ro', isa => Int, default => 0;
+has 'patience'        => is => 'ro',   isa => Int, default => 0;
 
-has 'pid'             => is => 'ro', isa => PositiveInt, default => $PID;
+has 'pid'             => is => 'ro',   isa => PositiveInt, default => $PID;
 
-has 'time_out'        => is => 'ro', isa => PositiveInt, default => 300;
+has 'time_out'        => is => 'ro',   isa => PositiveInt, default => 300;
 
 # Private attributes
-has '_null_class' => is => 'ro', isa => LoadableClass, coerce => 1,
-   default        => sub { 'Class::Null' }, init_arg => undef, lazy => 1;
+has '_null_class'     => is => 'lazy', isa => LoadableClass,
+   default            => 'Class::Null', init_arg => undef;
 
 # Public methods
 sub get_table {
@@ -117,8 +115,6 @@ sub __hash_from {
    return ref $args[ 0 ] ? $args[ 0 ] : { @args };
 }
 
-__PACKAGE__->meta->make_immutable;
-
 1;
 
 __END__
@@ -135,13 +131,13 @@ IPC::SRLock::Base - Common lock object attributes and methods
 
    package IPC::SRLock::<some_new_mechanism>;
 
-   use Moose;
+   use Moo;
 
    extents 'IPC::SRLock::Base';
 
 =head1 Version
 
-This documents version v0.11.$Rev: 10 $ of L<IPC::SRLock::Base>
+This documents version v0.11.$Rev: 14 $ of L<IPC::SRLock::Base>
 
 =head1 Description
 
@@ -157,6 +153,10 @@ Defines the following attributes;
 =item C<debug>
 
 Turns on debug output. Defaults to 0
+
+=item C<exception_class>
+
+Class used to throw exceptions
 
 =item C<log>
 
@@ -268,17 +268,11 @@ None
 
 =item L<IPC::SRLock::Exception>
 
-=item L<Moose>
-
-=item L<MooseX::Types::Common::Numeric>
-
-=item L<MooseX::Types::Common::String>
-
-=item L<MooseX::Types::Moose>
-
-=item L<MooseX::Types::LoadableClass>
+=item L<Moo>
 
 =item L<Time::Elapsed>
+
+=item L<Unexpected>
 
 =back
 

@@ -1,32 +1,29 @@
-# @(#)$Ident: Sysv.pm 2013-05-06 13:36 pjf ;
+# @(#)$Ident: Sysv.pm 2013-06-21 01:01 pjf ;
 
 package IPC::SRLock::Sysv;
 
-use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev: 0 $ =~ /\d+/gmx );
+use namespace::sweep;
+use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev: 14 $ =~ /\d+/gmx );
 
-use Moose;
-use English                        qw(-no_match_vars);
-use IPC::ShareLite                 qw(:lock);
-use MooseX::Types::Common::Numeric qw(PositiveInt);
-use MooseX::Types::Common::String  qw(NonEmptySimpleStr);
-use MooseX::Types::Moose           qw(Object);
-use Storable                       qw(nfreeze thaw);
-use Time::HiRes                    qw(usleep);
+use English                 qw( -no_match_vars );
+use IPC::ShareLite          qw( :lock );
+use Moo;
+use Storable                qw( nfreeze thaw );
+use Time::HiRes             qw( usleep );
 use Try::Tiny;
+use Unexpected::Types       qw( NonEmptySimpleStr Object PositiveInt );
 
 extends q(IPC::SRLock::Base);
 
 # Public attributes
-has 'lockfile' => is => 'ro', isa => PositiveInt,       default => 12244237;
+has 'lockfile' => is => 'ro',   isa => PositiveInt,       default  => 12244237;
 
-has 'mode'     => is => 'ro', isa => NonEmptySimpleStr, default => q(0666);
+has 'mode'     => is => 'ro',   isa => NonEmptySimpleStr, default  => q(0666);
 
-has 'size'     => is => 'ro', isa => PositiveInt,       default => 65_536;
+has 'size'     => is => 'ro',   isa => PositiveInt,       default  => 65_536;
 
 # Private attributes
-has '_share'   => is => 'ro', isa => Object,
-   builder     => '_build__share', init_arg => undef, lazy => 1;
+has '_share'   => is => 'lazy', isa => Object,            init_arg => undef;
 
 # Private methods
 sub _build__share {
@@ -156,7 +153,7 @@ IPC::SRLock::Sysv - Set/reset locks using System V IPC
 
 =head1 Version
 
-This documents version v0.11.$Rev: 0 $
+This documents version v0.11.$Rev: 14 $
 
 =head1 Synopsis
 
@@ -216,17 +213,15 @@ None
 
 =item L<IPC::SRLock::Base>
 
-=item L<Moose>
-
-=item L<MooseX::Types::Common>
-
-=item L<MooseX::Types::Moose>
+=item L<Moo>
 
 =item L<Storable>
 
 =item L<Time::HiRes>
 
 =item L<Try::Tiny>
+
+=item L<Unexpected>
 
 =back
 

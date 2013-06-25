@@ -1,34 +1,31 @@
-# @(#)$Ident: SRLock.pm 2013-05-19 10:38 pjf ;
+# @(#)$Ident: SRLock.pm 2013-06-21 01:04 pjf ;
 
 package IPC::SRLock;
 
 use 5.01;
-use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev: 13 $ =~ /\d+/gmx );
+use namespace::sweep;
+use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev: 14 $ =~ /\d+/gmx );
 
-use Moose;
-use Moose::Util::TypeConstraints;
-use MooseX::Types::LoadableClass qw(LoadableClass);
-use MooseX::Types::Moose         qw(HashRef Object);
+use Moo;
+use Type::Utils             qw( enum );
+use Unexpected::Types       qw( HashRef LoadableClass Object );
 
-enum __PACKAGE__.'::Type'   => qw(fcntl memcached sysv);
+my $Lock_Type = enum 'Lock_Type' => [ qw(fcntl memcached sysv) ];
 
 # Public attributes
-has 'type'                  => is => 'ro', isa => __PACKAGE__.'::Type',
+has 'type'                  => is => 'ro',   isa => $Lock_Type,
    default                  => 'fcntl';
 
 # Private attributes
-has '_implementation'       => is => 'ro', isa => Object,
-   builder                  => '_build__implementation',
-   handles                  => [ qw(debug get_table list reset set) ],
-   init_arg                 => undef, lazy => 1;
+has '_implementation'       => is => 'lazy', isa => Object,
+   handles                  => [ qw( debug get_table list reset set ) ],
+   init_arg                 => undef;
 
-has '_implementation_attr'  => is => 'ro', isa => HashRef,
+has '_implementation_attr'  => is => 'ro',   isa => HashRef,
    default                  => sub { {} };
 
-has '_implementation_class' => is => 'ro', isa => LoadableClass, coerce => 1,
-   builder                  => '_build__implementation_class',
-   init_arg                 => undef, lazy => 1;
+has '_implementation_class' => is => 'lazy', isa => LoadableClass,
+   init_arg                 => undef;
 
 # Construction
 around 'BUILDARGS' => sub {
@@ -70,7 +67,7 @@ IPC::SRLock - Set/reset locking semantics to single thread processes
 
 =head1 Version
 
-This documents version v0.11.$Rev: 13 $ of L<IPC::SRLock>
+This documents version v0.11.$Rev: 14 $ of L<IPC::SRLock>
 
 =head1 Synopsis
 
@@ -109,6 +106,10 @@ be; C<fcntl>, C<memcached>, or C<sysv>
 =back
 
 =head1 Subroutines/Methods
+
+=head2 BUILDARGS
+
+Extracts the C<type> attribute from those passed to the factory subclass
 
 =head2 BUILD
 
@@ -168,13 +169,11 @@ the lock record at the debug level
 
 =over 3
 
-=item L<Moose>
+=item L<Moo>
 
-=item L<Moose::Util::TypeConstraints>
+=item L<Type::Tiny>
 
-=item L<MooseX::Types::LoadableClass>
-
-=item L<MooseX::Types::Moose>
+=item L<Unexpected>
 
 =back
 

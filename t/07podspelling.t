@@ -1,8 +1,8 @@
-# @(#)Ident: 07podspelling.t 2013-05-05 09:56 pjf ;
+# @(#)Ident: 07podspelling.t 2013-06-21 01:07 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev: 0 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev: 14 $ =~ /\d+/gmx );
 use File::Spec::Functions qw(catdir catfile updir);
 use FindBin qw( $Bin );
 use lib catdir( $Bin, updir, q(lib) );
@@ -40,6 +40,7 @@ done_testing();
 
 __DATA__
 flanigan
+buildargs
 ipc
 libmemcache
 memcached

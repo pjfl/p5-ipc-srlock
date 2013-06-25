@@ -1,18 +1,16 @@
-# @(#)$Ident: Fcntl.pm 2013-05-07 12:47 pjf ;
+# @(#)$Ident: Fcntl.pm 2013-06-21 01:07 pjf ;
 
 package IPC::SRLock::Fcntl;
 
-use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev: 6 $ =~ /\d+/gmx );
+use namespace::sweep;
+use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev: 14 $ =~ /\d+/gmx );
 
-use Moose;
-use English                        qw(-no_match_vars);
-use MooseX::Types::Common::Numeric qw(PositiveInt);
-use MooseX::Types::Common::String  qw(NonEmptySimpleStr);
-use MooseX::Types::Moose           qw(Int RegexpRef);
-use File::DataClass::Constraints   qw(Directory Path);
-use Storable                       qw(nfreeze thaw);
-use Time::HiRes                    qw(usleep);
+use English                 qw( -no_match_vars );
+use File::DataClass::Types  qw( Directory Int NonEmptySimpleStr
+                                Path PositiveInt RegexpRef );
+use Moo;
+use Storable                qw( nfreeze thaw );
+use Time::HiRes             qw( usleep );
 use Try::Tiny;
 
 extends q(IPC::SRLock::Base);
@@ -23,22 +21,20 @@ has 'mode'    => is => 'ro', isa => PositiveInt, default => oct q(0666);
 has 'pattern' => is => 'ro', isa => RegexpRef,
    default    => sub { qr{ \A ([ ~:+./\-\\\w]+) \z }msx };
 
-has 'tempdir' => is => 'ro', isa => Directory, coerce => 1,
+has 'tempdir' => is => 'ro', isa => Directory, coerce => Directory->coercion,
    default    => sub { File::Spec->tmpdir };
 
 has 'umask'   => is => 'ro', isa => Int, default => 0;
 
 # Private attributes
-has '_lockfile'      => is => 'ro', isa => Path, coerce => 1,
-   builder           => '_build__lockfile', lazy => 1;
+has '_lockfile'      => is => 'lazy', isa => Path, coerce => Path->coercion;
 
-has '_lockfile_name' => is => 'ro', isa => NonEmptySimpleStr,
+has '_lockfile_name' => is => 'ro',   isa => NonEmptySimpleStr,
    init_arg          => 'lockfile';
 
-has '_shmfile'       => is => 'ro', isa => Path, coerce => 1,
-   builder           => '_build__shmfile', lazy => 1;
+has '_shmfile'       => is => 'lazy', isa => Path, coerce => Path->coercion;
 
-has '_shmfile_name'  => is => 'ro', isa => NonEmptySimpleStr,
+has '_shmfile_name'  => is => 'ro',   isa => NonEmptySimpleStr,
    init_arg          => 'shmfile';
 
 # Private methods
@@ -166,7 +162,7 @@ IPC::SRLock::Fcntl - Set/reset locks using fcntl
 
 =head1 Version
 
-This documents version v0.11.$Rev: 6 $
+This documents version v0.11.$Rev: 14 $
 
 =head1 Synopsis
 
@@ -195,6 +191,10 @@ Path to the file used by fcntl
 =item C<mode>
 
 File mode to use when creating the lock table file. Defaults to 0666
+
+=item C<pattern>
+
+Regexp used to untaint file names
 
 =item C<shmfile>
 
@@ -245,17 +245,15 @@ None
 
 =item L<IPC::SRLock::Base>
 
-=item L<Moose>
-
-=item L<MooseX::Types::Common>
-
-=item L<MooseX::Types::Moose>
+=item L<Moo>
 
 =item L<Storable>
 
 =item L<Time::HiRes>
 
 =item L<Try::Tiny>
+
+=item L<Unexpected>
 
 =back
 
