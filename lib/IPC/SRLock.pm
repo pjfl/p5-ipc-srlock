@@ -1,10 +1,10 @@
-# @(#)$Ident: SRLock.pm 2013-07-29 18:51 pjf ;
+# @(#)$Ident: SRLock.pm 2013-07-29 23:17 pjf ;
 
 package IPC::SRLock;
 
 use 5.01;
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.12.%d', q$Rev: 3 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.12.%d', q$Rev: 4 $ =~ /\d+/gmx );
 
 use Moo;
 use Type::Utils             qw( enum );
@@ -67,7 +67,7 @@ IPC::SRLock - Set/reset locking semantics to single thread processes
 
 =head1 Version
 
-This documents version v0.12.$Rev: 3 $ of L<IPC::SRLock>
+This documents version v0.12.$Rev: 4 $ of L<IPC::SRLock>
 
 =head1 Synopsis
 

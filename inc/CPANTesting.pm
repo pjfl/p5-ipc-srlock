@@ -1,4 +1,4 @@
-# @(#)Ident: CPANTesting.pm 2013-07-29 18:50 pjf ;
+# @(#)Ident: CPANTesting.pm 2013-07-29 23:15 pjf ;
 
 package CPANTesting;
 
@@ -32,6 +32,8 @@ sub test_exceptions {
    $host   eq q(falco)    and return "tests: No space left on device";
    $host =~ m{ pigsty }mx and return
       "tests: 693dc200-c006-11e2-b7e8-40f1fec28264";
+   $host =~ m{ k83    }mx and return
+      "tests: 7092717e-f880-11e2-8c3e-8ef8f1ff63fb";
    return 0;
 }
 
