@@ -1,6 +1,7 @@
 Revision history for IPC::SRLock
 
-0.12.4    2013-07-30 00:17:48
+0.12.5    2013-07-30 14:41:48
+          - New method for CPANTesting min Perl ver
           - Skip tests ANDK 7092717e-f880-11e2-8c3e-8ef8f1ff63fb
             Smoker deleted shared memory segment whilst we were using it
           - Aborting Bingoes failed see df276fba-f57c-11e2-8c80-50d7c5c10595
