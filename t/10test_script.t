@@ -1,8 +1,8 @@
-# @(#)$Ident: 10test_script.t 2013-05-19 11:31 pjf ;
+# @(#)$Ident: 10test_script.t 2013-08-01 11:30 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.12.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.12.%d', q$Rev: 6 $ =~ /\d+/gmx );
 use File::Spec::Functions qw(catdir catfile updir);
 use FindBin qw( $Bin );
 use lib catdir( $Bin, updir, q(lib) );
@@ -55,7 +55,10 @@ unlink catfile( qw(t ipc_srlock.shm) );
 SKIP: {
    $is_win32 and skip 'tests: OS unsupported', 2;
    $reason and $reason =~ m{ \A tests: }mx and skip $reason, 2;
-   $lock = IPC::SRLock->new( { type => q(sysv) } );
+
+   my $key = 12244237 + int( rand( 4096 ) );
+
+   $lock = IPC::SRLock->new( { lockfile => $key, type => q(sysv) } );
    $lock->set( k => $PROGRAM_NAME );
 
    is [ map { $_->{key} } @{ $lock->list() } ]->[ 0 ], $PROGRAM_NAME, 'Set ipc';
@@ -64,7 +67,7 @@ SKIP: {
 
    is [ map { $_->{key} } @{ $lock->list() } ]->[ 0 ], undef, 'Reset ipc';
 
-   qx{ ipcrm -M 0x00bad50d }; qx{ ipcrm -S 0x00bad50d };
+   qx{ ipcrm -M $key }; qx{ ipcrm -S $key };
 }
 
 SKIP: {
