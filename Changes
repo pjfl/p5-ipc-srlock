@@ -1,6 +1,7 @@
 Revision history for IPC::SRLock
 
-0.12.6    2013-08-01 12:50:48
+0.12.7    2013-08-03 10:53:41
+          - Reverted min Perl ver testing in toolchain
           - Randomize shared memory key for parallel testing
           - New method for CPANTesting min Perl ver
           - Skip tests ANDK 7092717e-f880-11e2-8c3e-8ef8f1ff63fb
