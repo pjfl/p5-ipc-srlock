@@ -1,10 +1,10 @@
-# @(#)$Ident: SRLock.pm 2013-08-03 09:30 pjf ;
+# @(#)$Ident: SRLock.pm 2013-08-06 15:53 pjf ;
 
 package IPC::SRLock;
 
 use 5.01;
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.12.%d', q$Rev: 7 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.13.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moo;
 use Type::Utils             qw( enum );
@@ -67,7 +67,7 @@ IPC::SRLock - Set/reset locking semantics to single thread processes
 
 =head1 Version
 
-This documents version v0.12.$Rev: 7 $ of L<IPC::SRLock>
+This documents version v0.13.$Rev: 1 $ of L<IPC::SRLock>
 
 =head1 Synopsis
 
@@ -87,6 +87,12 @@ This documents version v0.12.$Rev: 7 $ of L<IPC::SRLock>
 
 Provides set/reset locking methods which will force a critical region
 of code to run single threaded
+
+Implements a factory pattern, three implementations are provided. The
+LCD option L<IPC::SRLock::Fcntl> which works on non Unixen,
+L<IPC::SRLock::Sysv> which uses System V IPC, and
+L<IPC::SRLock::Memcached> which uses C<libmemcache> to implement a
+distributed lock manager
 
 =head1 Configuration and Environment
 

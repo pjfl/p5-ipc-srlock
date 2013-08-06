@@ -3,7 +3,7 @@
 package IPC::SRLock::Base;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.12.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.13.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Date::Format;
 use English                 qw( -no_match_vars );
@@ -137,7 +137,7 @@ IPC::SRLock::Base - Common lock object attributes and methods
 
 =head1 Version
 
-This documents version v0.12.$Rev: 1 $ of L<IPC::SRLock::Base>
+This documents version v0.13.$Rev: 1 $ of L<IPC::SRLock::Base>
 
 =head1 Description
 

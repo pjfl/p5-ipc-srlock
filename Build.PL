@@ -1,9 +1,9 @@
-# @(#)$Ident: Build.PL 2013-07-28 18:13 pjf ;
+# @(#)$Ident: Build.PL 2013-08-06 16:02 pjf ;
 
 use strict;
 use warnings;
 use inc::Bob; # Module::Build subclass
-use version; our $VERSION = qv( sprintf '0.12.%d', q$Rev: 2 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.13.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 Bob->new( {
    module    => 'IPC::SRLock',
@@ -15,11 +15,11 @@ Bob->new( {
       'Date::Format'     => 2.24,
       'File::DataClass'  => q(0.22.0),
       'IPC::ShareLite'   => 0.17,
-      'Moo'              => 1.002,
+      'Moo'              => 1.003,
       'Time::Elapsed'    => 0.29,
       'Try::Tiny'        => 0.09,
       'Type::Tiny'       => 0.012,
-      'Unexpected'       => q(0.4.0), },
+      'Unexpected'       => q(0.6.0), },
    recommends            => {
       'Cache::Memcached' => 1.24, },
    configure_requires    => {

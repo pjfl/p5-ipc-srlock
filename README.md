@@ -4,7 +4,7 @@ IPC::SRLock - Set/reset locking semantics to single thread processes
 
 # Version
 
-This documents version v0.12.$Rev: 7 $ of [IPC::SRLock](https://metacpan.org/module/IPC::SRLock)
+This documents version v0.13.$Rev: 1 $ of [IPC::SRLock](https://metacpan.org/module/IPC::SRLock)
 
 # Synopsis
 
@@ -24,6 +24,12 @@ This documents version v0.12.$Rev: 7 $ of [IPC::SRLock](https://metacpan.org/mod
 
 Provides set/reset locking methods which will force a critical region
 of code to run single threaded
+
+Implements a factory pattern, three implementations are provided. The
+LCD option [IPC::SRLock::Fcntl](https://metacpan.org/module/IPC::SRLock::Fcntl) which works on non Unixen,
+[IPC::SRLock::Sysv](https://metacpan.org/module/IPC::SRLock::Sysv) which uses System V IPC, and
+[IPC::SRLock::Memcached](https://metacpan.org/module/IPC::SRLock::Memcached) which uses `libmemcache` to implement a
+distributed lock manager
 
 # Configuration and Environment
 

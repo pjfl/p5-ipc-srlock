@@ -1,8 +1,8 @@
-# @(#)Ident: 07podspelling.t 2013-06-21 01:07 pjf ;
+# @(#)Ident: 07podspelling.t 2013-08-06 15:54 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.12.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.13.%d', q$Rev: 1 $ =~ /\d+/gmx );
 use File::Spec::Functions qw(catdir catfile updir);
 use FindBin qw( $Bin );
 use lib catdir( $Bin, updir, q(lib) );
@@ -47,4 +47,5 @@ memcached
 namespace
 stacktrace
 stringifies
+unixen
 localhost's

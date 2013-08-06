@@ -1,5 +1,8 @@
 Revision history for IPC::SRLock
 
+0.13.1    2013-08-06 17:19:03
+          - POD updates
+
 0.12.7    2013-08-03 10:53:41
           - Reverted min Perl ver testing in toolchain
           - Randomize shared memory key for parallel testing
