@@ -1,6 +1,7 @@
 Revision history for IPC::SRLock
 
-0.13.1    2013-08-06 17:19:03
+0.13.2    2013-08-07 02:39:06
+          - Raised minimum Perl version to v5.10.1
           - POD updates
 
 0.12.7    2013-08-03 10:53:41

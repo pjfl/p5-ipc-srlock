@@ -1,15 +1,15 @@
-# @(#)$Ident: Build.PL 2013-08-06 16:02 pjf ;
+# @(#)$Ident: Build.PL 2013-08-07 00:35 pjf ;
 
 use strict;
 use warnings;
 use inc::Bob; # Module::Build subclass
-use version; our $VERSION = qv( sprintf '0.13.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.13.%d', q$Rev: 2 $ =~ /\d+/gmx );
 
 Bob->new( {
    module    => 'IPC::SRLock',
    home_page => 'http://www.roxsoft.co.uk',
    requires  => {
-      'perl'             => 5.01,
+      'perl'             => 5.010001,
       'namespace::sweep' => 0.006,
       'Class::Null'      => 1.09,
       'Date::Format'     => 2.24,
