@@ -1,4 +1,4 @@
-# @(#)Ident: 01always_pass.t 2013-08-03 22:52 pjf ;
+# @(#)Ident: 01always_pass.t 2013-08-06 18:57 pjf ;
 
 use strict;
 use warnings;
@@ -67,4 +67,5 @@ $AUTOMATED_TESTING
 $NONINTERACTIVE_TESTING
 $EXTENDED_TESTING
 $AUTHOR_TESTING
-$RELEASE_TESTING
+$TEST_CRITIC
+$TEST_SPELLING
