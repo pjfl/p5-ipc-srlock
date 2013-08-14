@@ -4,7 +4,7 @@ IPC::SRLock - Set/reset locking semantics to single thread processes
 
 # Version
 
-This documents version v0.13.$Rev: 3 $ of [IPC::SRLock](https://metacpan.org/module/IPC::SRLock)
+This documents version v0.14.$Rev: 1 $ of [IPC::SRLock](http://search.cpan.org/perldoc?IPC::SRLock)
 
 # Synopsis
 
@@ -26,9 +26,9 @@ Provides set/reset locking methods which will force a critical region
 of code to run single threaded
 
 Implements a factory pattern, three implementations are provided. The
-LCD option [IPC::SRLock::Fcntl](https://metacpan.org/module/IPC::SRLock::Fcntl) which works on non Unixen,
-[IPC::SRLock::Sysv](https://metacpan.org/module/IPC::SRLock::Sysv) which uses System V IPC, and
-[IPC::SRLock::Memcached](https://metacpan.org/module/IPC::SRLock::Memcached) which uses `libmemcache` to implement a
+LCD option [IPC::SRLock::Fcntl](http://search.cpan.org/perldoc?IPC::SRLock::Fcntl) which works on non Unixen,
+[IPC::SRLock::Sysv](http://search.cpan.org/perldoc?IPC::SRLock::Sysv) which uses System V IPC, and
+[IPC::SRLock::Memcached](http://search.cpan.org/perldoc?IPC::SRLock::Memcached) which uses `libmemcache` to implement a
 distributed lock manager
 
 # Configuration and Environment
@@ -61,7 +61,7 @@ evaluation of the concrete subclass
 
 Returns a hash ref that contains the current lock table contents. The
 keys/values in the hash are suitable for passing to
-[HTML::FormWidgets](https://metacpan.org/module/HTML::FormWidgets)
+[HTML::FormWidgets](http://search.cpan.org/perldoc?HTML::FormWidgets)
 
 ## list
 
@@ -102,9 +102,9 @@ the lock record at the debug level
 
 # Dependencies
 
-- [Moo](https://metacpan.org/module/Moo)
-- [Type::Tiny](https://metacpan.org/module/Type::Tiny)
-- [Unexpected](https://metacpan.org/module/Unexpected)
+- [Moo](http://search.cpan.org/perldoc?Moo)
+- [Type::Tiny](http://search.cpan.org/perldoc?Type::Tiny)
+- [Unexpected](http://search.cpan.org/perldoc?Unexpected)
 
 # Incompatibilities
 
@@ -129,7 +129,7 @@ Peter Flanigan, `<pjfl@cpan.org>`
 Copyright (c) 2013 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
-under the same terms as Perl itself. See [perlartistic](https://metacpan.org/module/perlartistic)
+under the same terms as Perl itself. See [perlartistic](http://search.cpan.org/perldoc?perlartistic)
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT WARRANTY; without even the implied warranty of

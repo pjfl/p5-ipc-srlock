@@ -1,5 +1,8 @@
 Revision history for IPC::SRLock
 
+0.14.1    2013-08-14 10:57:17
+          - Switched to Dist::Zilla
+
 0.13.3    2013-08-07 14:30:09
           - Reset min perl testing to original behaviour
           - Raised minimum Perl version to v5.10.1
