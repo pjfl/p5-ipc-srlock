@@ -1,6 +1,7 @@
 Revision history for IPC::SRLock
 
-0.14.1    2013-08-14 10:57:17
+0.14.2    2013-08-15 22:55:29
+          - Updated toolchain
           - Switched to Dist::Zilla
 
 0.13.3    2013-08-07 14:30:09
