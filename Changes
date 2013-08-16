@@ -1,6 +1,6 @@
 Revision history for IPC::SRLock
 
-0.14.2    2013-08-15 22:55:29
+0.14.3    2013-08-17 00:17:32
           - Updated toolchain
           - Switched to Dist::Zilla
 
@@ -153,48 +153,4 @@ Revision history for IPC::SRLock
           - Now uses TryCatch
           - Updated ensure_class_loaded
 
-0.3.137   27/06/2009
-          - Fixed key used to sign distro
-          - Use Class::MOP in ensure_class_loaded
-
-0.3.125   13/06/2009
-          - Added more tests
-
-0.2.118   06/06/2009
-          - Updated exception class
-          - Replaced mnemonics in errors
-
-0.2.114   05/06/2009
-          - Changed exception class API
-          - Improved testing idioms
-          - Upated POD Coverage Kwalitee tests
-
-0.2.103   05/04/2009
-          - More crap for CPAN testing
-
-0.2.100   28/02/2009
-          - Removed table_data method
-
-0.2.99    12/02/2009
-          - Dropped the singleton pattern from the construtor
-
-0.2.92    26/01/2009
-          - No longer depends on Readonly
-          - Now uses IPC::ShareLite in SysV store
-          - Added hclass table attribute to set key field to occupy most
-            space
-
-0.1.82    21/11/2008
-          - Removed circular dependency on Exception::Class
-
-0.1.80    15/11/2008
-          - New approach to CPAN testing
-
-0.1.78    19/10/2008
-          - Another attempt to find the off swith for CPAN testers
-
-0.1.75    15/10/2008
-          - Exempted automated testing due to continued inaccurate
-            reporting
-          - Minor performance improvements
 
