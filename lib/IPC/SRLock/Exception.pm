@@ -1,9 +1,9 @@
-# @(#)$Ident: Exception.pm 2013-06-21 01:05 pjf ;
+# @(#)$Ident: Exception.pm 2013-09-02 14:47 pjf ;
 
 package IPC::SRLock::Exception;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.14.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.14.%d', q$Rev: 4 $ =~ /\d+/gmx );
 
 use Moo;
 use Unexpected::Types qw( Str );
@@ -11,9 +11,7 @@ use Unexpected::Types qw( Str );
 extends q(Unexpected);
 with    q(Unexpected::TraitFor::ErrorLeader);
 
-has '+class' => default => __PACKAGE__;
-
-has 'out'    => is => 'ro', isa => Str, default => q();
+has 'out' => is => 'ro', isa => Str, default => q();
 
 1;
 
@@ -29,7 +27,7 @@ IPC::SRLock::Exception - Exception class
 
 =head1 Version
 
-This documents version v0.14.$Rev: 1 $
+This documents version v0.14.$Rev: 4 $
 
 =head1 Synopsis
 
@@ -43,15 +41,10 @@ Implements throw and catch error semantics. Inherits from L<Unexpected>
 
 =head1 Configuration and Environment
 
-Overrides the C<class> attribute setting it's value to this class
-
 Defines these attributes;
 
 =over 3
 
-=item C<class>
-
-Overrides the default value with this package name
 
 =item C<out>
 

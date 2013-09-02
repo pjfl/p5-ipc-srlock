@@ -1,6 +1,7 @@
 Revision history for IPC::SRLock
 
 0.14.3    2013-08-17 00:17:32
+          - Exception no longer overrides 'class' attribute
           - Updated toolchain
           - Switched to Dist::Zilla
 
