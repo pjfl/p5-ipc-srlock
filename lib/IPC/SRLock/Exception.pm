@@ -3,7 +3,7 @@
 package IPC::SRLock::Exception;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.14.%d', q$Rev: 4 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.15.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moo;
 use Unexpected::Types qw( Str );
@@ -27,7 +27,7 @@ IPC::SRLock::Exception - Exception class
 
 =head1 Version
 
-This documents version v0.14.$Rev: 4 $
+This documents version v0.15.$Rev: 1 $
 
 =head1 Synopsis
 

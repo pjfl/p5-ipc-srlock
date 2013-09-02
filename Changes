@@ -1,5 +1,8 @@
 Revision history for IPC::SRLock
 
+0.15.1    2013-09-02 16:04:33
+          - Bumped version for Unexpected
+
 0.14.3    2013-08-17 00:17:32
           - Exception no longer overrides 'class' attribute
           - Updated toolchain
