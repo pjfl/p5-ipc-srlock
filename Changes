@@ -1,5 +1,8 @@
 Revision history for IPC::SRLock
 
+0.16.1    2013-09-03 12:39:40
+          - Improved test coverage
+
 0.15.1    2013-09-02 16:04:33
           - Bumped version for Unexpected
 

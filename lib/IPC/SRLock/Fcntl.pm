@@ -1,13 +1,14 @@
-# @(#)$Ident: Fcntl.pm 2013-06-21 01:07 pjf ;
+# @(#)$Ident: Fcntl.pm 2013-09-03 02:56 pjf ;
 
 package IPC::SRLock::Fcntl;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.15.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.16.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use English                 qw( -no_match_vars );
 use File::DataClass::Types  qw( Directory Int NonEmptySimpleStr
                                 Path PositiveInt RegexpRef );
+use File::Spec;
 use Moo;
 use Storable                qw( nfreeze thaw );
 use Time::HiRes             qw( usleep );
@@ -74,7 +75,7 @@ sub _list {
 sub _read_shmfile {
    my $self = shift; my $old_umask = umask $self->umask; my ($file, $content);
 
-   try   { $file = $self->_lockfile->lock->assert_open( q(w), $self->mode ) }
+   try   { $file = $self->_lockfile->lock->assert_open( 'w', $self->mode ) }
    catch { umask $old_umask; $self->throw( $_ ) };
 
    if ($self->_shmfile->exists) {
@@ -110,7 +111,7 @@ sub _set {
       ($lock_file, $lock_content) = $self->_read_shmfile; $now = time;
 
       if (($lock = $lock_content->{ $key })
-          && ($now > $lock->{stime} + $lock->{timeout})) {
+          and ($now > $lock->{stime} + $lock->{timeout})) {
          $self->log->error( $self->timeout_error( $key,
                                                   $lock->{spid   },
                                                   $lock->{stime  },
@@ -122,7 +123,7 @@ sub _set {
       if ($lock) {
          $lock_file->close; $args->{async} and return 0;
 
-         if ($self->patience && $now - $start > $self->patience) {
+         if ($self->patience and $now > $start + $self->patience) {
             $self->throw( error => 'Lock [_1] timed out', args => [ $key ] );
          }
 
@@ -140,7 +141,7 @@ sub _set {
 sub _write_shmfile {
    my ($self, $file, $content) = @_; my $wtr;
 
-   try   { $wtr = $self->_shmfile->atomic->assert_open( q(w), $self->mode ) }
+   try   { $wtr = $self->_shmfile->atomic->assert_open( 'w', $self->mode ) }
    catch { $file->close; $self->throw( $_ ) };
 
    try   { $wtr->print( nfreeze $content ) }
@@ -162,7 +163,7 @@ IPC::SRLock::Fcntl - Set/reset locks using fcntl
 
 =head1 Version
 
-This documents version v0.15.$Rev: 1 $
+This documents version v0.16.$Rev: 1 $
 
 =head1 Synopsis
 

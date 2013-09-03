@@ -1,9 +1,9 @@
-# @(#)$Ident: Memcached.pm 2013-06-21 00:55 pjf ;
+# @(#)$Ident: Memcached.pm 2013-09-03 03:12 pjf ;
 
 package IPC::SRLock::Memcached;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.15.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.16.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Cache::Memcached;
 use Moo;
@@ -16,7 +16,7 @@ extends q(IPC::SRLock::Base);
 has 'lockfile' => is => 'ro', isa => NonEmptySimpleStr, default => '_lockfile';
 
 has 'servers'  => is => 'ro', isa => ArrayRef,
-   default     => sub { [ q(localhost:11211) ] };
+   default     => sub { [ 'localhost:11211' ] };
 
 has 'shmfile'  => is => 'ro', isa => NonEmptySimpleStr, default => '_shmfile';
 
@@ -32,20 +32,19 @@ sub _build_memd {
 }
 
 sub _list {
-   my $self = shift; my (@flds, $key, $list, $recs, $start);
-
-   $list = []; $start = time;
+   my $self = shift; my $list = []; my $start = time;
 
    while (1) {
       if ($self->memd->add( $self->lockfile, 1, $self->patience + 30 )) {
-         $recs = $self->memd->get( $self->shmfile ) || {};
+         my $recs = $self->memd->get( $self->shmfile ) || {};
 
-         for $key (sort keys %{ $recs }) {
-            @flds = split m{ , }mx, $recs->{ $key };
+         for my $key (sort keys %{ $recs }) {
+            my @fields = split m{ , }mx, $recs->{ $key };
+
             push @{ $list }, { key     => $key,
-                               pid     => $flds[0],
-                               stime   => $flds[1],
-                               timeout => $flds[2] };
+                               pid     => $fields[ 0 ],
+                               stime   => $fields[ 1 ],
+                               timeout => $fields[ 2 ] };
          }
 
          $self->memd->delete( $self->lockfile );
@@ -59,11 +58,12 @@ sub _list {
 }
 
 sub _reset {
-   my ($self, $key) = @_; my ($found, $recs); my $start = time;
+   my ($self, $key) = @_; my $start = time;
 
    while (1) {
       if ($self->memd->add( $self->lockfile, 1, $self->patience + 30 )) {
-         $recs = $self->memd->get( $self->shmfile ) || {};
+         my $recs = $self->memd->get( $self->shmfile ) || {}; my $found = 0;
+
          delete $recs->{ $key } and $found = 1;
          $found and $self->memd->set( $self->shmfile, $recs );
          $self->memd->delete( $self->lockfile );
@@ -83,30 +83,29 @@ sub _set {
 
    my $key = $args->{k}; my $pid = $args->{p}; my $timeout = $args->{t};
 
-   my (@flds, $lock_set, $now, $rec, $recs, $text);
-
    while (1) {
-      $now = time;
+      my $now = time; my ($lock_set, $rec);
 
       if ($self->memd->add( $self->lockfile, 1, $self->patience + 30 )) {
-         $recs = $self->memd->get( $self->shmfile ) || {};
+         my $recs = $self->memd->get( $self->shmfile ) || {};
 
          if ($rec = $recs->{ $key }) {
-            @flds = split m{ [,] }mx, $rec;
+            my @fields = split m{ , }mx, $rec;
 
-            if ($now > $flds[1] + $flds[2]) {
-               $recs->{ $key } = $pid.q(,).$now.q(,).$timeout;
+            if ($now > $fields[ 1 ] + $fields[ 2 ]) {
+               $recs->{ $key } = "${pid},${now},${timeout}";
                $self->memd->set( $self->shmfile, $recs );
-               $text = $self->timeout_error( $key,
-                                             $flds[0],
-                                             $flds[1],
-                                             $flds[2] );
-               $self->log->error( $text );
-               $lock_set = 1;
+
+               my $text = $self->timeout_error( $key,
+                                                $fields[ 0 ],
+                                                $fields[ 1 ],
+                                                $fields[ 2 ] );
+
+               $self->log->error( $text ); $lock_set = 1;
             }
          }
          else {
-            $recs->{ $key } = $pid.q(,).$now.q(,).$timeout;
+            $recs->{ $key } = "${pid},${now},${timeout}";
             $self->memd->set( $self->shmfile, $recs );
             $lock_set = 1;
          }
@@ -129,7 +128,7 @@ sub _set {
 sub _sleep_or_throw {
    my ($self, $start, $now, $key) = @_;
 
-   $self->patience and $now - $start > $self->patience
+   $self->patience and $now > $start + $self->patience
       and $self->throw( error => 'Lock [_1] timed out', args => [ $key ] );
    usleep( 1_000_000 * $self->nap_time );
    return;
@@ -147,7 +146,7 @@ IPC::SRLock::Memcached - Set/reset locks using libmemcache
 
 =head1 Version
 
-This documents version v0.15.$Rev: 1 $
+This documents version v0.16.$Rev: 1 $
 
 =head1 Synopsis
 
@@ -205,7 +204,7 @@ None
 
 =head1 Dependencies
 
-=over 4
+=over 3
 
 =item L<Cache::Memcached>
 

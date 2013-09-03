@@ -1,9 +1,9 @@
-# @(#)$Ident: Sysv.pm 2013-06-21 01:01 pjf ;
+# @(#)$Ident: Sysv.pm 2013-09-03 03:14 pjf ;
 
 package IPC::SRLock::Sysv;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.15.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.16.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use English                 qw( -no_match_vars );
 use IPC::ShareLite          qw( :lock );
@@ -18,7 +18,7 @@ extends q(IPC::SRLock::Base);
 # Public attributes
 has 'lockfile' => is => 'ro',   isa => PositiveInt,       default  => 12244237;
 
-has 'mode'     => is => 'ro',   isa => NonEmptySimpleStr, default  => q(0666);
+has 'mode'     => is => 'ro',   isa => NonEmptySimpleStr, default  => '0666';
 
 has 'size'     => is => 'ro',   isa => PositiveInt,       default  => 65_536;
 
@@ -113,7 +113,7 @@ sub _set {
          $self->log->error( $text );
       }
 
-      if (!$lock_set && $self->patience && $now - $start > $self->patience) {
+      if (!$lock_set && $self->patience && $now > $start + $self->patience) {
          $self->throw( error => 'Lock [_1] timed out', args => [ $key ] );
       }
 
@@ -153,7 +153,7 @@ IPC::SRLock::Sysv - Set/reset locks using System V IPC
 
 =head1 Version
 
-This documents version v0.15.$Rev: 1 $
+This documents version v0.16.$Rev: 1 $
 
 =head1 Synopsis
 

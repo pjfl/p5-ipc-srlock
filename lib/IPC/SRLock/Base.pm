@@ -1,9 +1,9 @@
-# @(#)Ident: Base.pm 2013-06-21 01:06 pjf ;
+# @(#)Ident: Base.pm 2013-09-03 02:48 pjf ;
 
 package IPC::SRLock::Base;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.15.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.16.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Date::Format;
 use English                 qw( -no_match_vars );
@@ -45,8 +45,8 @@ sub get_table {
                              stime => 'right',
                              tleft => 'right'},
                  count  => $count,
-                 fields => [ qw(id pid stime tleft) ],
-                 hclass => { id => q(most) },
+                 fields => [ qw( id pid stime tleft ) ],
+                 hclass => { id    => 'most' },
                  labels => { id    => 'Key',
                              pid   => 'PID',
                              stime => 'Lock Time',
@@ -64,7 +64,7 @@ sub get_table {
 
       $fields->{tleft} = $tleft > 0 ? elapsed( $tleft ) : 'Expired';
       $fields->{class}->{tleft}
-                       = $tleft < 1 ? q(error dataValue) : q(odd dataValue);
+                       = $tleft < 1 ? 'error dataValue' : 'odd dataValue';
       push @{ $data->{values} }, $fields;
       $count++;
    }
@@ -82,13 +82,13 @@ sub reset {
 
    my $key = $args->{k} or $self->throw( 'No key specified' );
 
-   return $self->_reset( q().$key );
+   return $self->_reset( "${key}" );
 }
 
 sub set {
    my ($self, @args) = @_; my $args = __hash_from( @args );
 
-   $args->{k}   = q().$args->{k} or $self->throw( 'No key specified' );
+   $args->{k} or $self->throw( 'No key specified' ); $args->{k} .= q();
    $args->{p} ||= $self->pid; $args->{p} or $self->throw( 'No pid specified' );
    $args->{t} ||= $self->time_out;
 
@@ -137,7 +137,7 @@ IPC::SRLock::Base - Common lock object attributes and methods
 
 =head1 Version
 
-This documents version v0.15.$Rev: 1 $ of L<IPC::SRLock::Base>
+This documents version v0.16.$Rev: 1 $ of L<IPC::SRLock::Base>
 
 =head1 Description
 

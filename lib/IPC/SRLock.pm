@@ -1,16 +1,16 @@
-# @(#)$Ident: SRLock.pm 2013-08-16 23:12 pjf ;
+# @(#)$Ident: SRLock.pm 2013-09-03 02:44 pjf ;
 
 package IPC::SRLock;
 
 use 5.010001;
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.15.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.16.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moo;
 use Type::Utils             qw( enum );
 use Unexpected::Types       qw( HashRef LoadableClass Object );
 
-my $Lock_Type = enum 'Lock_Type' => [ qw(fcntl memcached sysv) ];
+my $Lock_Type = enum 'Lock_Type' => [ qw( fcntl memcached sysv ) ];
 
 # Public attributes
 has 'type'                  => is => 'ro',   isa => $Lock_Type,
@@ -67,7 +67,7 @@ IPC::SRLock - Set/reset locking semantics to single thread processes
 
 =head1 Version
 
-This documents version v0.15.$Rev: 1 $ of L<IPC::SRLock>
+This documents version v0.16.$Rev: 1 $ of L<IPC::SRLock>
 
 =head1 Synopsis
 

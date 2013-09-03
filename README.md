@@ -4,7 +4,7 @@ IPC::SRLock - Set/reset locking semantics to single thread processes
 
 # Version
 
-This documents version v0.15.$Rev: 0 $ of [IPC::SRLock](https://metacpan.org/module/IPC::SRLock)
+This documents version v0.16.$Rev: 0 $ of [IPC::SRLock](https://metacpan.org/module/IPC::SRLock)
 
 # Synopsis
 
