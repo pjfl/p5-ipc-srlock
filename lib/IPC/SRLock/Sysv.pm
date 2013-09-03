@@ -1,17 +1,17 @@
-# @(#)$Ident: Sysv.pm 2013-09-03 03:14 pjf ;
+# @(#)$Ident: Sysv.pm 2013-09-03 14:52 pjf ;
 
 package IPC::SRLock::Sysv;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.16.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.16.%d', q$Rev: 2 $ =~ /\d+/gmx );
 
 use English                 qw( -no_match_vars );
+use File::DataClass::Types  qw( NonEmptySimpleStr Object PositiveInt );
 use IPC::ShareLite          qw( :lock );
 use Moo;
 use Storable                qw( nfreeze thaw );
 use Time::HiRes             qw( usleep );
 use Try::Tiny;
-use Unexpected::Types       qw( NonEmptySimpleStr Object PositiveInt );
 
 extends q(IPC::SRLock::Base);
 
@@ -153,7 +153,7 @@ IPC::SRLock::Sysv - Set/reset locks using System V IPC
 
 =head1 Version
 
-This documents version v0.16.$Rev: 1 $
+This documents version v0.16.$Rev: 2 $
 
 =head1 Synopsis
 
@@ -209,6 +209,8 @@ None
 
 =over 3
 
+=item L<File::DataClass>
+
 =item L<IPC::ShareLite>
 
 =item L<IPC::SRLock::Base>
@@ -220,8 +222,6 @@ None
 =item L<Time::HiRes>
 
 =item L<Try::Tiny>
-
-=item L<Unexpected>
 
 =back
 

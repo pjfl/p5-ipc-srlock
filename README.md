@@ -102,9 +102,9 @@ the lock record at the debug level
 
 # Dependencies
 
+- [File::DataClass](https://metacpan.org/module/File::DataClass)
 - [Moo](https://metacpan.org/module/Moo)
 - [Type::Tiny](https://metacpan.org/module/Type::Tiny)
-- [Unexpected](https://metacpan.org/module/Unexpected)
 
 # Incompatibilities
 

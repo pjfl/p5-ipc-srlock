@@ -1,9 +1,9 @@
-# @(#)$Ident: Fcntl.pm 2013-09-03 02:56 pjf ;
+# @(#)$Ident: Fcntl.pm 2013-09-03 14:50 pjf ;
 
 package IPC::SRLock::Fcntl;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.16.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.16.%d', q$Rev: 2 $ =~ /\d+/gmx );
 
 use English                 qw( -no_match_vars );
 use File::DataClass::Types  qw( Directory Int NonEmptySimpleStr
@@ -163,7 +163,7 @@ IPC::SRLock::Fcntl - Set/reset locks using fcntl
 
 =head1 Version
 
-This documents version v0.16.$Rev: 1 $
+This documents version v0.16.$Rev: 2 $
 
 =head1 Synopsis
 
@@ -253,8 +253,6 @@ None
 =item L<Time::HiRes>
 
 =item L<Try::Tiny>
-
-=item L<Unexpected>
 
 =back
 

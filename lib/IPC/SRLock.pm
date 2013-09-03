@@ -1,14 +1,14 @@
-# @(#)$Ident: SRLock.pm 2013-09-03 02:44 pjf ;
+# @(#)$Ident: SRLock.pm 2013-09-03 14:53 pjf ;
 
 package IPC::SRLock;
 
 use 5.010001;
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.16.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.16.%d', q$Rev: 2 $ =~ /\d+/gmx );
 
+use File::DataClass::Types  qw( HashRef LoadableClass Object );
 use Moo;
 use Type::Utils             qw( enum );
-use Unexpected::Types       qw( HashRef LoadableClass Object );
 
 my $Lock_Type = enum 'Lock_Type' => [ qw( fcntl memcached sysv ) ];
 
@@ -67,7 +67,7 @@ IPC::SRLock - Set/reset locking semantics to single thread processes
 
 =head1 Version
 
-This documents version v0.16.$Rev: 1 $ of L<IPC::SRLock>
+This documents version v0.16.$Rev: 2 $ of L<IPC::SRLock>
 
 =head1 Synopsis
 
@@ -175,11 +175,11 @@ the lock record at the debug level
 
 =over 3
 
+=item L<File::DataClass>
+
 =item L<Moo>
 
 =item L<Type::Tiny>
-
-=item L<Unexpected>
 
 =back
 

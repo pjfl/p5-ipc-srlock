@@ -1,13 +1,13 @@
-# @(#)$Ident: Memcached.pm 2013-09-03 03:12 pjf ;
+# @(#)$Ident: Memcached.pm 2013-09-03 14:51 pjf ;
 
 package IPC::SRLock::Memcached;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.16.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.16.%d', q$Rev: 2 $ =~ /\d+/gmx );
 
 use Cache::Memcached;
+use File::DataClass::Types  qw( ArrayRef NonEmptySimpleStr Object );
 use Moo;
-use Unexpected::Types       qw( ArrayRef NonEmptySimpleStr Object );
 use Time::HiRes             qw( usleep );
 
 extends q(IPC::SRLock::Base);
@@ -146,7 +146,7 @@ IPC::SRLock::Memcached - Set/reset locks using libmemcache
 
 =head1 Version
 
-This documents version v0.16.$Rev: 1 $
+This documents version v0.16.$Rev: 2 $
 
 =head1 Synopsis
 
@@ -208,13 +208,13 @@ None
 
 =item L<Cache::Memcached>
 
+=item L<File::DataClass>
+
 =item L<IPC::SRLock::Base>
 
 =item L<Moo>
 
 =item L<Time::HiRes>
-
-=item L<Unexpected>
 
 =back
 

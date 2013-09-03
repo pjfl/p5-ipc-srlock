@@ -1,23 +1,23 @@
-# @(#)Ident: Base.pm 2013-09-03 02:48 pjf ;
+# @(#)Ident: Base.pm 2013-09-03 14:52 pjf ;
 
 package IPC::SRLock::Base;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.16.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.16.%d', q$Rev: 2 $ =~ /\d+/gmx );
 
 use Date::Format;
 use English                 qw( -no_match_vars );
-use IPC::SRLock::Exception;
-use Moo;
-use Unexpected::Types       qw( Bool ClassName Int LoadableClass
+use File::DataClass::Exception;
+use File::DataClass::Types  qw( Bool ClassName Int LoadableClass
                                 NonEmptySimpleStr Num Object PositiveInt );
+use Moo;
 use Time::Elapsed           qw( elapsed );
 
 # Public attributes
 has 'debug'           => is => 'rw',   isa => Bool, default => 0;
 
 has 'exception_class' => is => 'ro',   isa => ClassName,
-   default            => 'IPC::SRLock::Exception';
+   default            => 'File::DataClass::Exception';
 
 has 'log'             => is => 'lazy', isa => Object,
    default            => sub { $_[ 0 ]->_null_class->new };
@@ -137,7 +137,7 @@ IPC::SRLock::Base - Common lock object attributes and methods
 
 =head1 Version
 
-This documents version v0.16.$Rev: 1 $ of L<IPC::SRLock::Base>
+This documents version v0.16.$Rev: 2 $ of L<IPC::SRLock::Base>
 
 =head1 Description
 
@@ -234,7 +234,7 @@ it to zero makes the lock last indefinitely
 
 =head2 throw
 
-Expose the C<throw> method in C<IPC::SRLock::ExceptionClass>
+Expose the C<throw> method in L<File::DataClass::Exception>
 
 =head2 timeout_error
 
@@ -266,13 +266,11 @@ None
 
 =item L<Date::Format>
 
-=item L<IPC::SRLock::Exception>
+=item L<File::DataClass>
 
 =item L<Moo>
 
 =item L<Time::Elapsed>
-
-=item L<Unexpected>
 
 =back
 

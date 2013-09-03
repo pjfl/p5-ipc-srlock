@@ -1,8 +1,8 @@
-# @(#)$Ident: 10test_script.t 2013-09-03 11:06 pjf ;
+# @(#)$Ident: 10test_script.t 2013-09-03 14:48 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.16.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.16.%d', q$Rev: 2 $ =~ /\d+/gmx );
 use File::Spec::Functions   qw( catdir catfile updir );
 use FindBin                 qw( $Bin );
 use lib                 catdir( $Bin, updir, 'lib' );
@@ -20,8 +20,8 @@ BEGIN {
 
 use Test::Requires "${perl_ver}";
 use English qw( -no_match_vars );
+use File::DataClass::Exception;
 
-use_ok 'IPC::SRLock::Exception';
 use_ok 'IPC::SRLock';
 
 my $is_win32 = ($OSNAME eq 'MSWin32') || ($OSNAME eq 'cygwin');
@@ -32,7 +32,7 @@ isa_ok $lock, 'IPC::SRLock';
 
 eval { $lock->set() };
 
-if ($e = IPC::SRLock::Exception->caught()) {
+if ($e = File::DataClass::Exception->caught()) {
    is $e->error, 'No key specified', 'Error no key';
 }
 else {
@@ -41,7 +41,7 @@ else {
 
 eval { $lock->reset( k => $PROGRAM_NAME ) };
 
-if ($e = IPC::SRLock::Exception->caught()) {
+if ($e = File::DataClass::Exception->caught()) {
    is $e->error, 'Lock [_1] not set', 'Error not set';
    ok $e->args->[ 0 ] eq $PROGRAM_NAME, 'Error args';
 }
