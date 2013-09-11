@@ -1,5 +1,8 @@
 Revision history for IPC::SRLock
 
+0.18.1    2013-09-11 23:21:44
+          - Readded dynamic config
+
 0.17.1    2013-09-11 21:35:12
           - Removed dependency on Unexpected
           - Removed IPC::SRLock::Exception

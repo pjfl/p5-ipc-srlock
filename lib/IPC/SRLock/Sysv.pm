@@ -3,7 +3,7 @@
 package IPC::SRLock::Sysv;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.17.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use English                 qw( -no_match_vars );
 use File::DataClass::Types  qw( NonEmptySimpleStr Object PositiveInt );
@@ -153,7 +153,7 @@ IPC::SRLock::Sysv - Set/reset locks using System V IPC
 
 =head1 Version
 
-This documents version v0.17.$Rev: 1 $
+This documents version v0.18.$Rev: 1 $
 
 =head1 Synopsis
 
