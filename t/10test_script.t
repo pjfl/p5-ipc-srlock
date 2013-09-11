@@ -1,8 +1,8 @@
-# @(#)$Ident: 10test_script.t 2013-09-03 14:48 pjf ;
+# @(#)$Ident: 10test_script.t 2013-09-11 20:29 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.16.%d', q$Rev: 2 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.17.%d', q$Rev: 1 $ =~ /\d+/gmx );
 use File::Spec::Functions   qw( catdir catfile updir );
 use FindBin                 qw( $Bin );
 use lib                 catdir( $Bin, updir, 'lib' );
@@ -86,11 +86,15 @@ unlink catfile( qw( t tlock ) );
 unlink catfile( qw( t tshm  ) );
 
 SKIP: {
-   $is_win32 and skip 'tests: OS unsupported', 2;
+   $is_win32 and skip 'tests: OS unsupported', 5;
 
    my $key = 12244237 + int( rand( 4096 ) );
 
-   $lock = IPC::SRLock->new( { lockfile => $key, type => 'sysv' } );
+   eval { $lock = IPC::SRLock->new( { lockfile => $key, type => 'sysv' } ) };
+
+   my $e = $EVAL_ERROR; $e and $e =~ m{ No \s+ space }mx
+      and skip 'tests: No shared memory space', 5;
+
    $lock->set( k => $PROGRAM_NAME );
 
    is [ map { $_->{key} } @{ $lock->list() } ]->[ 0 ], $PROGRAM_NAME,

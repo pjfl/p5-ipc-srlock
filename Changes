@@ -1,8 +1,10 @@
 Revision history for IPC::SRLock
 
-0.16.2    2013-09-03 15:58:15
+0.17.1    2013-09-11 21:35:12
           - Removed dependency on Unexpected
           - Removed IPC::SRLock::Exception
+
+0.16.2    2013-09-03 15:58:15
           - Improved test coverage
 
 0.15.1    2013-09-02 16:04:33

@@ -1,4 +1,4 @@
-# @(#)$Ident: Build.PL 2013-09-02 14:56 pjf ;
+# @(#)$Ident: DZ_Build.PL 2013-09-03 12:35 pjf ;
 
 use strict;
 use warnings;
@@ -25,10 +25,5 @@ exit 0;
 __DATA__
 
 sub _normalize_prereqs { # Dynamic config
-   my $self = shift; my $p = $self->SUPER::_normalize_prereqs;
-
-   my $osname = lc $^O; ($osname eq 'mswin32' or $osname eq 'cygwin')
-      and delete $p->{requires}->{ 'IPC::ShareLite' };
-
-   return $p;
+   my $self = shift; my $p = $self->SUPER::_normalize_prereqs; return $p;
 }
