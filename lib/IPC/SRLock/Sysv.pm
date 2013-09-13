@@ -1,9 +1,9 @@
-# @(#)$Ident: Sysv.pm 2013-09-03 14:52 pjf ;
+# @(#)$Ident: Sysv.pm 2013-09-13 12:26 pjf ;
 
 package IPC::SRLock::Sysv;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.19.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use English                 qw( -no_match_vars );
 use File::DataClass::Types  qw( NonEmptySimpleStr Object PositiveInt );
@@ -24,6 +24,11 @@ has 'size'     => is => 'ro',   isa => PositiveInt,       default  => 65_536;
 
 # Private attributes
 has '_share'   => is => 'lazy', isa => Object,            init_arg => undef;
+
+# Construction
+sub BUILD {
+   my $self = shift; $self->_share; return;
+}
 
 # Private methods
 sub _build__share {
@@ -153,7 +158,7 @@ IPC::SRLock::Sysv - Set/reset locks using System V IPC
 
 =head1 Version
 
-This documents version v0.18.$Rev: 1 $
+This documents version v0.19.$Rev: 1 $
 
 =head1 Synopsis
 
@@ -188,6 +193,10 @@ Maximum size of a shared memory segment. Defaults to 65_536
 =back
 
 =head1 Subroutines/Methods
+
+=head2 BUILD
+
+Create the shared memory segment at construction time
 
 =head2 _list
 

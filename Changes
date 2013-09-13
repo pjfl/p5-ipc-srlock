@@ -1,5 +1,8 @@
 Revision history for IPC::SRLock
 
+0.19.1    2013-09-13 13:29:41
+          - Create shared memory segment on construction
+
 0.18.1    2013-09-11 23:21:44
           - Readded dynamic config
 
