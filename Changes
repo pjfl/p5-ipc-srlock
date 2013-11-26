@@ -1,5 +1,8 @@
 Revision history for IPC::SRLock
 
+0.20.1    2013-11-26 22:46:46
+          - 8aae5113-6bf7-1014-9ee2-ba2209253afe bullshit
+
 0.19.1    2013-09-13 13:29:41
           - Create shared memory segment on construction
 

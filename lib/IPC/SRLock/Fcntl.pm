@@ -3,7 +3,7 @@
 package IPC::SRLock::Fcntl;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.19.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use English                 qw( -no_match_vars );
 use File::DataClass::Types  qw( Directory Int NonEmptySimpleStr
@@ -163,7 +163,7 @@ IPC::SRLock::Fcntl - Set/reset locks using fcntl
 
 =head1 Version
 
-This documents version v0.19.$Rev: 1 $
+This documents version v0.20.$Rev: 1 $
 
 =head1 Synopsis
 
