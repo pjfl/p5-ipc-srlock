@@ -1,5 +1,11 @@
 Revision history for IPC::SRLock
 
+0.21.1    2013-11-27 15:25:41
+          - Module::Build backwardly incompatible change around 0.4200
+            The dynamic config was stuffed by a change in the data
+            structure used by _normalize_prereqs. It is now keyed by
+            phase, relation and module. Thanks
+
 0.20.1    2013-11-26 22:46:46
           - 8aae5113-6bf7-1014-9ee2-ba2209253afe bullshit
 

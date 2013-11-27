@@ -1,4 +1,4 @@
-# @(#)$Ident: Build.PL 2013-09-11 22:19 pjf ;
+# @(#)$Ident: Build.PL 2013-11-27 15:01 pjf ;
 
 use strict;
 use warnings;
@@ -28,7 +28,7 @@ sub _normalize_prereqs { # Dynamic config
    my $self = shift; my $p = $self->SUPER::_normalize_prereqs;
 
    my $osname = lc $^O; ($osname eq 'mswin32' or $osname eq 'cygwin')
-      and delete $p->{requires}->{ 'IPC::ShareLite' };
+      and delete $p->{runtime}->{requires}->{ 'IPC::ShareLite' };
 
    return $p;
 }

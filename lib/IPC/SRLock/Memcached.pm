@@ -3,7 +3,7 @@
 package IPC::SRLock::Memcached;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Cache::Memcached;
 use File::DataClass::Types  qw( ArrayRef NonEmptySimpleStr Object );
@@ -146,7 +146,7 @@ IPC::SRLock::Memcached - Set/reset locks using libmemcache
 
 =head1 Version
 
-This documents version v0.20.$Rev: 1 $
+This documents version v0.21.$Rev: 1 $
 
 =head1 Synopsis
 
