@@ -1,5 +1,6 @@
 Revision history for IPC::SRLock
 
+          - Remove prereqs below min perl ver
           - Stopped using _normalize_prereqs in Build.PL
           - Use DZ::P::AbstractFromPOD and LicenseFromModule
 
