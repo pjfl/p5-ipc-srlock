@@ -1,16 +1,13 @@
-# @(#)Ident: Base.pm 2013-09-03 14:52 pjf ;
-
 package IPC::SRLock::Base;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
+use Moo;
 use Date::Format;
 use English                 qw( -no_match_vars );
 use File::DataClass::Exception;
 use File::DataClass::Types  qw( Bool ClassName Int LoadableClass
                                 NonEmptySimpleStr Num Object PositiveInt );
-use Moo;
 use Time::Elapsed           qw( elapsed );
 
 # Public attributes
@@ -134,10 +131,6 @@ IPC::SRLock::Base - Common lock object attributes and methods
    use Moo;
 
    extents 'IPC::SRLock::Base';
-
-=head1 Version
-
-This documents version v0.21.$Rev: 1 $ of L<IPC::SRLock::Base>
 
 =head1 Description
 

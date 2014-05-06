@@ -1,7 +1,9 @@
 Revision history for IPC::SRLock
 
+0.22.1    2014-05-06 12:22:47
+          - Removed Ident and VERSION lines
           - Remove prereqs below min perl ver
-          - Stopped using _normalize_prereqs in Build.PL
+          - Stopped using _normalize_prereqs in Build.PL. My bad
           - Use DZ::P::AbstractFromPOD and LicenseFromModule
 
 0.21.1    2013-11-27 15:25:41
@@ -11,7 +13,7 @@ Revision history for IPC::SRLock
             phase, relation and module. Thanks
 
 0.20.1    2013-11-26 22:46:46
-          - 8aae5113-6bf7-1014-9ee2-ba2209253afe bullshit
+          - 8aae5113-6bf7-1014-9ee2-ba2209253afe wtf?
 
 0.19.1    2013-09-13 13:29:41
           - Create shared memory segment on construction

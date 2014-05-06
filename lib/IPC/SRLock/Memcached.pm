@@ -1,13 +1,10 @@
-# @(#)$Ident: Memcached.pm 2013-09-03 14:51 pjf ;
-
 package IPC::SRLock::Memcached;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
+use Moo;
 use Cache::Memcached;
 use File::DataClass::Types  qw( ArrayRef NonEmptySimpleStr Object );
-use Moo;
 use Time::HiRes             qw( usleep );
 
 extends q(IPC::SRLock::Base);
@@ -143,10 +140,6 @@ __END__
 =head1 Name
 
 IPC::SRLock::Memcached - Set/reset locks using libmemcache
-
-=head1 Version
-
-This documents version v0.21.$Rev: 1 $
 
 =head1 Synopsis
 

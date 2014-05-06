@@ -1,16 +1,13 @@
-# @(#)$Ident: Sysv.pm 2013-09-13 12:26 pjf ;
-
 package IPC::SRLock::Sysv;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
-use English                 qw( -no_match_vars );
-use File::DataClass::Types  qw( NonEmptySimpleStr Object PositiveInt );
-use IPC::ShareLite          qw( :lock );
 use Moo;
-use Storable                qw( nfreeze thaw );
-use Time::HiRes             qw( usleep );
+use English                qw( -no_match_vars );
+use File::DataClass::Types qw( NonEmptySimpleStr Object PositiveInt );
+use IPC::ShareLite         qw( :lock );
+use Storable               qw( nfreeze thaw );
+use Time::HiRes            qw( usleep );
 use Try::Tiny;
 
 extends q(IPC::SRLock::Base);
@@ -155,10 +152,6 @@ __END__
 =head1 Name
 
 IPC::SRLock::Sysv - Set/reset locks using System V IPC
-
-=head1 Version
-
-This documents version v0.21.$Rev: 1 $
 
 =head1 Synopsis
 

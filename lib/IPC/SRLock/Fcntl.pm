@@ -1,15 +1,12 @@
-# @(#)$Ident: Fcntl.pm 2013-09-03 14:50 pjf ;
-
 package IPC::SRLock::Fcntl;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
+use Moo;
 use English                 qw( -no_match_vars );
 use File::DataClass::Types  qw( Directory Int NonEmptySimpleStr
                                 Path PositiveInt RegexpRef );
 use File::Spec;
-use Moo;
 use Storable                qw( nfreeze thaw );
 use Time::HiRes             qw( usleep );
 use Try::Tiny;
@@ -160,10 +157,6 @@ __END__
 =head1 Name
 
 IPC::SRLock::Fcntl - Set/reset locks using fcntl
-
-=head1 Version
-
-This documents version v0.21.$Rev: 1 $
 
 =head1 Synopsis
 
