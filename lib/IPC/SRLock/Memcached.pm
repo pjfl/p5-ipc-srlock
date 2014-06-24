@@ -1,11 +1,11 @@
 package IPC::SRLock::Memcached;
 
-use namespace::sweep;
+use namespace::autoclean;
 
 use Moo;
 use Cache::Memcached;
-use File::DataClass::Types  qw( ArrayRef NonEmptySimpleStr Object );
-use Time::HiRes             qw( usleep );
+use File::DataClass::Types qw( ArrayRef NonEmptySimpleStr Object );
+use Time::HiRes            qw( usleep );
 
 extends q(IPC::SRLock::Base);
 

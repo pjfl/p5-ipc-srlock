@@ -1,14 +1,14 @@
 package IPC::SRLock::Fcntl;
 
-use namespace::sweep;
+use namespace::autoclean;
 
 use Moo;
-use English                 qw( -no_match_vars );
-use File::DataClass::Types  qw( Directory Int NonEmptySimpleStr
-                                Path PositiveInt RegexpRef );
+use English                qw( -no_match_vars );
+use File::DataClass::Types qw( Directory Int NonEmptySimpleStr
+                               Path PositiveInt RegexpRef );
 use File::Spec;
-use Storable                qw( nfreeze thaw );
-use Time::HiRes             qw( usleep );
+use Storable               qw( nfreeze thaw );
+use Time::HiRes            qw( usleep );
 use Try::Tiny;
 
 extends q(IPC::SRLock::Base);

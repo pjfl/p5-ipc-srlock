@@ -1,6 +1,6 @@
 package IPC::SRLock::Sysv;
 
-use namespace::sweep;
+use namespace::autoclean;
 
 use Moo;
 use English                qw( -no_match_vars );

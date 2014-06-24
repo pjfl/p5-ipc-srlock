@@ -1,14 +1,14 @@
 package IPC::SRLock::Base;
 
-use namespace::sweep;
+use namespace::autoclean;
 
 use Moo;
 use Date::Format;
-use English                 qw( -no_match_vars );
+use English                qw( -no_match_vars );
 use File::DataClass::Exception;
-use File::DataClass::Types  qw( Bool ClassName Int LoadableClass
-                                NonEmptySimpleStr Num Object PositiveInt );
-use Time::Elapsed           qw( elapsed );
+use File::DataClass::Types qw( Bool ClassName Int LoadableClass
+                               NonEmptySimpleStr Num Object PositiveInt );
+use Time::Elapsed          qw( elapsed );
 
 # Public attributes
 has 'debug'           => is => 'rw',   isa => Bool, default => 0;

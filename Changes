@@ -1,5 +1,7 @@
 Revision history for IPC::SRLock
 
+          - Replaced namespace::sweep with namespace::autoclean
+
 0.22.1    2014-05-06 12:22:47
           - Removed Ident and VERSION lines
           - Remove prereqs below min perl ver
