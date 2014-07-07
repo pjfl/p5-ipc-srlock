@@ -1,5 +1,6 @@
 Revision history for IPC::SRLock
 
+          - Replaced M::B with Module::Build::Tiny
           - Replaced namespace::sweep with namespace::autoclean
 
 0.22.1    2014-05-06 12:22:47

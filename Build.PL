@@ -1,32 +1,30 @@
 use strict;
 use warnings;
 
-use Module::Build ##{ $meta2{prereqs}->{configure}->{requires}->{'Module::Build'} ##};
+use Module::Build::Tiny;
 
 sub testing { $ENV{AUTOMATED_TESTING} || $ENV{PERL_CPAN_REPORTER_CONFIG}
                                       || $ENV{PERL5_CPANPLUS_IS_VERSION} }
 sub whimper { print {*STDOUT} $_[ 0 ]."\n"; exit 0 }
 
 my $perl_ver = ##{ $meta2{prereqs}->{runtime}->{requires}->{perl} ##};
-my $name     = '##{ $zilla->name ##}'; $name =~ s{ - }{::}gmx;
-my $prereqs  = {
-##{ $plugin->get_prereqs( 1 ) ##}
-};
-my $osname   = lc $^O; ($osname eq 'mswin32' or $osname eq 'cygwin')
-   and delete $prereqs->{requires}->{ 'IPC::ShareLite' };
 
-if ($] < $perl_ver) { # Not interested in reports below min perl ver
-   testing or whimper "Minimum required Perl version is ${perl_ver}";
-   $prereqs->{build_requires} = { %{ $prereqs->{configure_requires} } };
-   $prereqs->{build_requires}->{ 'Test::Requires' } = 0.06;
-   delete $prereqs->{requires};
+sub Dynamic_Config {
+   my $meta    = shift;
+   my $prereqs = $meta->{prereqs};
+   my $osname  = lc $^O;# ($osname eq 'mswin32' or $osname eq 'cygwin') and
+      delete $prereqs->{runtime}->{requires}->{ 'IPC::ShareLite' };
+
+   if ($] < $perl_ver) { # Not interested in reports below min perl ver
+      testing or whimper "Minimum required Perl version is ${perl_ver}";
+      $prereqs->{build}->{requires} = { %{ $prereqs->{configure}->{requires} }};
+      $prereqs->{build}->{requires}->{ 'Test::Requires' } = 0.06;
+      delete $prereqs->{runtime}->{requires};
+   }
+
+   return $meta;
 }
 
-Module::Build->new(
-  'module_name' => $name,
-  'notes'       => { min_perl_version => $perl_ver },
-  %{ $prereqs },
-##{ $plugin->get_default('share_dir') ##}
-)->create_build_script;
+Build_PL();
 
 exit 0;
