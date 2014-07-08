@@ -4,8 +4,18 @@ use File::Spec::Functions qw( catdir catfile updir );
 use FindBin               qw( $Bin );
 use lib               catdir( $Bin, updir, 'lib' );
 
+use CPAN::Meta;
+
+my ($file, $meta, $perl_ver);
+
+BEGIN {
+   ($file) = grep { -e $_ } qw( MYMETA.json MYMETA.yml META.json META.yml );
+   $file and $meta = CPAN::Meta->load_file( $file );
+   $perl_ver = $meta ? $meta->{prereqs}->{runtime}->{requires}->{perl} : 5.008;
+}
+
 use Test::More;
-use Test::Requires '5.010001';
+use Test::Requires "${perl_ver}";
 use Test::Requires { version => 0.88 };
 
 use English qw( -no_match_vars );

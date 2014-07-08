@@ -1,5 +1,6 @@
 Revision history for IPC::SRLock
 
+          - Using CPAN::Meta to get min perl ver in tests
           - Replaced M::B with Module::Build::Tiny
           - Replaced namespace::sweep with namespace::autoclean
 
