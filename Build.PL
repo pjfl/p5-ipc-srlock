@@ -10,10 +10,10 @@ sub whimper { print {*STDOUT} $_[ 0 ]."\n"; exit 0 }
 my $perl_ver = ##{ $meta2{prereqs}->{runtime}->{requires}->{perl} ##};
 
 sub Dynamic_Config {
-   my $meta    = shift;
-   my $prereqs = $meta->{prereqs};
-   my $osname  = lc $^O;# ($osname eq 'mswin32' or $osname eq 'cygwin') and
-      delete $prereqs->{runtime}->{requires}->{ 'IPC::ShareLite' };
+   my $meta = shift; my $prereqs = $meta->{prereqs}; my $osname = lc $^O;
+
+   $osname ne 'mswin32' and $osname ne 'cygwin' and
+      $prereqs->{runtime}->{requires}->{ 'IPC::ShareLite' } = '0.17';
 
    if ($] < $perl_ver) { # Not interested in reports below min perl ver
       testing or whimper "Minimum required Perl version is ${perl_ver}";
