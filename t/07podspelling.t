@@ -42,6 +42,7 @@ buildargs
 ipc
 libmemcache
 memcached
+merchantability
 namespace
 stacktrace
 stringifies
