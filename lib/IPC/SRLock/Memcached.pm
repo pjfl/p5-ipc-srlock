@@ -18,22 +18,21 @@ has 'servers'  => is => 'ro', isa => ArrayRef,
 has 'shmfile'  => is => 'ro', isa => NonEmptySimpleStr, default => '_shmfile';
 
 # Private attributes
-has '_memd'    => is => 'lazy', isa => Object,
-   init_arg    => undef,     reader => 'memd';
+has '_memd'    => is => 'lazy', isa => Object, builder => sub {
+   Cache::Memcached->new( debug     => $_[ 0 ]->debug,
+                          namespace => $_[ 0 ]->name,
+                          servers   => $_[ 0 ]->servers ) },
+   init_arg    => undef, reader => 'memd';
 
 # Private methods
-sub _build_memd {
-   return Cache::Memcached->new( debug     => $_[ 0 ]->debug,
-                                 namespace => $_[ 0 ]->name,
-                                 servers   => $_[ 0 ]->servers );
-}
-
 sub _list {
    my $self = shift; my $list = []; my $start = time;
 
    while (1) {
       if ($self->memd->add( $self->lockfile, 1, $self->patience + 30 )) {
          my $recs = $self->memd->get( $self->shmfile ) || {};
+
+         $self->memd->delete( $self->lockfile );
 
          for my $key (sort keys %{ $recs }) {
             my @fields = split m{ , }mx, $recs->{ $key };
@@ -44,7 +43,6 @@ sub _list {
                                timeout => $fields[ 2 ] };
          }
 
-         $self->memd->delete( $self->lockfile );
          return $list;
       }
 
@@ -93,10 +91,8 @@ sub _set {
                $recs->{ $key } = "${pid},${now},${timeout}";
                $self->memd->set( $self->shmfile, $recs );
 
-               my $text = $self->timeout_error( $key,
-                                                $fields[ 0 ],
-                                                $fields[ 1 ],
-                                                $fields[ 2 ] );
+               my $text = $self->timeout_error
+                  ( $key, $fields[ 0 ], $fields[ 1 ], $fields[ 2 ] );
 
                $self->log->error( $text ); $lock_set = 1;
             }
