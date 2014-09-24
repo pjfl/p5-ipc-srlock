@@ -2,7 +2,7 @@ package IPC::SRLock;
 
 use 5.010001;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.23.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.23.%d', q$Rev: 2 $ =~ /\d+/gmx );
 
 use Moo;
 use File::DataClass::Types  qw( HashRef LoadableClass Object );
@@ -15,7 +15,8 @@ has 'type'                  => is => 'ro',   isa => $Lock_Type,
    default                  => 'fcntl';
 
 # Private attributes
-has '_implementation'       => is => 'lazy', isa => Object,
+has '_implementation'       => is => 'lazy', isa => Object, builder => sub {
+   $_[ 0 ]->_implementation_class->new( $_[ 0 ]->_get_attr ) },
    handles                  => [ qw( debug get_table list reset set ) ],
    init_arg                 => undef;
 
@@ -23,6 +24,7 @@ has '_implementation_attr'  => is => 'ro',   isa => HashRef,
    default                  => sub { {} };
 
 has '_implementation_class' => is => 'lazy', isa => LoadableClass,
+   builder                  => sub { __PACKAGE__.'::'.(ucfirst $_[ 0 ]->type) },
    init_arg                 => undef;
 
 # Construction
@@ -39,16 +41,9 @@ sub BUILD {
 }
 
 # Private methods
-sub _build__implementation {
-   my $self = shift;
-   my $attr = { name => (lc join '_', split m{ :: }mx, __PACKAGE__),
-                %{ $self->_implementation_attr }, };
-
-   return $self->_implementation_class->new( $attr );
-}
-
-sub _build__implementation_class {
-   my $self = shift; return __PACKAGE__.'::'.(ucfirst $self->type);
+sub _get_attr {
+   return { name => (lc join '_', split m{ :: }mx, __PACKAGE__),
+            %{ $_[ 0 ]->_implementation_attr }, };
 }
 
 1;
@@ -65,7 +60,7 @@ IPC::SRLock - Set/reset locking semantics to single thread processes
 
 =head1 Version
 
-This documents version v0.23.$Rev: 1 $ of L<IPC::SRLock>
+This documents version v0.23.$Rev: 2 $ of L<IPC::SRLock>
 
 =head1 Synopsis
 
