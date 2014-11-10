@@ -49,14 +49,15 @@ else {
 
 $lock->set( k => $PROGRAM_NAME );
 
-is [ map { $_->{key} } @{ $lock->list() } ]->[ 0 ], $PROGRAM_NAME, 'Set fcntl';
+is [ map { $_->{key} } @{ $lock->list() } ]->[ 0 ], $PROGRAM_NAME,
+   'Set - fcntl';
 
 $lock->reset( k => $PROGRAM_NAME );
 
-is [ map { $_->{key} } @{ $lock->list() } ]->[ 0 ], undef, 'Reset fcntl';
+is [ map { $_->{key} } @{ $lock->list() } ]->[ 0 ], undef, 'Reset - fcntl';
 
-ok -f catfile( qw( t ipc_srlock.lck ) ), 'Lock file exists';
-ok -f catfile( qw( t ipc_srlock.shm ) ), 'Shm file exists';
+ok -f catfile( qw( t ipc_srlock.lck ) ), 'Lock file exists - fcntl';
+ok -f catfile( qw( t ipc_srlock.shm ) ), 'Shm file exists - fcntl';
 
 unlink catfile( qw( t ipc_srlock.lck ) );
 unlink catfile( qw( t ipc_srlock.shm ) );
@@ -69,16 +70,20 @@ $lock = IPC::SRLock->new( { debug    => 1,
 
 $lock->set( k => $PROGRAM_NAME, p => 100, t => 100 );
 
-is $lock->list->[ 0 ]->{pid}, 100, 'Non default pid';
+is $lock->list->[ 0 ]->{pid}, 100, 'Non default pid - fcntl';
 
-is $lock->list->[ 0 ]->{timeout}, 100, 'Non default timeout';
+is $lock->list->[ 0 ]->{timeout}, 100, 'Non default timeout - fcntl';
 
-is $lock->get_table->{count}, 1, 'Get table has count';
+is $lock->get_table->{count}, 1, 'Get table has count - fcntl';
 
 like $lock->_implementation->timeout_error( 0, 0, 0, 0 ),
-   qr{ 0 \s set \s by \s 0 }mx, 'Timeout error';
+   qr{ 0 \s set \s by \s 0 }mx, 'Timeout error - fcntl';
+
+is $lock->set( k => $PROGRAM_NAME, async => 1 ), 0, 'Async lock - fcntl';
 
 $lock->reset( k => $PROGRAM_NAME );
+
+is $lock->get_table->{count}, 0, 'Get table has no count - fcntl';
 
 unlink catfile( qw( t tlock ) );
 unlink catfile( qw( t tshm  ) );
@@ -96,15 +101,16 @@ SKIP: {
    $lock->set( k => $PROGRAM_NAME );
 
    is [ map { $_->{key} } @{ $lock->list() } ]->[ 0 ], $PROGRAM_NAME,
-      'Set sysv';
+      'Set - sysv';
 
    $lock->reset( k => $PROGRAM_NAME );
 
-   is [ map { $_->{key} } @{ $lock->list() } ]->[ 0 ], undef, 'Reset sysv';
+   is [ map { $_->{key} } @{ $lock->list() } ]->[ 0 ], undef, 'Reset - sysv';
 
    $lock = IPC::SRLock->new( { debug => 1, lockfile => $key, type => 'sysv' } );
 
-   $lock->set( k => $PROGRAM_NAME, p => 100, t => 100 );
+   is $lock->set( k => $PROGRAM_NAME, p => 100, t => 100 ), 1,
+      'Set returns true - sysv';
 
    is $lock->list->[ 0 ]->{pid}, 100, 'Non default pid - sysv';
 
@@ -112,7 +118,11 @@ SKIP: {
 
    is $lock->get_table->{count}, 1, 'Get table has count - sysv';
 
+   is $lock->set( k => $PROGRAM_NAME, async => 1 ), 0, 'Async lock - sysv';
+
    $lock->reset( k => $PROGRAM_NAME );
+
+   is $lock->get_table->{count}, 0, 'Get table has no count - sysv';
 
    qx{ ipcrm -M $key }; qx{ ipcrm -S $key };
 }
@@ -124,11 +134,12 @@ SKIP: {
    $lock->set( k => $PROGRAM_NAME );
 
    is [ map { $_->{key} } @{ $lock->list() } ]->[ 0 ], $PROGRAM_NAME,
-      'Set memcached';
+      'Set - memcached';
 
    $lock->reset( k => $PROGRAM_NAME );
 
-   is [ map { $_->{key} } @{ $lock->list() } ]->[ 0 ], undef, 'Reset memcached';
+   is [ map { $_->{key} } @{ $lock->list() } ]->[ 0 ], undef,
+      'Reset - memcached';
 }
 
 done_testing;

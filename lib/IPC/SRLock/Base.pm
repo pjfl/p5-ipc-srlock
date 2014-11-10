@@ -6,12 +6,12 @@ use Moo;
 use Date::Format;
 use English                qw( -no_match_vars );
 use File::DataClass::Exception;
-use File::DataClass::Types qw( Bool ClassName Int LoadableClass
+use File::DataClass::Types qw( Bool ClassName LoadableClass
                                NonEmptySimpleStr Num Object PositiveInt );
 use Time::Elapsed          qw( elapsed );
 
 # Public attributes
-has 'debug'           => is => 'rw',   isa => Bool, default => 0;
+has 'debug'           => is => 'ro',   isa => Bool, default => 0;
 
 has 'exception_class' => is => 'ro',   isa => ClassName,
    default            => 'File::DataClass::Exception';
@@ -23,9 +23,7 @@ has 'name'            => is => 'ro',   isa => NonEmptySimpleStr, required => 1;
 
 has 'nap_time'        => is => 'ro',   isa => Num, default => 0.1;
 
-has 'patience'        => is => 'ro',   isa => Int, default => 0;
-
-has 'pid'             => is => 'ro',   isa => PositiveInt, default => $PID;
+has 'patience'        => is => 'ro',   isa => PositiveInt, default => 0;
 
 has 'time_out'        => is => 'ro',   isa => PositiveInt, default => 300;
 
@@ -86,8 +84,8 @@ sub set {
    my ($self, @args) = @_; my $args = __hash_from( @args );
 
    $args->{k} or $self->throw( 'No key specified' ); $args->{k} .= q();
-   $args->{p} ||= $self->pid; $args->{p} or $self->throw( 'No pid specified' );
-   $args->{t} ||= $self->time_out;
+   $args->{p} //= $PID;
+   $args->{t} //= $self->time_out;
 
    return $self->_set( $args );
 }

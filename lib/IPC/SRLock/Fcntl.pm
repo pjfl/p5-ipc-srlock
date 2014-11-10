@@ -3,18 +3,19 @@ package IPC::SRLock::Fcntl;
 use namespace::autoclean;
 
 use Moo;
-use English                qw( -no_match_vars );
-use File::DataClass::Types qw( Directory Int NonEmptySimpleStr
-                               Path PositiveInt RegexpRef );
+use English                    qw( -no_match_vars );
+use File::DataClass::Constants qw( LOCK_BLOCKING LOCK_NONBLOCKING );
+use File::DataClass::Types     qw( Directory NonEmptySimpleStr
+                                   Path PositiveInt RegexpRef );
 use File::Spec;
-use Storable               qw( nfreeze thaw );
-use Time::HiRes            qw( usleep );
+use Storable                   qw( nfreeze thaw );
+use Time::HiRes                qw( usleep );
 use Try::Tiny;
 
 extends q(IPC::SRLock::Base);
 
 # Public attributes
-has 'mode'    => is => 'ro', isa => PositiveInt, default => oct q(0666);
+has 'mode'    => is => 'ro', isa => PositiveInt, default => oct '0666';
 
 has 'pattern' => is => 'ro', isa => RegexpRef,
    default    => sub { qr{ \A ([ ~:+./\-\\\w]+) \z }msx };
@@ -22,7 +23,7 @@ has 'pattern' => is => 'ro', isa => RegexpRef,
 has 'tempdir' => is => 'ro', isa => Directory, coerce => Directory->coercion,
    default    => sub { File::Spec->tmpdir };
 
-has 'umask'   => is => 'ro', isa => Int, default => 0;
+has 'umask'   => is => 'ro', isa => PositiveInt, default => 0;
 
 # Private attributes
 has '_lockfile'      => is => 'lazy', isa => Path, coerce => Path->coercion;
@@ -40,8 +41,8 @@ sub _build__lockfile {
    my $self = shift; my $path = $self->_lockfile_name;
 
    $path ||= $self->tempdir->catfile( $self->name.'.lck' );
-   $path =~ $self->pattern or $self->throw( error => 'Path [_1] cannot untaint',
-                                            args  => [ $path ] );
+   $path =~ $self->pattern
+      or $self->throw( 'Path [_1] cannot untaint', args => [ $path ] );
    return $path;
 }
 
@@ -49,17 +50,17 @@ sub _build__shmfile {
    my $self = shift; my $path = $self->_shmfile_name;
 
    $path ||= $self->tempdir->catfile( $self->name.'.shm' );
-   $path =~ $self->pattern or $self->throw( error => 'Path [_1] cannot untaint',
-                                            args  => [ $path ] );
+   $path =~ $self->pattern
+      or $self->throw( 'Path [_1] cannot untaint', args => [ $path ] );
    return $path;
 }
 
 sub _list {
    my $self = shift; my $list = [];
 
-   my ($lock_file, $lock_content) = $self->_read_shmfile; $lock_file->close;
+   my ($lock_file, $shm_content) = $self->_read_shmfile; $lock_file->close;
 
-   while (my ($key, $info) = each %{ $lock_content }) {
+   while (my ($key, $info) = each %{ $shm_content }) {
       push @{ $list }, { key     => $key,
                          pid     => $info->{spid},
                          stime   => $info->{stime},
@@ -70,75 +71,84 @@ sub _list {
 }
 
 sub _read_shmfile {
-   my $self = shift; my $old_umask = umask $self->umask; my ($file, $content);
+   my ($self, $async) = @_; my ($file, $content);
 
-   try   { $file = $self->_lockfile->lock->assert_open( 'w', $self->mode ) }
+   my $old_umask = umask $self->umask;
+   my $mode      = $async ? LOCK_NONBLOCKING : LOCK_BLOCKING;
+   my $shmfile   = $self->_shmfile;
+
+   try {
+      $file = $self->_lockfile->lock( $mode )->assert_open( 'w', $self->mode );
+   }
    catch { umask $old_umask; $self->throw( $_ ) };
 
-   if ($self->_shmfile->exists) {
-      try   { $content = thaw $self->_shmfile->all }
-      catch { umask $old_umask; $file->close; $self->throw( $_ ) };
+   if ($file->have_lock and $shmfile->exists) {
+      try   { $content = thaw $shmfile->all }
+      catch { $file->close; umask $old_umask; $self->throw( $_ ) };
    }
    else { $content = {} }
 
-   umask $old_umask;
+   $shmfile->close; umask $old_umask;
    return ($file, $content);
 }
 
 sub _reset {
    my ($self, $key) = @_; my $found;
 
-   my ($lock_file, $lock_content) = $self->_read_shmfile;
+   my ($lock_file, $shm_content) = $self->_read_shmfile;
 
-   $found = exists $lock_content->{ $key } and delete $lock_content->{ $key };
-   $found and $self->_write_shmfile( $lock_file, $lock_content );
+   $found = exists $shm_content->{ $key } and delete $shm_content->{ $key };
+   $found and $self->_write_shmfile( $lock_file, $shm_content );
    $lock_file->close;
-   $found or $self->throw( error => 'Lock [_1] not set', args => [ $key ] );
+   $found or $self->throw( 'Lock [_1] not set', args => [ $key ] );
    return 1;
 }
 
 sub _set {
-   my ($self, $args) = @_;
+   my ($self, $args) = @_; my $start = time;
 
    my $key = $args->{k}; my $pid = $args->{p}; my $timeout = $args->{t};
 
-   my $lock_content = {}; my $start = time; my ($lock, $lock_file, $now);
+   while (1) {
+      my ($lock_file, $shm_content) = $self->_read_shmfile( $args->{async} );
 
-   while (!$now || $lock_content->{ $key }) {
-      ($lock_file, $lock_content) = $self->_read_shmfile; $now = time;
+      my $now = time; my $lock;
 
-      if (($lock = $lock_content->{ $key })
-          and ($now > $lock->{stime} + $lock->{timeout})) {
-         $self->log->error( $self->timeout_error( $key,
-                                                  $lock->{spid   },
-                                                  $lock->{stime  },
-                                                  $lock->{timeout} ) );
-         delete $lock_content->{ $key };
-         $lock = 0;
-      }
-
-      if ($lock) {
-         $lock_file->close; $args->{async} and return 0;
-
-         if ($self->patience and $now > $start + $self->patience) {
-            $self->throw( error => 'Lock [_1] timed out', args => [ $key ] );
+      if ($lock_file->have_lock) {
+         if ($lock = $shm_content->{ $key }
+             and $now > $lock->{stime} + $lock->{timeout}) {
+            $self->log->error( $self->timeout_error( $key,
+                                                     $lock->{spid   },
+                                                     $lock->{stime  },
+                                                     $lock->{timeout} ) );
+            delete $shm_content->{ $key };
+            $lock = 0;
          }
 
-         usleep( 1_000_000 * $self->nap_time );
+         unless ($lock) {
+            $shm_content->{ $key }
+               = { spid => $pid, stime => $now, timeout => $timeout };
+            $self->_write_shmfile( $lock_file, $shm_content );
+            $self->log->debug( "Lock ${key} set by ${pid}" );
+            return 1;
+         }
       }
+
+      $lock_file->close; $args->{async} and return 0;
+
+      $self->patience and $now > $start + $self->patience
+         and $self->throw( 'Lock [_1] timed out', args => [ $key ] );
+
+      usleep( 1_000_000 * $self->nap_time );
    }
 
-   $lock_content->{ $key }
-      = { spid => $pid, stime => $now, timeout => $timeout };
-   $self->_write_shmfile( $lock_file, $lock_content );
-   $self->debug and $self->log->debug( "Lock ${key} set by ${pid}\n" );
-   return 1;
+   return; # Not reached
 }
 
 sub _write_shmfile {
    my ($self, $file, $content) = @_; my $wtr;
 
-   try   { $wtr = $self->_shmfile->atomic->assert_open( 'w', $self->mode ) }
+   try   { $wtr = $self->_shmfile->assert_open( 'w', $self->mode ) }
    catch { $file->close; $self->throw( $_ ) };
 
    try   { $wtr->print( nfreeze $content ) }

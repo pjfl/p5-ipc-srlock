@@ -1,5 +1,8 @@
 Revision history for IPC::SRLock
 
+0.24.1    2014-11-10 16:38:26
+          - Dropped atomic shm file writes from ::Fcntl. Unecessary
+          - Added async option. Blocks for memcached implementation
           - Optimized and retested memcache backend
 
 0.23.1    2014-09-15 15:51:17

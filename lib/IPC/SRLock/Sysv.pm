@@ -41,10 +41,12 @@ sub _build__share {
 }
 
 sub _fetch_share_data {
-   my ($self, $for_update) = @_; my $data;
+   my ($self, $for_update, $async) = @_; my $data;
 
-   defined $self->_share->lock( $for_update ? LOCK_EX : LOCK_SH )
-      or $self->throw( 'Failed to set semaphore' );
+   my $mode = $for_update ? LOCK_EX : LOCK_SH; $async and $mode |= LOCK_NB;
+   my $lock = $self->_share->lock( $mode );
+
+   defined $lock or $self->throw( 'Failed to set semaphore' ); $lock or return;
 
    try   { $data = $self->_share->fetch; $data = $data ? thaw( $data ) : {} }
    catch { $self->throw( "${_}: ${OS_ERROR}" ) };
@@ -73,7 +75,7 @@ sub _reset {
 
    $self->_unlock_share;
 
-   $found or $self->throw( error => 'Lock [_1] not set', args => [ $key ] );
+   $found or $self->throw( 'Lock [_1] not set', args => [ $key ] );
    return 1;
 }
 
@@ -84,45 +86,46 @@ sub _set {
 
    while (not $lock_set) {
       my ($lock, $lpid, $ltime, $ltimeout);
+      my $data  = $self->_fetch_share_data( 1, $args->{async} );
       my $found = 0; my $now = time; my $timedout = 0;
-      my $data  = $self->_fetch_share_data( 1 );
 
-      if (exists $data->{ $key } and $lock = $data->{ $key }) {
-         $lpid     = $lock->{pid    };
-         $ltime    = $lock->{stime  };
-         $ltimeout = $lock->{timeout};
+      if ($data) {
+         if (exists $data->{ $key } and $lock = $data->{ $key }) {
+            $lpid     = $lock->{pid    };
+            $ltime    = $lock->{stime  };
+            $ltimeout = $lock->{timeout};
 
-         if ($now > $ltime + $ltimeout) {
+            if ($now > $ltime + $ltimeout) {
+               $data->{ $key } = { pid     => $pid,
+                                   stime   => $now,
+                                   timeout => $timeout };
+               $lock_set = $self->_store_share_data( $data );
+               $timedout = 1;
+            }
+            else { $found = 1 }
+         }
+         else {
             $data->{ $key } = { pid     => $pid,
                                 stime   => $now,
                                 timeout => $timeout };
             $lock_set = $self->_store_share_data( $data );
-            $timedout = 1;
          }
-         else { $found = 1 }
-      }
-      else {
-         $data->{ $key } = { pid => $pid, stime => $now, timeout => $timeout };
-         $lock_set = $self->_store_share_data( $data );
-      }
 
-      $self->_unlock_share;
+         $self->_unlock_share;
+      }
 
       not $lock_set and $args->{async} and return 0;
 
-      if ($timedout) {
-         my $text = $self->timeout_error( $key, $lpid, $ltime, $ltimeout );
-         $self->log->error( $text );
-      }
+      $timedout and $self->log->error( $self->timeout_error
+                                       ( $key, $lpid, $ltime, $ltimeout ) );
 
-      if (!$lock_set && $self->patience && $now > $start + $self->patience) {
-         $self->throw( error => 'Lock [_1] timed out', args => [ $key ] );
-      }
+      not $lock_set and $self->patience and $now > $start + $self->patience
+         and $self->throw( 'Lock [_1] timed out', args => [ $key ] );
 
       $found and usleep( 1_000_000 * $self->nap_time );
    }
 
-   $self->debug and $self->log->debug( "Lock ${key} set by ${pid}\n" );
+   $self->log->debug( "Lock ${key} set by ${pid}" );
    return 1;
 }
 

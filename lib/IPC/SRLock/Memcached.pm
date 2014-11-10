@@ -62,8 +62,7 @@ sub _reset {
          delete $recs->{ $key } and $found = 1;
          $found and $self->memd->set( $self->shmfile, $recs );
          $self->memd->delete( $self->lockfile );
-         $found or $self->throw( error => 'Lock [_1] not set',
-                                 args  => [ $key ] );
+         $found or $self->throw( 'Lock [_1] not set', args => [ $key ] );
          return 1;
       }
 
@@ -106,7 +105,7 @@ sub _set {
          $self->memd->delete( $self->lockfile );
 
          if ($lock_set) {
-            $self->debug and $self->log->debug( "Lock ${key} set by ${pid}\n" );
+            $self->log->debug( "Lock ${key} set by ${pid}" );
             return 1;
          }
          elsif ($args->{async}) { return 0 }
@@ -122,7 +121,7 @@ sub _sleep_or_throw {
    my ($self, $start, $now, $key) = @_;
 
    $self->patience and $now > $start + $self->patience
-      and $self->throw( error => 'Lock [_1] timed out', args => [ $key ] );
+      and $self->throw( 'Lock [_1] timed out', args => [ $key ] );
    usleep( 1_000_000 * $self->nap_time );
    return;
 }
