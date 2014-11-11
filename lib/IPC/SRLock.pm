@@ -2,7 +2,7 @@ package IPC::SRLock;
 
 use 5.010001;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.24.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.24.%d', q$Rev: 2 $ =~ /\d+/gmx );
 
 use Moo;
 use File::DataClass::Types  qw( HashRef LoadableClass Object );
@@ -60,7 +60,7 @@ IPC::SRLock - Set/reset locking semantics to single thread processes
 
 =head1 Version
 
-This documents version v0.24.$Rev: 1 $ of L<IPC::SRLock>
+This documents version v0.24.$Rev: 2 $ of L<IPC::SRLock>
 
 =head1 Synopsis
 
@@ -95,7 +95,7 @@ Defines the following attributes;
 
 =item C<debug>
 
-Mutable attribute if true will log lock set events at the debug level
+Immutable attribute if true will log lock set events at the debug level
 
 =item C<type>
 
