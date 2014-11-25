@@ -2,21 +2,23 @@ package IPC::SRLock;
 
 use 5.010001;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.24.%d', q$Rev: 2 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.24.%d', q$Rev: 3 $ =~ /\d+/gmx );
 
 use Moo;
-use File::DataClass::Types  qw( HashRef LoadableClass Object );
-use Type::Utils             qw( enum );
+use File::DataClass::Types qw( HashRef LoadableClass NonEmptySimpleStr Object );
 
-my $Lock_Type = enum 'Lock_Type' => [ qw( fcntl memcached sysv ) ];
+# Private functions
+my $_impl_attr = sub {
+   return { name => (lc join '_', split m{ :: }mx, __PACKAGE__),
+            %{ $_[ 0 ]->_implementation_attr }, };
+};
 
 # Public attributes
-has 'type'                  => is => 'ro',   isa => $Lock_Type,
-   default                  => 'fcntl';
+has 'type' => is => 'ro', isa => NonEmptySimpleStr, default => 'fcntl';
 
 # Private attributes
 has '_implementation'       => is => 'lazy', isa => Object, builder => sub {
-   $_[ 0 ]->_implementation_class->new( $_[ 0 ]->_get_attr ) },
+   $_[ 0 ]->_implementation_class->new( $_impl_attr->( $_[ 0 ] ) ) },
    handles                  => [ qw( debug get_table list reset set ) ],
    init_arg                 => undef;
 
@@ -29,7 +31,7 @@ has '_implementation_class' => is => 'lazy', isa => LoadableClass,
 
 # Construction
 around 'BUILDARGS' => sub {
-   my ($next, $self, @args) = @_; my $attr = $self->$next( @args );
+   my ($orig, $self, @args) = @_; my $attr = $orig->( $self, @args );
 
    my $type = delete $attr->{type}; $attr = { _implementation_attr => $attr };
 
@@ -38,12 +40,6 @@ around 'BUILDARGS' => sub {
 
 sub BUILD {
    my $self = shift; $self->_implementation; return;
-}
-
-# Private methods
-sub _get_attr {
-   return { name => (lc join '_', split m{ :: }mx, __PACKAGE__),
-            %{ $_[ 0 ]->_implementation_attr }, };
 }
 
 1;
@@ -60,7 +56,7 @@ IPC::SRLock - Set/reset locking semantics to single thread processes
 
 =head1 Version
 
-This documents version v0.24.$Rev: 2 $ of L<IPC::SRLock>
+This documents version v0.24.$Rev: 3 $ of L<IPC::SRLock>
 
 =head1 Synopsis
 

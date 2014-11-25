@@ -22,12 +22,61 @@ has 'size'     => is => 'ro',   isa => PositiveInt,       default  => 65_536;
 # Private attributes
 has '_share'   => is => 'lazy', isa => Object,            init_arg => undef;
 
+# Private functions
+my $_hash_from = sub {
+   my (@args) = @_; $args[ 0 ] or return {};
+
+   return ref $args[ 0 ] ? $args[ 0 ] : { @args };
+};
+
+# Private methods
+my $_set_args = sub {
+   my $self = shift; my $args = $_hash_from->( @_ );
+
+   $args->{k} or $self->throw( 'No key specified' ); $args->{k} .= q();
+   $args->{p} //= $PID;
+   $args->{t} //= $self->time_out;
+
+   return $args;
+};
+
+my $_store_share_data = sub {
+   my ($self, $data) = @_;
+
+   try   { $self->_share->store( nfreeze $data ) }
+   catch { $self->throw( "${_}: ${OS_ERROR}" ) };
+
+   return 1;
+};
+
+my $_unlock_share = sub {
+   my $self = shift;
+
+   defined $self->_share->unlock or $self->throw( 'Failed to unset semaphore' );
+
+   return;
+};
+
+my $_fetch_share_data = sub {
+   my ($self, $for_update, $async) = @_; my $data;
+
+   my $mode = $for_update ? LOCK_EX : LOCK_SH; $async and $mode |= LOCK_NB;
+   my $lock = $self->_share->lock( $mode );
+
+   defined $lock or $self->throw( 'Failed to set semaphore' ); $lock or return;
+
+   try   { $data = $self->_share->fetch; $data = $data ? thaw( $data ) : {} }
+   catch { $self->throw( "${_}: ${OS_ERROR}" ) };
+
+   not $for_update and $self->$_unlock_share;
+   return $data;
+};
+
 # Construction
 sub BUILD {
    my $self = shift; $self->_share; return;
 }
 
-# Private methods
 sub _build__share {
    my $self = shift; my $share;
 
@@ -40,23 +89,9 @@ sub _build__share {
    return $share;
 }
 
-sub _fetch_share_data {
-   my ($self, $for_update, $async) = @_; my $data;
-
-   my $mode = $for_update ? LOCK_EX : LOCK_SH; $async and $mode |= LOCK_NB;
-   my $lock = $self->_share->lock( $mode );
-
-   defined $lock or $self->throw( 'Failed to set semaphore' ); $lock or return;
-
-   try   { $data = $self->_share->fetch; $data = $data ? thaw( $data ) : {} }
-   catch { $self->throw( "${_}: ${OS_ERROR}" ) };
-
-   not $for_update and $self->_unlock_share;
-   return $data;
-}
-
-sub _list {
-   my $self = shift; my $data = $self->_fetch_share_data; my $list = [];
+# Public methods
+sub list {
+   my $self = shift; my $data = $self->$_fetch_share_data; my $list = [];
 
    while (my ($key, $info) = each %{ $data }) {
       push @{ $list }, { key     => $key,
@@ -68,25 +103,31 @@ sub _list {
    return $list;
 }
 
-sub _reset {
-   my ($self, $key) = @_; my $data = $self->_fetch_share_data( 1 );
+sub reset {
+   my $self = shift; my $args = $_hash_from->( @_ );
 
-   my $found = delete $data->{ $key } and $self->_store_share_data( $data );
+   my $key = $args->{k} or $self->throw( 'No key specified' ); $key = "${key}";
 
-   $self->_unlock_share;
+   my $data = $self->$_fetch_share_data( 1 );
+
+   my $found = delete $data->{ $key } and $self->$_store_share_data( $data );
+
+   $self->$_unlock_share;
 
    $found or $self->throw( 'Lock [_1] not set', args => [ $key ] );
    return 1;
 }
 
-sub _set {
-   my ($self, $args) = @_; my $lock_set; my $start = time;
+sub set {
+   my $self = shift; my $args = $self->$_set_args( @_ ); my $start = time;
 
    my $key = $args->{k}; my $pid = $args->{p}; my $timeout = $args->{t};
 
+   my $lock_set;
+
    while (not $lock_set) {
       my ($lock, $lpid, $ltime, $ltimeout);
-      my $data  = $self->_fetch_share_data( 1, $args->{async} );
+      my $data  = $self->$_fetch_share_data( 1, $args->{async} );
       my $found = 0; my $now = time; my $timedout = 0;
 
       if ($data) {
@@ -99,7 +140,7 @@ sub _set {
                $data->{ $key } = { pid     => $pid,
                                    stime   => $now,
                                    timeout => $timeout };
-               $lock_set = $self->_store_share_data( $data );
+               $lock_set = $self->$_store_share_data( $data );
                $timedout = 1;
             }
             else { $found = 1 }
@@ -108,10 +149,10 @@ sub _set {
             $data->{ $key } = { pid     => $pid,
                                 stime   => $now,
                                 timeout => $timeout };
-            $lock_set = $self->_store_share_data( $data );
+            $lock_set = $self->$_store_share_data( $data );
          }
 
-         $self->_unlock_share;
+         $self->$_unlock_share;
       }
 
       not $lock_set and $args->{async} and return 0;
@@ -127,23 +168,6 @@ sub _set {
 
    $self->log->debug( "Lock ${key} set by ${pid}" );
    return 1;
-}
-
-sub _store_share_data {
-   my ($self, $data) = @_;
-
-   try   { $self->_share->store( nfreeze $data ) }
-   catch { $self->throw( "${_}: ${OS_ERROR}" ) };
-
-   return 1;
-}
-
-sub _unlock_share {
-   my $self = shift;
-
-   defined $self->_share->unlock or $self->throw( 'Failed to unset semaphore' );
-
-   return;
 }
 
 1;

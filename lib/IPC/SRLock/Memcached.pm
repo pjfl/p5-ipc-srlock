@@ -4,6 +4,7 @@ use namespace::autoclean;
 
 use Moo;
 use Cache::Memcached;
+use English                qw( -no_match_vars );
 use File::DataClass::Types qw( ArrayRef NonEmptySimpleStr Object );
 use Time::HiRes            qw( usleep );
 
@@ -24,8 +25,35 @@ has '_memd'    => is => 'lazy', isa => Object, builder => sub {
                           servers   => $_[ 0 ]->servers ) },
    init_arg    => undef, reader => 'memd';
 
+# Private functions
+my $_hash_from = sub {
+   my (@args) = @_; $args[ 0 ] or return {};
+
+   return ref $args[ 0 ] ? $args[ 0 ] : { @args };
+};
+
 # Private methods
-sub _list {
+my $_set_args = sub {
+   my $self = shift; my $args = $_hash_from->( @_ );
+
+   $args->{k} or $self->throw( 'No key specified' ); $args->{k} .= q();
+   $args->{p} //= $PID;
+   $args->{t} //= $self->time_out;
+
+   return $args;
+};
+
+my $_sleep_or_throw = sub {
+   my ($self, $start, $now, $key) = @_;
+
+   $self->patience and $now > $start + $self->patience
+      and $self->throw( 'Lock [_1] timed out', args => [ $key ] );
+   usleep( 1_000_000 * $self->nap_time );
+   return;
+};
+
+# Public methods
+sub list {
    my $self = shift; my $list = []; my $start = time;
 
    while (1) {
@@ -46,14 +74,16 @@ sub _list {
          return $list;
       }
 
-      $self->_sleep_or_throw( $start, time, $self->lockfile );
+      $self->$_sleep_or_throw( $start, time, $self->lockfile );
    }
 
    return;
 }
 
-sub _reset {
-   my ($self, $key) = @_; my $start = time;
+sub reset {
+   my $self = shift; my $args = $_hash_from->( @_ ); my $start = time;
+
+   my $key = $args->{k} or $self->throw( 'No key specified' ); $key = "${key}";
 
    while (1) {
       if ($self->memd->add( $self->lockfile, 1, $self->patience + 30 )) {
@@ -66,14 +96,14 @@ sub _reset {
          return 1;
       }
 
-      $self->_sleep_or_throw( $start, time, $self->lockfile );
+      $self->$_sleep_or_throw( $start, time, $self->lockfile );
    }
 
    return;
 }
 
-sub _set {
-   my ($self, $args) = @_; my $start = time;
+sub set {
+   my $self = shift; my $args = $self->$_set_args( @_ ); my $start = time;
 
    my $key = $args->{k}; my $pid = $args->{p}; my $timeout = $args->{t};
 
@@ -111,18 +141,9 @@ sub _set {
          elsif ($args->{async}) { return 0 }
       }
 
-      $self->_sleep_or_throw( $start, $now, $self->lockfile );
+      $self->$_sleep_or_throw( $start, $now, $self->lockfile );
    }
 
-   return;
-}
-
-sub _sleep_or_throw {
-   my ($self, $start, $now, $key) = @_;
-
-   $self->patience and $now > $start + $self->patience
-      and $self->throw( 'Lock [_1] timed out', args => [ $key ] );
-   usleep( 1_000_000 * $self->nap_time );
    return;
 }
 

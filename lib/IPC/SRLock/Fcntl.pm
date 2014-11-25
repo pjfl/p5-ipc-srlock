@@ -36,41 +36,15 @@ has '_shmfile'       => is => 'lazy', isa => Path, coerce => Path->coercion;
 has '_shmfile_name'  => is => 'ro',   isa => NonEmptySimpleStr,
    init_arg          => 'shmfile';
 
+# Private functions
+my $_hash_from = sub {
+   my (@args) = @_; $args[ 0 ] or return {};
+
+   return ref $args[ 0 ] ? $args[ 0 ] : { @args };
+};
+
 # Private methods
-sub _build__lockfile {
-   my $self = shift; my $path = $self->_lockfile_name;
-
-   $path ||= $self->tempdir->catfile( $self->name.'.lck' );
-   $path =~ $self->pattern
-      or $self->throw( 'Path [_1] cannot untaint', args => [ $path ] );
-   return $path;
-}
-
-sub _build__shmfile {
-   my $self = shift; my $path = $self->_shmfile_name;
-
-   $path ||= $self->tempdir->catfile( $self->name.'.shm' );
-   $path =~ $self->pattern
-      or $self->throw( 'Path [_1] cannot untaint', args => [ $path ] );
-   return $path;
-}
-
-sub _list {
-   my $self = shift; my $list = [];
-
-   my ($lock_file, $shm_content) = $self->_read_shmfile; $lock_file->close;
-
-   while (my ($key, $info) = each %{ $shm_content }) {
-      push @{ $list }, { key     => $key,
-                         pid     => $info->{spid},
-                         stime   => $info->{stime},
-                         timeout => $info->{timeout} };
-   }
-
-   return $list;
-}
-
-sub _read_shmfile {
+my $_read_shmfile = sub {
    my ($self, $async) = @_; my ($file, $content);
 
    my $old_umask = umask $self->umask;
@@ -90,27 +64,87 @@ sub _read_shmfile {
 
    $shmfile->close; umask $old_umask;
    return ($file, $content);
+};
+
+my $_set_args = sub {
+   my $self = shift; my $args = $_hash_from->( @_ );
+
+   $args->{k} or $self->throw( 'No key specified' ); $args->{k} .= q();
+   $args->{p} //= $PID;
+   $args->{t} //= $self->time_out;
+
+   return $args;
+};
+
+my $_write_shmfile = sub {
+   my ($self, $file, $content) = @_; my $wtr;
+
+   try   { $wtr = $self->_shmfile->assert_open( 'w', $self->mode ) }
+   catch { $file->close; $self->throw( $_ ) };
+
+   try   { $wtr->print( nfreeze $content ) }
+   catch { $wtr->delete; $file->close; $self->throw( $_ ) };
+
+   $wtr->close; $file->close;
+   return;
+};
+
+# Construction
+sub _build__lockfile {
+   my $self = shift; my $path = $self->_lockfile_name;
+
+   $path ||= $self->tempdir->catfile( $self->name.'.lck' );
+   $path =~ $self->pattern
+      or $self->throw( 'Path [_1] cannot untaint', args => [ $path ] );
+   return $path;
 }
 
-sub _reset {
-   my ($self, $key) = @_; my $found;
+sub _build__shmfile {
+   my $self = shift; my $path = $self->_shmfile_name;
 
-   my ($lock_file, $shm_content) = $self->_read_shmfile;
+   $path ||= $self->tempdir->catfile( $self->name.'.shm' );
+   $path =~ $self->pattern
+      or $self->throw( 'Path [_1] cannot untaint', args => [ $path ] );
+   return $path;
+}
+
+# Public methods
+sub list {
+   my $self = shift; my $list = [];
+
+   my ($lock_file, $shm_content) = $self->$_read_shmfile; $lock_file->close;
+
+   while (my ($key, $info) = each %{ $shm_content }) {
+      push @{ $list }, { key     => $key,
+                         pid     => $info->{spid},
+                         stime   => $info->{stime},
+                         timeout => $info->{timeout} };
+   }
+
+   return $list;
+}
+
+sub reset {
+   my $self = shift; my $args = $_hash_from->( @_ );
+
+   my $key = $args->{k} or $self->throw( 'No key specified' ); $key = "${key}";
+
+   my ($lock_file, $shm_content) = $self->$_read_shmfile; my $found;
 
    $found = exists $shm_content->{ $key } and delete $shm_content->{ $key };
-   $found and $self->_write_shmfile( $lock_file, $shm_content );
+   $found and $self->$_write_shmfile( $lock_file, $shm_content );
    $lock_file->close;
    $found or $self->throw( 'Lock [_1] not set', args => [ $key ] );
    return 1;
 }
 
-sub _set {
-   my ($self, $args) = @_; my $start = time;
+sub set {
+   my $self = shift; my $args = $self->$_set_args( @_ ); my $start = time;
 
    my $key = $args->{k}; my $pid = $args->{p}; my $timeout = $args->{t};
 
    while (1) {
-      my ($lock_file, $shm_content) = $self->_read_shmfile( $args->{async} );
+      my ($lock_file, $shm_content) = $self->$_read_shmfile( $args->{async} );
 
       my $now = time; my $lock;
 
@@ -128,7 +162,7 @@ sub _set {
          unless ($lock) {
             $shm_content->{ $key }
                = { spid => $pid, stime => $now, timeout => $timeout };
-            $self->_write_shmfile( $lock_file, $shm_content );
+            $self->$_write_shmfile( $lock_file, $shm_content );
             $self->log->debug( "Lock ${key} set by ${pid}" );
             return 1;
          }
@@ -143,19 +177,6 @@ sub _set {
    }
 
    return; # Not reached
-}
-
-sub _write_shmfile {
-   my ($self, $file, $content) = @_; my $wtr;
-
-   try   { $wtr = $self->_shmfile->assert_open( 'w', $self->mode ) }
-   catch { $file->close; $self->throw( $_ ) };
-
-   try   { $wtr->print( nfreeze $content ) }
-   catch { $wtr->delete; $file->close; $self->throw( $_ ) };
-
-   $wtr->close; $file->close;
-   return;
 }
 
 1;

@@ -68,46 +68,17 @@ sub get_table {
    return $data;
 }
 
-sub list {
-   my $self = shift; return $self->_list;
-}
-
-sub reset {
-   my ($self, @args) = @_; my $args = __hash_from( @args );
-
-   my $key = $args->{k} or $self->throw( 'No key specified' );
-
-   return $self->_reset( "${key}" );
-}
-
-sub set {
-   my ($self, @args) = @_; my $args = __hash_from( @args );
-
-   $args->{k} or $self->throw( 'No key specified' ); $args->{k} .= q();
-   $args->{p} //= $PID;
-   $args->{t} //= $self->time_out;
-
-   return $self->_set( $args );
-}
-
 sub throw {
-   my ($self, @args) = @_; return $self->exception_class->throw( @args );
+   my $self = shift; return $self->exception_class->throw( @_ );
 }
 
 sub timeout_error {
    my ($self, $key, $pid, $when, $after) = @_; my $text;
 
    $text  = "Timed out ${key} set by ${pid} on ";
-   $text .= time2str( q(%Y-%m-%d at %H:%M), $when );
+   $text .= time2str( '%Y-%m-%d at %H:%M', $when );
    $text .= " after ${after} seconds\n";
    return $text;
-}
-
-# Private functions
-sub __hash_from {
-   my (@args) = @_; $args[ 0 ] or return {};
-
-   return ref $args[ 0 ] ? $args[ 0 ] : { @args };
 }
 
 1;
