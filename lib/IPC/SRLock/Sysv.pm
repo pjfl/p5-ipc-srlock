@@ -6,6 +6,7 @@ use Moo;
 use English                qw( -no_match_vars );
 use File::DataClass::Types qw( NonEmptySimpleStr Object PositiveInt );
 use IPC::ShareLite         qw( :lock );
+use IPC::SRLock::Functions qw( Unspecified hash_from set_args );
 use Storable               qw( nfreeze thaw );
 use Time::HiRes            qw( usleep );
 use Try::Tiny;
@@ -23,23 +24,6 @@ has 'size'     => is => 'ro',   isa => PositiveInt,       default  => 65_536;
 has '_share'   => is => 'lazy', isa => Object,            init_arg => undef;
 
 # Private functions
-my $_hash_from = sub {
-   my (@args) = @_; $args[ 0 ] or return {};
-
-   return ref $args[ 0 ] ? $args[ 0 ] : { @args };
-};
-
-# Private methods
-my $_set_args = sub {
-   my $self = shift; my $args = $_hash_from->( @_ );
-
-   $args->{k} or $self->throw( 'No key specified' ); $args->{k} .= q();
-   $args->{p} //= $PID;
-   $args->{t} //= $self->time_out;
-
-   return $args;
-};
-
 my $_store_share_data = sub {
    my ($self, $data) = @_;
 
@@ -104,22 +88,19 @@ sub list {
 }
 
 sub reset {
-   my $self = shift; my $args = $_hash_from->( @_ );
-
-   my $key = $args->{k} or $self->throw( 'No key specified' ); $key = "${key}";
-
-   my $data = $self->$_fetch_share_data( 1 );
-
+   my $self  = shift;
+   my $args  = hash_from @_;
+   my $key   = $args->{k} or $self->throw( Unspecified, [ 'key' ] );
+   my $data  = $self->$_fetch_share_data( 1 ); $key = "${key}";
    my $found = delete $data->{ $key } and $self->$_store_share_data( $data );
 
    $self->$_unlock_share;
-
    $found or $self->throw( 'Lock [_1] not set', args => [ $key ] );
    return 1;
 }
 
 sub set {
-   my $self = shift; my $args = $self->$_set_args( @_ ); my $start = time;
+   my $self = shift; my $args = set_args $self, @_; my $start = time;
 
    my $key = $args->{k}; my $pid = $args->{p}; my $timeout = $args->{t};
 
@@ -218,15 +199,15 @@ Maximum size of a shared memory segment. Defaults to 65_536
 
 Create the shared memory segment at construction time
 
-=head2 _list
+=head2 list
 
 List the contents of the lock table
 
-=head2 _reset
+=head2 reset
 
 Delete a lock from the lock table
 
-=head2 _set
+=head2 set
 
 Set a lock in the lock table
 

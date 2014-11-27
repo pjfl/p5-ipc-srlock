@@ -6,6 +6,7 @@ use Moo;
 use Cache::Memcached;
 use English                qw( -no_match_vars );
 use File::DataClass::Types qw( ArrayRef NonEmptySimpleStr Object );
+use IPC::SRLock::Functions qw( Unspecified hash_from set_args );
 use Time::HiRes            qw( usleep );
 
 extends q(IPC::SRLock::Base);
@@ -25,29 +26,12 @@ has '_memd'    => is => 'lazy', isa => Object, builder => sub {
                           servers   => $_[ 0 ]->servers ) },
    init_arg    => undef, reader => 'memd';
 
-# Private functions
-my $_hash_from = sub {
-   my (@args) = @_; $args[ 0 ] or return {};
-
-   return ref $args[ 0 ] ? $args[ 0 ] : { @args };
-};
-
 # Private methods
-my $_set_args = sub {
-   my $self = shift; my $args = $_hash_from->( @_ );
-
-   $args->{k} or $self->throw( 'No key specified' ); $args->{k} .= q();
-   $args->{p} //= $PID;
-   $args->{t} //= $self->time_out;
-
-   return $args;
-};
-
 my $_sleep_or_throw = sub {
    my ($self, $start, $now, $key) = @_;
 
    $self->patience and $now > $start + $self->patience
-      and $self->throw( 'Lock [_1] timed out', args => [ $key ] );
+      and $self->throw( 'Lock [_1] timed out', [ $key ] );
    usleep( 1_000_000 * $self->nap_time );
    return;
 };
@@ -81,9 +65,11 @@ sub list {
 }
 
 sub reset {
-   my $self = shift; my $args = $_hash_from->( @_ ); my $start = time;
+   my $self = shift; my $args = hash_from @_; my $start = time;
 
-   my $key = $args->{k} or $self->throw( 'No key specified' ); $key = "${key}";
+   my $key = $args->{k} or $self->throw( Unspecified, [ 'key' ] );
+
+   $key = "${key}";
 
    while (1) {
       if ($self->memd->add( $self->lockfile, 1, $self->patience + 30 )) {
@@ -92,7 +78,7 @@ sub reset {
          delete $recs->{ $key } and $found = 1;
          $found and $self->memd->set( $self->shmfile, $recs );
          $self->memd->delete( $self->lockfile );
-         $found or $self->throw( 'Lock [_1] not set', args => [ $key ] );
+         $found or $self->throw( 'Lock [_1] not set', [ $key ] );
          return 1;
       }
 
@@ -103,7 +89,7 @@ sub reset {
 }
 
 sub set {
-   my $self = shift; my $args = $self->$_set_args( @_ ); my $start = time;
+   my $self = shift; my $args = set_args $self, @_; my $start = time;
 
    my $key = $args->{k}; my $pid = $args->{p}; my $timeout = $args->{t};
 
@@ -191,15 +177,15 @@ Name of the key to the lock table record. Defaults to C<_shmfile>
 
 =head1 Subroutines/Methods
 
-=head2 _list
+=head2 list
 
 List the contents of the lock table
 
-=head2 _reset
+=head2 reset
 
 Delete a lock from the lock table
 
-=head2 _set
+=head2 set
 
 Set a lock in the lock table
 

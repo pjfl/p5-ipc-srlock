@@ -2,23 +2,16 @@ package IPC::SRLock;
 
 use 5.010001;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.24.%d', q$Rev: 3 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.24.%d', q$Rev: 4 $ =~ /\d+/gmx );
 
 use Moo;
 use File::DataClass::Types qw( HashRef LoadableClass NonEmptySimpleStr Object );
-
-# Private functions
-my $_impl_attr = sub {
-   return { name => (lc join '_', split m{ :: }mx, __PACKAGE__),
-            %{ $_[ 0 ]->_implementation_attr }, };
-};
 
 # Public attributes
 has 'type' => is => 'ro', isa => NonEmptySimpleStr, default => 'fcntl';
 
 # Private attributes
-has '_implementation'       => is => 'lazy', isa => Object, builder => sub {
-   $_[ 0 ]->_implementation_class->new( $_impl_attr->( $_[ 0 ] ) ) },
+has '_implementation'       => is => 'lazy', isa => Object,
    handles                  => [ qw( debug get_table list reset set ) ],
    init_arg                 => undef;
 
@@ -42,6 +35,14 @@ sub BUILD {
    my $self = shift; $self->_implementation; return;
 }
 
+sub _build__implementation {
+   my $self = shift;
+   my $attr = { name => (lc join '_', split m{ :: }mx, __PACKAGE__),
+                %{ $self->_implementation_attr }, };
+
+   return $self->_implementation_class->new( $attr );
+}
+
 1;
 
 __END__
@@ -56,7 +57,7 @@ IPC::SRLock - Set/reset locking semantics to single thread processes
 
 =head1 Version
 
-This documents version v0.24.$Rev: 3 $ of L<IPC::SRLock>
+This documents version v0.24.$Rev: 4 $ of L<IPC::SRLock>
 
 =head1 Synopsis
 

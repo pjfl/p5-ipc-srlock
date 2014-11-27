@@ -1,5 +1,6 @@
 Revision history for IPC::SRLock
 
+          - Now using exception classes
           - Switched to private lexical subs
 
 0.24.1    2014-11-10 16:38:26

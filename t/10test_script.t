@@ -31,7 +31,7 @@ isa_ok $lock, 'IPC::SRLock';
 eval { $lock->set() };
 
 if ($e = File::DataClass::Exception->caught()) {
-   is $e->error, 'No key specified', 'Error no key';
+   like "${e}", qr{ \Qnot specified\E }mx, 'Error no key';
 }
 else {
    ok 0, 'Expected set error missing';

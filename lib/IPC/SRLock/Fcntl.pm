@@ -8,6 +8,7 @@ use File::DataClass::Constants qw( LOCK_BLOCKING LOCK_NONBLOCKING );
 use File::DataClass::Types     qw( Directory NonEmptySimpleStr
                                    Path PositiveInt RegexpRef );
 use File::Spec;
+use IPC::SRLock::Functions     qw( Unspecified hash_from set_args );
 use Storable                   qw( nfreeze thaw );
 use Time::HiRes                qw( usleep );
 use Try::Tiny;
@@ -36,13 +37,6 @@ has '_shmfile'       => is => 'lazy', isa => Path, coerce => Path->coercion;
 has '_shmfile_name'  => is => 'ro',   isa => NonEmptySimpleStr,
    init_arg          => 'shmfile';
 
-# Private functions
-my $_hash_from = sub {
-   my (@args) = @_; $args[ 0 ] or return {};
-
-   return ref $args[ 0 ] ? $args[ 0 ] : { @args };
-};
-
 # Private methods
 my $_read_shmfile = sub {
    my ($self, $async) = @_; my ($file, $content);
@@ -66,16 +60,6 @@ my $_read_shmfile = sub {
    return ($file, $content);
 };
 
-my $_set_args = sub {
-   my $self = shift; my $args = $_hash_from->( @_ );
-
-   $args->{k} or $self->throw( 'No key specified' ); $args->{k} .= q();
-   $args->{p} //= $PID;
-   $args->{t} //= $self->time_out;
-
-   return $args;
-};
-
 my $_write_shmfile = sub {
    my ($self, $file, $content) = @_; my $wtr;
 
@@ -95,7 +79,7 @@ sub _build__lockfile {
 
    $path ||= $self->tempdir->catfile( $self->name.'.lck' );
    $path =~ $self->pattern
-      or $self->throw( 'Path [_1] cannot untaint', args => [ $path ] );
+      or $self->throw( 'Path [_1] cannot untaint', [ $path ] );
    return $path;
 }
 
@@ -104,7 +88,7 @@ sub _build__shmfile {
 
    $path ||= $self->tempdir->catfile( $self->name.'.shm' );
    $path =~ $self->pattern
-      or $self->throw( 'Path [_1] cannot untaint', args => [ $path ] );
+      or $self->throw( 'Path [_1] cannot untaint', [ $path ] );
    return $path;
 }
 
@@ -125,21 +109,21 @@ sub list {
 }
 
 sub reset {
-   my $self = shift; my $args = $_hash_from->( @_ );
-
-   my $key = $args->{k} or $self->throw( 'No key specified' ); $key = "${key}";
-
-   my ($lock_file, $shm_content) = $self->$_read_shmfile; my $found;
+   my $self = shift;
+   my $args = hash_from @_;
+   my $key  = $args->{k} or $self->throw( Unspecified, [ 'key' ] );
+   my ($lock_file, $shm_content) = $self->$_read_shmfile; $key = "${key}";
+   my $found;
 
    $found = exists $shm_content->{ $key } and delete $shm_content->{ $key };
    $found and $self->$_write_shmfile( $lock_file, $shm_content );
    $lock_file->close;
-   $found or $self->throw( 'Lock [_1] not set', args => [ $key ] );
+   $found or $self->throw( 'Lock [_1] not set', [ $key ] );
    return 1;
 }
 
 sub set {
-   my $self = shift; my $args = $self->$_set_args( @_ ); my $start = time;
+   my $self = shift; my $args = set_args $self, @_; my $start = time;
 
    my $key = $args->{k}; my $pid = $args->{p}; my $timeout = $args->{t};
 
@@ -171,7 +155,7 @@ sub set {
       $lock_file->close; $args->{async} and return 0;
 
       $self->patience and $now > $start + $self->patience
-         and $self->throw( 'Lock [_1] timed out', args => [ $key ] );
+         and $self->throw( 'Lock [_1] timed out', [ $key ] );
 
       usleep( 1_000_000 * $self->nap_time );
    }
@@ -238,7 +222,7 @@ The umask to set when creating the lock table file. Defaults to 0
 
 =head1 Subroutines/Methods
 
-=head2 _list
+=head2 list
 
 List the contents of the lock table
 
@@ -246,11 +230,11 @@ List the contents of the lock table
 
 Read the file containing the lock table from disk
 
-=head2 _reset
+=head2 reset
 
 Delete a lock from the lock table
 
-=head2 _set
+=head2 set
 
 Set a lock in the lock table
 

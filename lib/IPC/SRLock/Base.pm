@@ -4,7 +4,6 @@ use namespace::autoclean;
 
 use Moo;
 use Date::Format;
-use English                qw( -no_match_vars );
 use File::DataClass::Exception;
 use File::DataClass::Types qw( Bool ClassName LoadableClass
                                NonEmptySimpleStr Num Object PositiveInt );
@@ -53,7 +52,7 @@ sub get_table {
 
       $fields->{id   } = $lock->{key};
       $fields->{pid  } = $lock->{pid};
-      $fields->{stime} = time2str( q(%Y-%m-%d %H:%M:%S), $lock->{stime} );
+      $fields->{stime} = time2str( '%Y-%m-%d %H:%M:%S', $lock->{stime} );
 
       my $tleft = $lock->{stime} + $lock->{timeout} - time;
 
