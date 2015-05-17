@@ -1,5 +1,6 @@
 Revision history for IPC::SRLock
 
+          - Don't try to untaint undef on BUILDARGS
           - Added MANIFEST to repository to keep Travis happy
           - Added public repository and badges
           - Added Fake lock type

@@ -2,7 +2,7 @@ package IPC::SRLock;
 
 use 5.010001;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.24.%d', q$Rev: 6 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.24.%d', q$Rev: 7 $ =~ /\d+/gmx );
 
 use File::DataClass::Types qw( HashRef LoadableClass NonEmptySimpleStr Object );
 use Moo;
@@ -42,7 +42,9 @@ has '_implementation_class' => is => 'lazy', isa => LoadableClass,
 around 'BUILDARGS' => sub {
    my ($orig, $self, @args) = @_; my $attr = $orig->( $self, @args );
 
-   my $type = delete $attr->{type}; $attr = { _implementation_attr => $attr };
+   my $type = delete $attr->{type};
+
+   $attr = { _implementation_attr => $attr }; $type or return $attr;
 
    if ($type =~ m{ \A ([a-zA-Z0-9\:\+]+) \z }mx) { $attr->{type} = $1 }
    else { die "Type ${type} tainted" }
@@ -76,7 +78,7 @@ IPC::SRLock - Set/reset locking semantics to single thread processes
 
 =head1 Version
 
-This documents version v0.24.$Rev: 6 $ of L<IPC::SRLock>
+This documents version v0.24.$Rev: 7 $ of L<IPC::SRLock>
 
 =head1 Synopsis
 
