@@ -2,37 +2,58 @@ package IPC::SRLock::Fcntl;
 
 use namespace::autoclean;
 
-use Moo;
 use English                    qw( -no_match_vars );
 use File::DataClass::Constants qw( LOCK_BLOCKING LOCK_NONBLOCKING );
 use File::DataClass::Types     qw( Directory NonEmptySimpleStr
-                                   Path PositiveInt RegexpRef );
+                                   OctalNum Path PositiveInt RegexpRef );
 use File::Spec;
 use IPC::SRLock::Functions     qw( Unspecified hash_from set_args );
 use Storable                   qw( nfreeze thaw );
 use Time::HiRes                qw( usleep );
 use Try::Tiny;
+use Moo;
 
 extends q(IPC::SRLock::Base);
 
+# Attribute constructors
+my $_build__lockfile = sub {
+   my $self = shift; my $path = $self->_lockfile_name;
+
+   $path ||= $self->tempdir->catfile( $self->name.'.lck' );
+   $path =~ $self->pattern
+      or $self->throw( 'Path [_1] cannot untaint', [ $path ] );
+   return $path;
+};
+
+my $_build__shmfile = sub {
+   my $self = shift; my $path = $self->_shmfile_name;
+
+   $path ||= $self->tempdir->catfile( $self->name.'.shm' );
+   $path =~ $self->pattern
+      or $self->throw( 'Path [_1] cannot untaint', [ $path ] );
+   return $path;
+};
+
 # Public attributes
-has 'mode'    => is => 'ro', isa => PositiveInt, default => oct '0666';
+has 'mode'    => is => 'ro', isa => OctalNum, coerce => 1, default => '0666';
 
 has 'pattern' => is => 'ro', isa => RegexpRef,
    default    => sub { qr{ \A ([ ~:+./\-\\\w]+) \z }msx };
 
-has 'tempdir' => is => 'ro', isa => Directory, coerce => Directory->coercion,
+has 'tempdir' => is => 'ro', isa => Directory, coerce => 1,
    default    => sub { File::Spec->tmpdir };
 
 has 'umask'   => is => 'ro', isa => PositiveInt, default => 0;
 
 # Private attributes
-has '_lockfile'      => is => 'lazy', isa => Path, coerce => Path->coercion;
+has '_lockfile'      => is => 'lazy', isa => Path, coerce => 1,
+   builder           => $_build__lockfile;
 
 has '_lockfile_name' => is => 'ro',   isa => NonEmptySimpleStr,
    init_arg          => 'lockfile';
 
-has '_shmfile'       => is => 'lazy', isa => Path, coerce => Path->coercion;
+has '_shmfile'       => is => 'lazy', isa => Path, coerce => 1,
+   builder           => $_build__shmfile;
 
 has '_shmfile_name'  => is => 'ro',   isa => NonEmptySimpleStr,
    init_arg          => 'shmfile';
@@ -72,25 +93,6 @@ my $_write_shmfile = sub {
    $wtr->close; $file->close;
    return;
 };
-
-# Construction
-sub _build__lockfile {
-   my $self = shift; my $path = $self->_lockfile_name;
-
-   $path ||= $self->tempdir->catfile( $self->name.'.lck' );
-   $path =~ $self->pattern
-      or $self->throw( 'Path [_1] cannot untaint', [ $path ] );
-   return $path;
-}
-
-sub _build__shmfile {
-   my $self = shift; my $path = $self->_shmfile_name;
-
-   $path ||= $self->tempdir->catfile( $self->name.'.shm' );
-   $path =~ $self->pattern
-      or $self->throw( 'Path [_1] cannot untaint', [ $path ] );
-   return $path;
-}
 
 # Public methods
 sub list {

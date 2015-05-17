@@ -2,12 +2,12 @@ package IPC::SRLock::Memcached;
 
 use namespace::autoclean;
 
-use Moo;
 use Cache::Memcached;
 use English                qw( -no_match_vars );
 use File::DataClass::Types qw( ArrayRef NonEmptySimpleStr Object );
 use IPC::SRLock::Functions qw( Unspecified hash_from set_args );
 use Time::HiRes            qw( usleep );
+use Moo;
 
 extends q(IPC::SRLock::Base);
 
@@ -20,11 +20,11 @@ has 'servers'  => is => 'ro', isa => ArrayRef,
 has 'shmfile'  => is => 'ro', isa => NonEmptySimpleStr, default => '_shmfile';
 
 # Private attributes
-has '_memd'    => is => 'lazy', isa => Object, builder => sub {
-   Cache::Memcached->new( debug     => $_[ 0 ]->debug,
-                          namespace => $_[ 0 ]->name,
-                          servers   => $_[ 0 ]->servers ) },
-   init_arg    => undef, reader => 'memd';
+has '_memd'    => is => 'lazy', isa => Object, reader => 'memd',
+   builder     => sub { Cache::Memcached->new
+                           ( debug     => $_[ 0 ]->debug,
+                             namespace => $_[ 0 ]->name,
+                             servers   => $_[ 0 ]->servers ) };
 
 # Private methods
 my $_sleep_or_throw = sub {

@@ -8,12 +8,12 @@ use Test::More;
 use Test::Requires { version => 0.88 };
 use Module::Build;
 
-my $notes = {}; my $perl_ver;
+my $builder; my $notes = {}; my $perl_ver;
 
 BEGIN {
-   my $builder = eval { Module::Build->current };
-      $builder and $notes = $builder->notes;
-      $perl_ver = $notes->{min_perl_version} || 5.008;
+   $builder  =  eval { Module::Build->current };
+   $builder and $notes = $builder->notes;
+   $perl_ver =  $notes->{min_perl_version} || 5.008;
 }
 
 use Test::Requires "${perl_ver}";
@@ -24,7 +24,13 @@ use_ok 'IPC::SRLock';
 
 my $is_win32 = ($OSNAME eq 'MSWin32') || ($OSNAME eq 'cygwin');
 
-my $lock = IPC::SRLock->new( { tempdir => 't', type => 'fcntl' } ); my $e;
+my $lock = IPC::SRLock->new( { tempdir => 't', type => 'fake' } );
+
+is ref $lock->list, 'ARRAY', 'Fake list is empty';
+is $lock->set, 1, 'Sets fake lock';
+is $lock->reset, 1, 'Resets fake lock';
+
+$lock = IPC::SRLock->new( { tempdir => 't', type => 'fcntl' } ); my $e;
 
 isa_ok $lock, 'IPC::SRLock';
 

@@ -2,26 +2,39 @@ package IPC::SRLock::Sysv;
 
 use namespace::autoclean;
 
-use Moo;
 use English                qw( -no_match_vars );
-use File::DataClass::Types qw( NonEmptySimpleStr Object PositiveInt );
+use File::DataClass::Types qw( Object OctalNum PositiveInt );
 use IPC::ShareLite         qw( :lock );
 use IPC::SRLock::Functions qw( Unspecified hash_from set_args );
 use Storable               qw( nfreeze thaw );
 use Time::HiRes            qw( usleep );
 use Try::Tiny;
+use Moo;
 
 extends q(IPC::SRLock::Base);
 
+# Attribute constructors
+my $_build__share = sub {
+   my $self = shift; my $share;
+
+   try   { $share = IPC::ShareLite->new( '-key'    => $self->lockfile,
+                                         '-create' => 1,
+                                         '-mode'   => $self->mode,
+                                         '-size'   => $self->size ) }
+   catch { $self->throw( "${_}: ${OS_ERROR}" ) };
+
+   return $share;
+};
+
 # Public attributes
-has 'lockfile' => is => 'ro',   isa => PositiveInt,       default  => 12244237;
+has 'lockfile' => is => 'ro',   isa => PositiveInt, default => 12_244_237;
 
-has 'mode'     => is => 'ro',   isa => NonEmptySimpleStr, default  => '0666';
+has 'mode'     => is => 'ro',   isa => OctalNum, coerce => 1, default => '0666';
 
-has 'size'     => is => 'ro',   isa => PositiveInt,       default  => 65_536;
+has 'size'     => is => 'ro',   isa => PositiveInt, default => 65_536;
 
 # Private attributes
-has '_share'   => is => 'lazy', isa => Object,            init_arg => undef;
+has '_share'   => is => 'lazy', isa => Object, builder => $_build__share;
 
 # Private functions
 my $_store_share_data = sub {
@@ -59,18 +72,6 @@ my $_fetch_share_data = sub {
 # Construction
 sub BUILD {
    my $self = shift; $self->_share; return;
-}
-
-sub _build__share {
-   my $self = shift; my $share;
-
-   try   { $share = IPC::ShareLite->new( '-key'    => $self->lockfile,
-                                         '-create' => 1,
-                                         '-mode'   => oct $self->mode,
-                                         '-size'   => $self->size ) }
-   catch { $self->throw( "${_}: ${OS_ERROR}" ) };
-
-   return $share;
 }
 
 # Public methods

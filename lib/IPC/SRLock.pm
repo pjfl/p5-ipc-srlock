@@ -2,10 +2,27 @@ package IPC::SRLock;
 
 use 5.010001;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.24.%d', q$Rev: 4 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.24.%d', q$Rev: 5 $ =~ /\d+/gmx );
 
-use Moo;
 use File::DataClass::Types qw( HashRef LoadableClass NonEmptySimpleStr Object );
+use Moo;
+
+my $_build__implementation = sub {
+   my $self = shift; my $name = lc join '_', split m{ :: }mx, __PACKAGE__, -1;
+
+   my $attr = { name => $name, %{ $self->_implementation_attr }, };
+
+   return $self->_implementation_class->new( $attr );
+};
+
+my $_build__implementation_class = sub {
+   my $self = shift; my $type = $self->type; my $class;
+
+   if (substr $type, 0, 1 eq '+') { $class = substr $type, 1 }
+   else { $class = __PACKAGE__.'::'.(ucfirst $type) }
+
+   return $class;
+};
 
 # Public attributes
 has 'type' => is => 'ro', isa => NonEmptySimpleStr, default => 'fcntl';
@@ -13,14 +30,13 @@ has 'type' => is => 'ro', isa => NonEmptySimpleStr, default => 'fcntl';
 # Private attributes
 has '_implementation'       => is => 'lazy', isa => Object,
    handles                  => [ qw( debug get_table list reset set ) ],
-   init_arg                 => undef;
+   builder                  => $_build__implementation;
 
 has '_implementation_attr'  => is => 'ro',   isa => HashRef,
    default                  => sub { {} };
 
 has '_implementation_class' => is => 'lazy', isa => LoadableClass,
-   builder                  => sub { __PACKAGE__.'::'.(ucfirst $_[ 0 ]->type) },
-   init_arg                 => undef;
+   builder                  => $_build__implementation_class;
 
 # Construction
 around 'BUILDARGS' => sub {
@@ -28,19 +44,14 @@ around 'BUILDARGS' => sub {
 
    my $type = delete $attr->{type}; $attr = { _implementation_attr => $attr };
 
-   $type and $attr->{type} = $type; return $attr;
+   if ($type =~ m{ \A ([a-zA-Z0-9\:\+]+) \z }mx) { $attr->{type} = $1 }
+   else { die "Type ${type} tainted" }
+
+   return $attr;
 };
 
 sub BUILD {
    my $self = shift; $self->_implementation; return;
-}
-
-sub _build__implementation {
-   my $self = shift;
-   my $attr = { name => (lc join '_', split m{ :: }mx, __PACKAGE__),
-                %{ $self->_implementation_attr }, };
-
-   return $self->_implementation_class->new( $attr );
 }
 
 1;
@@ -57,7 +68,7 @@ IPC::SRLock - Set/reset locking semantics to single thread processes
 
 =head1 Version
 
-This documents version v0.24.$Rev: 4 $ of L<IPC::SRLock>
+This documents version v0.24.$Rev: 5 $ of L<IPC::SRLock>
 
 =head1 Synopsis
 

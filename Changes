@@ -1,5 +1,7 @@
 Revision history for IPC::SRLock
 
+          - Added Fake lock type
+          - Untaint type arg and add qualifying
           - Now using exception classes
           - Switched to private lexical subs
 

@@ -2,12 +2,12 @@ package IPC::SRLock::Base;
 
 use namespace::autoclean;
 
-use Moo;
 use Date::Format;
 use File::DataClass::Exception;
 use File::DataClass::Types qw( Bool ClassName LoadableClass
                                NonEmptySimpleStr Num Object PositiveInt );
 use Time::Elapsed          qw( elapsed );
+use Moo;
 
 # Public attributes
 has 'debug'           => is => 'ro',   isa => Bool, default => 0;
@@ -59,8 +59,7 @@ sub get_table {
       $fields->{tleft} = $tleft > 0 ? elapsed( $tleft ) : 'Expired';
       $fields->{class}->{tleft}
                        = $tleft < 1 ? 'error dataValue' : 'odd dataValue';
-      push @{ $data->{values} }, $fields;
-      $count++;
+      push @{ $data->{values} }, $fields; $count++;
    }
 
    $data->{count} = $count;
@@ -72,12 +71,11 @@ sub throw {
 }
 
 sub timeout_error {
-   my ($self, $key, $pid, $when, $after) = @_; my $text;
+   my ($self, $key, $pid, $when, $after) = @_;
 
-   $text  = "Timed out ${key} set by ${pid} on ";
-   $text .= time2str( '%Y-%m-%d at %H:%M', $when );
-   $text .= " after ${after} seconds\n";
-   return $text;
+   return "Timed out ${key} set by ${pid} on "
+        . time2str( '%Y-%m-%d at %H:%M', $when )
+        . " after ${after} seconds\n";
 }
 
 1;
