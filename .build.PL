@@ -1,42 +1,16 @@
 use strict;
 use warnings;
 
-use Module::Build 0.4202;
+use Module::Build ##{ $meta2{prereqs}->{configure}->{requires}->{'Module::Build'} ##};
 
 sub testing { $ENV{AUTOMATED_TESTING} || $ENV{PERL_CPAN_REPORTER_CONFIG}
                                       || $ENV{PERL5_CPANPLUS_IS_VERSION} }
 sub whimper { print {*STDOUT} $_[ 0 ]."\n"; exit 0 }
 
-my $perl_ver = 5.010001;
-my $name     = 'IPC-SRLock'; $name =~ s{ - }{::}gmx;
+my $perl_ver = ##{ $meta2{prereqs}->{runtime}->{requires}->{perl} ##};
+my $name     = '##{ $zilla->name ##}'; $name =~ s{ - }{::}gmx;
 my $prereqs  = {
-  'build_requires' => {
-    'File::DataClass' => 'v0.61.0',
-    'Module::Build' => '0.4202',
-    'Test::Requires' => '0.06',
-    'version' => '0.88'
-  },
-  'configure_requires' => {
-    'Module::Build' => '0.4202',
-    'version' => '0.88'
-  },
-  'recommends' => {
-    'Cache::Memcached' => '1.30'
-  },
-  'requires' => {
-    'Class::Null' => '2.110730',
-    'Date::Format' => '2.24',
-    'Exporter::Tiny' => '0.042',
-    'File::DataClass' => 'v0.61.0',
-    'IPC::ShareLite' => '0.17',
-    'Moo' => '2.000001',
-    'Time::Elapsed' => '0.31',
-    'Try::Tiny' => '0.22',
-    'Type::Tiny' => '1.000004',
-    'Unexpected' => 'v0.38.0',
-    'namespace::autoclean' => '0.22',
-    'perl' => '5.010001'
-  },
+##{ $plugin->get_prereqs( 1 ) ##}
 };
 my $osname   = lc $^O; ($osname eq 'mswin32' or $osname eq 'cygwin')
    and delete $prereqs->{requires}->{ 'IPC::ShareLite' };
@@ -52,7 +26,7 @@ Module::Build->new(
   'module_name' => $name,
   'notes'       => { min_perl_version => $perl_ver, testing => testing },
   %{ $prereqs },
-
+##{ $plugin->get_default('share_dir') ##}
 )->create_build_script;
 
 exit 0;

@@ -2,7 +2,7 @@ package IPC::SRLock;
 
 use 5.010001;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.24.%d', q$Rev: 5 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.24.%d', q$Rev: 6 $ =~ /\d+/gmx );
 
 use File::DataClass::Types qw( HashRef LoadableClass NonEmptySimpleStr Object );
 use Moo;
@@ -62,13 +62,21 @@ __END__
 
 =encoding utf8
 
+=begin html
+
+<a href="https://travis-ci.org/pjfl/p5-ipc-srlock"><img src="https://travis-ci.org/pjfl/p5-ipc-srlock.svg?branch=master" alt="Travis CI Badge"></a>
+<a href="http://badge.fury.io/pl/IPC-SRLock"><img src="https://badge.fury.io/pl/IPC-SRLock.svg" alt="CPAN Badge"></a>
+<a href="http://cpants.cpanauthors.org/dist/IPC-SRLock"><img src="http://cpants.cpanauthors.org/dist/IPC-SRLock.png" alt="Kwalitee Badge"></a>
+
+=end html
+
 =head1 Name
 
 IPC::SRLock - Set/reset locking semantics to single thread processes
 
 =head1 Version
 
-This documents version v0.24.$Rev: 5 $ of L<IPC::SRLock>
+This documents version v0.24.$Rev: 6 $ of L<IPC::SRLock>
 
 =head1 Synopsis
 

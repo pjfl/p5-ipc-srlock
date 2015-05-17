@@ -1,5 +1,6 @@
 Revision history for IPC::SRLock
 
+          - Added public repository and badges
           - Added Fake lock type
           - Untaint type arg and add qualifying
           - Now using exception classes
