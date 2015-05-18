@@ -1,5 +1,6 @@
 Revision history for IPC::SRLock
 
+0.25.1    2015-05-18 14:47:51
           - Don't try to untaint undef on BUILDARGS
           - Added MANIFEST to repository to keep Travis happy
           - Added public repository and badges
