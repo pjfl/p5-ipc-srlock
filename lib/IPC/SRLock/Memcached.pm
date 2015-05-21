@@ -5,7 +5,7 @@ use namespace::autoclean;
 use Cache::Memcached;
 use English                qw( -no_match_vars );
 use File::DataClass::Types qw( ArrayRef NonEmptySimpleStr Object );
-use IPC::SRLock::Functions qw( Unspecified hash_from set_args );
+use IPC::SRLock::Functions qw( Unspecified hash_from throw );
 use Time::HiRes            qw( usleep );
 use Moo;
 
@@ -31,7 +31,7 @@ my $_sleep_or_throw = sub {
    my ($self, $start, $now, $key) = @_;
 
    $self->patience and $now > $start + $self->patience
-      and $self->throw( 'Lock [_1] timed out', [ $key ] );
+      and throw 'Lock [_1] timed out', [ $key ];
    usleep( 1_000_000 * $self->nap_time );
    return;
 };
@@ -67,9 +67,7 @@ sub list {
 sub reset {
    my $self = shift; my $args = hash_from @_; my $start = time;
 
-   my $key = $args->{k} or $self->throw( Unspecified, [ 'key' ] );
-
-   $key = "${key}";
+   my $key = $args->{k} or throw Unspecified, [ 'key' ]; $key = "${key}";
 
    while (1) {
       if ($self->memd->add( $self->lockfile, 1, $self->patience + 30 )) {
@@ -78,7 +76,7 @@ sub reset {
          delete $recs->{ $key } and $found = 1;
          $found and $self->memd->set( $self->shmfile, $recs );
          $self->memd->delete( $self->lockfile );
-         $found or $self->throw( 'Lock [_1] not set', [ $key ] );
+         $found or throw 'Lock [_1] not set', [ $key ];
          return 1;
       }
 
@@ -89,7 +87,7 @@ sub reset {
 }
 
 sub set {
-   my $self = shift; my $args = set_args $self, @_; my $start = time;
+   my $self = shift; my $args = $self->_get_args( @_ ); my $start = time;
 
    my $key = $args->{k}; my $pid = $args->{p}; my $timeout = $args->{t};
 
@@ -102,11 +100,11 @@ sub set {
          if ($rec = $recs->{ $key }) {
             my @fields = split m{ , }mx, $rec;
 
-            if ($now > $fields[ 1 ] + $fields[ 2 ]) {
+            if ($fields[ 2 ] and $now > $fields[ 1 ] + $fields[ 2 ]) {
                $recs->{ $key } = "${pid},${now},${timeout}";
                $self->memd->set( $self->shmfile, $recs );
 
-               my $text = $self->timeout_error
+               my $text = $self->_timeout_error
                   ( $key, $fields[ 0 ], $fields[ 1 ], $fields[ 2 ] );
 
                $self->log->error( $text ); $lock_set = 1;
@@ -141,7 +139,7 @@ __END__
 
 =head1 Name
 
-IPC::SRLock::Memcached - Set/reset locks using libmemcache
+IPC::SRLock::Memcached - Set / reset locks using libmemcache
 
 =head1 Synopsis
 

@@ -20,6 +20,7 @@ BEGIN {
 use Test::Requires "${perl_ver}";
 use English qw( -no_match_vars );
 use File::DataClass::Exception;
+use File::DataClass::IO;
 
 use_ok 'IPC::SRLock';
 
@@ -28,7 +29,7 @@ my $is_win32 = ($OSNAME eq 'MSWin32') || ($OSNAME eq 'cygwin');
 my $lock = IPC::SRLock->new( { tempdir => 't', type => 'fake' } );
 
 is ref $lock->list, 'ARRAY', 'Fake list is empty';
-is $lock->set, 1, 'Sets fake lock';
+is $lock->set( k => 1 ), 1, 'Sets fake lock';
 is $lock->reset, 1, 'Resets fake lock';
 
 $lock = IPC::SRLock->new( { tempdir => 't', type => 'fcntl' } ); my $e;
@@ -63,11 +64,16 @@ $lock->reset( k => $PROGRAM_NAME );
 
 is [ map { $_->{key} } @{ $lock->list() } ]->[ 0 ], undef, 'Reset - fcntl';
 
-ok -f catfile( qw( t ipc_srlock.lck ) ), 'Lock file exists - fcntl';
-ok -f catfile( qw( t ipc_srlock.shm ) ), 'Shm file exists - fcntl';
+my $lockf = io[ 't', 'ipc_srlock.lck' ]; my $shmf = io[ 't', 'ipc_srlock.shm' ];
 
-unlink catfile( qw( t ipc_srlock.lck ) );
-unlink catfile( qw( t ipc_srlock.shm ) );
+ok $lockf->exists && $lockf->is_file, 'Lock file exists - fcntl';
+ok $shmf->exists && $shmf->is_file, 'Shm file exists - fcntl';
+
+$lockf->exists and $lockf->unlink; $shmf->exists and $shmf->unlink;
+
+$lockf = io[ 't', 'tlock' ]; $shmf = io[ 't', 'tshm' ];
+
+$lockf->exists and $lockf->unlink; $shmf->exists and $shmf->unlink;
 
 $lock = IPC::SRLock->new( { debug    => 1,
                             lockfile => catfile( qw( t tlock ) ),
@@ -83,7 +89,7 @@ is $lock->list->[ 0 ]->{timeout}, 100, 'Non default timeout - fcntl';
 
 is $lock->get_table->{count}, 1, 'Get table has count - fcntl';
 
-like $lock->_implementation->timeout_error( 0, 0, 0, 0 ),
+like $lock->_implementation->_timeout_error( 0, 0, 0, 0 ),
    qr{ 0 \s set \s by \s 0 }mx, 'Timeout error - fcntl';
 
 is $lock->set( k => $PROGRAM_NAME, async => 1 ), 0, 'Async lock - fcntl';
@@ -92,8 +98,7 @@ $lock->reset( k => $PROGRAM_NAME );
 
 is $lock->get_table->{count}, 0, 'Get table has no count - fcntl';
 
-unlink catfile( qw( t tlock ) );
-unlink catfile( qw( t tshm  ) );
+$lockf->exists and $lockf->unlink; $shmf->exists and $shmf->unlink;
 
 SKIP: {
    $is_win32 and skip 'tests: OS unsupported', 5;

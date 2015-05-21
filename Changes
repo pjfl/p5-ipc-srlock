@@ -1,5 +1,8 @@
 Revision history for IPC::SRLock
 
+          - Dropped exception_class attribute
+          - Added Constants Expception_Class
+
 0.25.1    2015-05-18 14:47:51
           - Don't try to untaint undef on BUILDARGS
           - Added MANIFEST to repository to keep Travis happy

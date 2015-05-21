@@ -5,7 +5,7 @@ use namespace::autoclean;
 use English                qw( -no_match_vars );
 use File::DataClass::Types qw( Object OctalNum PositiveInt );
 use IPC::ShareLite         qw( :lock );
-use IPC::SRLock::Functions qw( Unspecified hash_from set_args );
+use IPC::SRLock::Functions qw( Unspecified hash_from throw );
 use Storable               qw( nfreeze thaw );
 use Time::HiRes            qw( usleep );
 use Try::Tiny;
@@ -21,7 +21,7 @@ my $_build__share = sub {
                                          '-create' => 1,
                                          '-mode'   => $self->mode,
                                          '-size'   => $self->size ) }
-   catch { $self->throw( "${_}: ${OS_ERROR}" ) };
+   catch { throw "${_}: ${OS_ERROR}" };
 
    return $share;
 };
@@ -41,7 +41,7 @@ my $_store_share_data = sub {
    my ($self, $data) = @_;
 
    try   { $self->_share->store( nfreeze $data ) }
-   catch { $self->throw( "${_}: ${OS_ERROR}" ) };
+   catch { throw "${_}: ${OS_ERROR}" };
 
    return 1;
 };
@@ -49,7 +49,7 @@ my $_store_share_data = sub {
 my $_unlock_share = sub {
    my $self = shift;
 
-   defined $self->_share->unlock or $self->throw( 'Failed to unset semaphore' );
+   defined $self->_share->unlock or throw 'Failed to unset semaphore';
 
    return;
 };
@@ -60,10 +60,10 @@ my $_fetch_share_data = sub {
    my $mode = $for_update ? LOCK_EX : LOCK_SH; $async and $mode |= LOCK_NB;
    my $lock = $self->_share->lock( $mode );
 
-   defined $lock or $self->throw( 'Failed to set semaphore' ); $lock or return;
+   defined $lock or throw 'Failed to set semaphore'; $lock or return;
 
    try   { $data = $self->_share->fetch; $data = $data ? thaw( $data ) : {} }
-   catch { $self->throw( "${_}: ${OS_ERROR}" ) };
+   catch { throw "${_}: ${OS_ERROR}" };
 
    not $for_update and $self->$_unlock_share;
    return $data;
@@ -91,23 +91,23 @@ sub list {
 sub reset {
    my $self  = shift;
    my $args  = hash_from @_;
-   my $key   = $args->{k} or $self->throw( Unspecified, [ 'key' ] );
+   my $key   = $args->{k} or throw Unspecified, [ 'key' ];
    my $data  = $self->$_fetch_share_data( 1 ); $key = "${key}";
    my $found = delete $data->{ $key } and $self->$_store_share_data( $data );
 
    $self->$_unlock_share;
-   $found or $self->throw( 'Lock [_1] not set', args => [ $key ] );
+   $found or throw 'Lock [_1] not set', args => [ $key ];
    return 1;
 }
 
 sub set {
-   my $self = shift; my $args = set_args $self, @_; my $start = time;
+   my $self = shift; my $args = $self->_get_args( @_ ); my $start = time;
 
    my $key = $args->{k}; my $pid = $args->{p}; my $timeout = $args->{t};
 
    my $lock_set;
 
-   while (not $lock_set) {
+   until ($lock_set) {
       my ($lock, $lpid, $ltime, $ltimeout);
       my $data  = $self->$_fetch_share_data( 1, $args->{async} );
       my $found = 0; my $now = time; my $timedout = 0;
@@ -118,7 +118,7 @@ sub set {
             $ltime    = $lock->{stime  };
             $ltimeout = $lock->{timeout};
 
-            if ($now > $ltime + $ltimeout) {
+            if ($ltimeout and $now > $ltime + $ltimeout) {
                $data->{ $key } = { pid     => $pid,
                                    stime   => $now,
                                    timeout => $timeout };
@@ -139,11 +139,11 @@ sub set {
 
       not $lock_set and $args->{async} and return 0;
 
-      $timedout and $self->log->error( $self->timeout_error
-                                       ( $key, $lpid, $ltime, $ltimeout ) );
+      $timedout and $self->log->error
+         ( $self->_timeout_error( $key, $lpid, $ltime, $ltimeout ) );
 
       not $lock_set and $self->patience and $now > $start + $self->patience
-         and $self->throw( 'Lock [_1] timed out', args => [ $key ] );
+         and throw 'Lock [_1] timed out', args => [ $key ];
 
       $found and usleep( 1_000_000 * $self->nap_time );
    }
@@ -160,7 +160,7 @@ __END__
 
 =head1 Name
 
-IPC::SRLock::Sysv - Set/reset locks using System V IPC
+IPC::SRLock::Sysv - Set / reset locks using System V IPC
 
 =head1 Synopsis
 

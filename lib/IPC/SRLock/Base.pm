@@ -2,33 +2,49 @@ package IPC::SRLock::Base;
 
 use namespace::autoclean;
 
-use Date::Format;
-use File::DataClass::Exception;
-use File::DataClass::Types qw( Bool ClassName LoadableClass
-                               NonEmptySimpleStr Num Object PositiveInt );
+use Date::Format           qw( time2str );
+use English                qw( -no_match_vars );
+use File::DataClass::Types qw( Bool LoadableClass NonEmptySimpleStr
+                               Num Object PositiveInt );
+use IPC::SRLock::Functions qw( Unspecified hash_from throw );
 use Time::Elapsed          qw( elapsed );
 use Moo;
 
 # Public attributes
-has 'debug'           => is => 'ro',   isa => Bool, default => 0;
+has 'debug'       => is => 'ro',   isa => Bool, default => 0;
 
-has 'exception_class' => is => 'ro',   isa => ClassName,
-   default            => 'File::DataClass::Exception';
+has 'log'         => is => 'lazy', isa => Object,
+   builder        => sub { $_[ 0 ]->_null_class->new };
 
-has 'log'             => is => 'lazy', isa => Object,
-   default            => sub { $_[ 0 ]->_null_class->new };
+has 'name'        => is => 'ro',   isa => NonEmptySimpleStr, required => 1;
 
-has 'name'            => is => 'ro',   isa => NonEmptySimpleStr, required => 1;
+has 'nap_time'    => is => 'ro',   isa => Num, default => 0.1;
 
-has 'nap_time'        => is => 'ro',   isa => Num, default => 0.1;
+has 'patience'    => is => 'ro',   isa => PositiveInt, default => 0;
 
-has 'patience'        => is => 'ro',   isa => PositiveInt, default => 0;
-
-has 'time_out'        => is => 'ro',   isa => PositiveInt, default => 300;
+has 'time_out'    => is => 'ro',   isa => PositiveInt, default => 300;
 
 # Private attributes
-has '_null_class'     => is => 'lazy', isa => LoadableClass,
-   default            => 'Class::Null', init_arg => undef;
+has '_null_class' => is => 'lazy', isa => LoadableClass,
+   default        => 'Class::Null', init_arg => undef;
+
+# Private methods
+sub _get_args {
+   my $self = shift; my $args = hash_from @_;
+
+   $args->{k}  or throw Unspecified, [ 'key' ]; $args->{k} .= q();
+   $args->{p} //= $PID;
+   $args->{t} //= $self->time_out;
+
+   return $args;
+}
+
+sub _timeout_error {
+   my ($self, $key, $pid, $when, $after) = @_;
+
+   return "Timed out ${key} set by ${pid} on "
+        . time2str( '%Y-%m-%d at %H:%M', $when )." after ${after} seconds\n";
+}
 
 # Public methods
 sub get_table {
@@ -64,18 +80,6 @@ sub get_table {
 
    $data->{count} = $count;
    return $data;
-}
-
-sub throw {
-   my $self = shift; return $self->exception_class->throw( @_ );
-}
-
-sub timeout_error {
-   my ($self, $key, $pid, $when, $after) = @_;
-
-   return "Timed out ${key} set by ${pid} on "
-        . time2str( '%Y-%m-%d at %H:%M', $when )
-        . " after ${after} seconds\n";
 }
 
 1;
@@ -191,25 +195,13 @@ it to zero makes the lock last indefinitely
 
 =back
 
-=head2 throw
+=head2 _get_args
 
-Expose the C<throw> method in L<File::DataClass::Exception>
+Default arguments for the C<set> method
 
-=head2 timeout_error
+=head2 _timeout_error
 
 Return the text of the the timeout message
-
-=head2 _list
-
-Should be implemented in the factory subclass
-
-=head2 _reset
-
-Should be implemented in the factory subclass
-
-=head2 _set
-
-Should be implemented in the factory subclass
 
 =head1 Diagnostics
 

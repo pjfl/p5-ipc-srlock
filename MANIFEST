@@ -8,6 +8,7 @@ README
 SIGNATURE
 lib/IPC/SRLock.pm
 lib/IPC/SRLock/Base.pm
+lib/IPC/SRLock/Constants.pm
 lib/IPC/SRLock/Fake.pm
 lib/IPC/SRLock/Fcntl.pm
 lib/IPC/SRLock/Functions.pm

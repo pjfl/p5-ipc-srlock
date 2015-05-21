@@ -7,7 +7,7 @@ use File::DataClass::Constants qw( LOCK_BLOCKING LOCK_NONBLOCKING );
 use File::DataClass::Types     qw( Directory NonEmptySimpleStr
                                    OctalNum Path PositiveInt RegexpRef );
 use File::Spec;
-use IPC::SRLock::Functions     qw( Unspecified hash_from set_args );
+use IPC::SRLock::Functions     qw( Unspecified hash_from throw );
 use Storable                   qw( nfreeze thaw );
 use Time::HiRes                qw( usleep );
 use Try::Tiny;
@@ -20,8 +20,8 @@ my $_build__lockfile = sub {
    my $self = shift; my $path = $self->_lockfile_name;
 
    $path ||= $self->tempdir->catfile( $self->name.'.lck' );
-   $path =~ $self->pattern
-      or $self->throw( 'Path [_1] cannot untaint', [ $path ] );
+   $path  =~ $self->pattern or throw 'Path [_1] cannot untaint', [ $path ];
+
    return $path;
 };
 
@@ -29,8 +29,8 @@ my $_build__shmfile = sub {
    my $self = shift; my $path = $self->_shmfile_name;
 
    $path ||= $self->tempdir->catfile( $self->name.'.shm' );
-   $path =~ $self->pattern
-      or $self->throw( 'Path [_1] cannot untaint', [ $path ] );
+   $path  =~ $self->pattern or throw 'Path [_1] cannot untaint', [ $path ];
+
    return $path;
 };
 
@@ -69,11 +69,11 @@ my $_read_shmfile = sub {
    try {
       $file = $self->_lockfile->lock( $mode )->assert_open( 'w', $self->mode );
    }
-   catch { umask $old_umask; $self->throw( $_ ) };
+   catch { umask $old_umask; throw $_ };
 
    if ($file->have_lock and $shmfile->exists) {
       try   { $content = thaw $shmfile->all }
-      catch { $file->close; umask $old_umask; $self->throw( $_ ) };
+      catch { $file->close; umask $old_umask; throw $_ };
    }
    else { $content = {} }
 
@@ -85,10 +85,10 @@ my $_write_shmfile = sub {
    my ($self, $file, $content) = @_; my $wtr;
 
    try   { $wtr = $self->_shmfile->assert_open( 'w', $self->mode ) }
-   catch { $file->close; $self->throw( $_ ) };
+   catch { $file->close; throw $_ };
 
    try   { $wtr->print( nfreeze $content ) }
-   catch { $wtr->delete; $file->close; $self->throw( $_ ) };
+   catch { $wtr->delete; $file->close; throw $_ };
 
    $wtr->close; $file->close;
    return;
@@ -113,19 +113,19 @@ sub list {
 sub reset {
    my $self = shift;
    my $args = hash_from @_;
-   my $key  = $args->{k} or $self->throw( Unspecified, [ 'key' ] );
+   my $key  = $args->{k} or throw Unspecified, [ 'key' ];
    my ($lock_file, $shm_content) = $self->$_read_shmfile; $key = "${key}";
    my $found;
 
    $found = exists $shm_content->{ $key } and delete $shm_content->{ $key };
    $found and $self->$_write_shmfile( $lock_file, $shm_content );
    $lock_file->close;
-   $found or $self->throw( 'Lock [_1] not set', [ $key ] );
+   $found or throw 'Lock [_1] not set', [ $key ];
    return 1;
 }
 
 sub set {
-   my $self = shift; my $args = set_args $self, @_; my $start = time;
+   my $self = shift; my $args = $self->_get_args( @_ ); my $start = time;
 
    my $key = $args->{k}; my $pid = $args->{p}; my $timeout = $args->{t};
 
@@ -135,12 +135,12 @@ sub set {
       my $now = time; my $lock;
 
       if ($lock_file->have_lock) {
-         if ($lock = $shm_content->{ $key }
+         if ($lock = $shm_content->{ $key } and $lock->{timeout}
              and $now > $lock->{stime} + $lock->{timeout}) {
-            $self->log->error( $self->timeout_error( $key,
-                                                     $lock->{spid   },
-                                                     $lock->{stime  },
-                                                     $lock->{timeout} ) );
+            $self->log->error( $self->_timeout_error( $key,
+                                                      $lock->{spid   },
+                                                      $lock->{stime  },
+                                                      $lock->{timeout} ) );
             delete $shm_content->{ $key };
             $lock = 0;
          }
@@ -157,7 +157,7 @@ sub set {
       $lock_file->close; $args->{async} and return 0;
 
       $self->patience and $now > $start + $self->patience
-         and $self->throw( 'Lock [_1] timed out', [ $key ] );
+         and throw 'Lock [_1] timed out', [ $key ];
 
       usleep( 1_000_000 * $self->nap_time );
    }
@@ -173,7 +173,7 @@ __END__
 
 =head1 Name
 
-IPC::SRLock::Fcntl - Set/reset locks using fcntl
+IPC::SRLock::Fcntl - Set / reset locks using fcntl
 
 =head1 Synopsis
 

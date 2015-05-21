@@ -4,9 +4,9 @@ use strict;
 use warnings;
 use parent 'Exporter::Tiny';
 
-use English qw( -no_match_vars );
+use IPC::SRLock::Constants qw( EXCEPTION_CLASS );
 
-our @EXPORT_OK = qw( Unspecified hash_from set_args );
+our @EXPORT_OK = qw( Unspecified hash_from throw );
 
 sub Unspecified () {
    return sub { 'Unspecified' };
@@ -18,14 +18,8 @@ sub hash_from  (;@) {
    return ref $args[ 0 ] ? $args[ 0 ] : { @args };
 }
 
-sub set_args ($;@) {
-   my $self = shift; my $args = hash_from( @_ );
-
-   $args->{k}  or $self->throw( Unspecified, [ 'key' ] ); $args->{k} .= q();
-   $args->{p} //= $PID;
-   $args->{t} //= $self->time_out;
-
-   return $args;
+sub throw (;@) {
+   EXCEPTION_CLASS->throw( @_ );
 }
 
 1;
@@ -42,7 +36,7 @@ IPC::SRLock::Functions - Common functions used by this distribution
 
 =head1 Synopsis
 
-   use IPC::SRLock::Functions qw( Unspecified hash_from set_args );
+   use IPC::SRLock::Functions qw( Unspecified hash_from get_args );
 
 =head1 Description
 
@@ -61,9 +55,9 @@ L<throw|IPC::SRLock::Base/throw> method
 Returns a hash reference. Accepts a hash reference or a list of keys and
 values
 
-=head2 set_args
+=head2 throw
 
-Default arguments for the C<set> method
+Expose the C<throw> method in L<File::DataClass::Exception>
 
 =head1 Configuration and Environment
 

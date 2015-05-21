@@ -6,11 +6,11 @@
 
 # Name
 
-IPC::SRLock - Set/reset locking semantics to single thread processes
+IPC::SRLock - Set / reset locking semantics to single thread processes
 
 # Version
 
-This documents version v0.25.$Rev: 1 $ of [IPC::SRLock](https://metacpan.org/pod/IPC::SRLock)
+This documents version v0.25.$Rev: 3 $ of [IPC::SRLock](https://metacpan.org/pod/IPC::SRLock)
 
 # Synopsis
 
@@ -40,10 +40,6 @@ distributed lock manager
 # Configuration and Environment
 
 Defines the following attributes;
-
-- `debug`
-
-    Immutable attribute if true will log lock set events at the debug level
 
 - `type`
 
@@ -132,7 +128,7 @@ Peter Flanigan, `<pjfl@cpan.org>`
 
 # License and Copyright
 
-Copyright (c) 2014 Peter Flanigan. All rights reserved
+Copyright (c) 2015 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See [perlartistic](https://metacpan.org/pod/perlartistic)

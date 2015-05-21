@@ -1,26 +1,24 @@
-package IPC::SRLock::Fake;
+package IPC::SRLock::Constants;
 
-use namespace::autoclean;
+use strict;
+use warnings;
+use parent 'Exporter::Tiny';
 
-use Moo;
+use File::DataClass::Exception;
 
-extends q(IPC::SRLock::Base);
+our @EXPORT_OK = qw( EXCEPTION_CLASS );
 
-sub list {
-   return [];
-}
+my $_exception_class = 'File::DataClass::Exception';
 
-sub reset {
-   return 1;
-}
+sub EXCEPTION_CLASS () { __PACKAGE__->Exception_Class }
 
-sub set {
-   my $self = shift; my $args = $self->_get_args( @_ );
+sub Exception_Class {
+   my ($self, $class) = @_; defined $class or return $_exception_class;
 
-   my $key = $args->{k}; my $pid = $args->{p};
+   $class->can( 'throw' )
+       or die "Class '${class}' is not loaded or has no 'throw' method";
 
-   $self->log->debug( "Lock ${key} set by ${pid}" );
-   return 1;
+   return $_exception_class = $class;
 }
 
 1;
@@ -33,39 +31,30 @@ __END__
 
 =head1 Name
 
-IPC::SRLock::Fake - Does nothing but dummy up the public methods in the API
+IPC::SRLock::Constants - Defines constants used in this distribution
 
 =head1 Synopsis
 
-   use IPC::SRLock;
-
-   my $lock = IPC::SRLock->new( { type => 'fake' } );
-
-   $lock->set( k => 'key' );
-   # Your code goes here...
-   $lock->reset( k => 'key' );
+   use IPC::SRLock::Constants qw( EXCEPTION_CLASS );
 
 =head1 Description
 
-Does nothing but dummy up the public methods in the API
+Defines constants used in this distribution
 
 =head1 Configuration and Environment
 
-Defines no additional attributes;
+Defines no attributes
 
 =head1 Subroutines/Methods
 
-=head2 list
+=head2 Exception_Class
 
-Returns an empty array reference
+Class method. An accessor / mutator for the classname returned by the
+L</EXCEPTION_CLASS> function
 
-=head2 reset
+=head2 C<EXCEPTION_CLASS>
 
-Returns true
-
-=head2 set
-
-Returns true
+The class to use when throwing exceptions
 
 =head1 Diagnostics
 
@@ -75,7 +64,7 @@ None
 
 =over 3
 
-=item L<Moo>
+=item L<Exporter>
 
 =back
 

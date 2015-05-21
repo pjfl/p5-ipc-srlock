@@ -2,7 +2,7 @@ package IPC::SRLock;
 
 use 5.010001;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.25.%d', q$Rev: 2 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.25.%d', q$Rev: 3 $ =~ /\d+/gmx );
 
 use File::DataClass::Types qw( HashRef LoadableClass NonEmptySimpleStr Object );
 use Moo;
@@ -29,7 +29,7 @@ has 'type' => is => 'ro', isa => NonEmptySimpleStr, default => 'fcntl';
 
 # Private attributes
 has '_implementation'       => is => 'lazy', isa => Object,
-   handles                  => [ qw( debug get_table list reset set ) ],
+   handles                  => [ qw( get_table list reset set ) ],
    builder                  => $_build__implementation;
 
 has '_implementation_attr'  => is => 'ro',   isa => HashRef,
@@ -74,11 +74,11 @@ __END__
 
 =head1 Name
 
-IPC::SRLock - Set/reset locking semantics to single thread processes
+IPC::SRLock - Set / reset locking semantics to single thread processes
 
 =head1 Version
 
-This documents version v0.25.$Rev: 2 $ of L<IPC::SRLock>
+This documents version v0.25.$Rev: 3 $ of L<IPC::SRLock>
 
 =head1 Synopsis
 
@@ -110,10 +110,6 @@ distributed lock manager
 Defines the following attributes;
 
 =over 3
-
-=item C<debug>
-
-Immutable attribute if true will log lock set events at the debug level
 
 =item C<type>
 
