@@ -1,11 +1,6 @@
 Build.PL
 Changes
-LICENSE
 MANIFEST
-META.json
-META.yml
-README
-SIGNATURE
 lib/IPC/SRLock.pm
 lib/IPC/SRLock/Base.pm
 lib/IPC/SRLock/Constants.pm
@@ -14,9 +9,9 @@ lib/IPC/SRLock/Fcntl.pm
 lib/IPC/SRLock/Functions.pm
 lib/IPC/SRLock/Memcached.pm
 lib/IPC/SRLock/Sysv.pm
-t/01always_pass.t
 t/02pod.t
 t/03podcoverage.t
 t/05kwalitee.t
 t/07podspelling.t
 t/10test_script.t
+t/boilerplate.pm

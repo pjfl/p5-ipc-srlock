@@ -3,17 +3,11 @@ use warnings;
 
 use Module::Build 0.4202;
 
-sub testing { $ENV{AUTOMATED_TESTING} || $ENV{PERL_CPAN_REPORTER_CONFIG}
-                                      || $ENV{PERL5_CPANPLUS_IS_VERSION} }
-sub whimper { print {*STDOUT} $_[ 0 ]."\n"; exit 0 }
-
 my $perl_ver = 5.010001;
 my $name     = 'IPC-SRLock'; $name =~ s{ - }{::}gmx;
 my $prereqs  = {
   'build_requires' => {
-    'File::DataClass' => 'v0.61.0',
     'Module::Build' => '0.4202',
-    'Test::Requires' => '0.06',
     'version' => '0.88'
   },
   'configure_requires' => {
@@ -27,31 +21,44 @@ my $prereqs  = {
     'Class::Null' => '2.110730',
     'Date::Format' => '2.24',
     'Exporter::Tiny' => '0.042',
-    'File::DataClass' => 'v0.61.0',
+    'File::DataClass' => 'v0.66.0',
     'IPC::ShareLite' => '0.17',
     'Moo' => '2.000001',
     'Time::Elapsed' => '0.31',
     'Try::Tiny' => '0.22',
     'Type::Tiny' => '1.000004',
-    'Unexpected' => 'v0.38.0',
-    'namespace::autoclean' => '0.22',
+    'Unexpected' => 'v0.39.0',
+    'namespace::autoclean' => '0.26',
     'perl' => '5.010001'
   },
+  'test_requires' => {
+    'File::DataClass' => 'v0.66.0',
+    'Module::Build' => '0.4202',
+    'Test::Requires' => '0.06',
+    'version' => '0.88'
+  },
+};
+my $testing  = sub { $ENV{AUTOMATED_TESTING}
+                  || $ENV{PERL_CPAN_REPORTER_CONFIG}
+                  || $ENV{PERL5_CPANPLUS_IS_VERSION} };
+my $whimper  = sub { print {*STDOUT} $_[ 0 ]."\n"; exit 0 };
+my $stop     = sub {
+   $testing->() or $whimper->( $_[ 0 ] );
+   $prereqs->{build_requires} = { %{ $prereqs->{configure_requires} } };
+   $prereqs->{test_requires } = { %{ $prereqs->{configure_requires} } };
+   $prereqs->{test_requires }->{ 'Test::Requires' } = 0.06;
+   delete $prereqs->{requires};
 };
 my $osname   = lc $^O; ($osname eq 'mswin32' or $osname eq 'cygwin')
    and delete $prereqs->{requires}->{ 'IPC::ShareLite' };
 
-if ($] < $perl_ver) { # Not interested in reports below min perl ver
-   testing or whimper "Minimum required Perl version is ${perl_ver}";
-   $prereqs->{build_requires} = { %{ $prereqs->{configure_requires} } };
-   $prereqs->{build_requires}->{ 'Test::Requires' } = 0.06;
-   delete $prereqs->{requires};
-}
+# Not interested in reports below min perl ver
+$] < $perl_ver and $stop->( "Minimum required Perl version is ${perl_ver}" );
 
 Module::Build->new(
-  'module_name' => $name,
-  'notes'       => { min_perl_version => $perl_ver, testing => testing },
-  %{ $prereqs },
+   'module_name' => $name,
+   'notes'       => { min_perl_version => $perl_ver, testing => $testing->() },
+   %{ $prereqs },
 
 )->create_build_script;
 

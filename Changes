@@ -1,5 +1,7 @@
 Revision history for IPC::SRLock
 
+          - Toolchain updates
+
 0.26.1    2015-05-28 19:07:29
           - Dropped exception_class attribute
           - Added Constants Expception_Class
