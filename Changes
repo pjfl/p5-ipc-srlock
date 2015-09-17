@@ -1,5 +1,6 @@
 Revision history for IPC::SRLock
 
+          - Updated prereqs
           - Toolchain updates
 
 0.26.1    2015-05-28 19:07:29

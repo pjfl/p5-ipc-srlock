@@ -26,14 +26,16 @@ my $prereqs  = {
     'Moo' => '2.000001',
     'Time::Elapsed' => '0.31',
     'Try::Tiny' => '0.22',
-    'Type::Tiny' => '1.000004',
-    'Unexpected' => 'v0.39.0',
+    'Type::Tiny' => '1.000005',
     'namespace::autoclean' => '0.26',
     'perl' => '5.010001'
   },
   'test_requires' => {
     'File::DataClass' => 'v0.66.0',
+    'File::Spec' => '0',
     'Module::Build' => '0.4202',
+    'Module::Metadata' => '0',
+    'Sys::Hostname' => '0',
     'Test::Requires' => '0.06',
     'version' => '0.88'
   },
