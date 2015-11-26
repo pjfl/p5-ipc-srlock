@@ -1,5 +1,6 @@
 Revision history for IPC::SRLock
 
+          - Refactored smoker exceptions to dump file
           - Updated Travis configuration and toolchain
           - Updated prereqs
           - Toolchain updates
