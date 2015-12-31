@@ -8,6 +8,7 @@ use File::DataClass::Types qw( Bool LoadableClass NonEmptySimpleStr
                                Num Object PositiveInt );
 use IPC::SRLock::Functions qw( Unspecified hash_from throw );
 use Time::Elapsed          qw( elapsed );
+use Time::HiRes            qw( usleep );
 use Moo;
 
 # Public attributes
@@ -33,8 +34,8 @@ sub _get_args {
    my $self = shift; my $args = hash_from @_;
 
    $args->{k}  or throw Unspecified, [ 'key' ]; $args->{k} .= q();
-   $args->{p} //= $PID;
-   $args->{t} //= $self->time_out;
+   $args->{p} //= $PID; # uncoverable condition false
+   $args->{t} //= $self->time_out; # uncoverable condition false
 
    return $args;
 }
@@ -72,14 +73,22 @@ sub get_table {
 
       my $tleft = $lock->{stime} + $lock->{timeout} - time;
 
+      # uncoverable branch false
       $fields->{tleft} = $tleft > 0 ? elapsed( $tleft ) : 'Expired';
-      $fields->{class}->{tleft}
-                       = $tleft < 1 ? 'error dataValue' : 'odd dataValue';
       push @{ $data->{values} }, $fields; $count++;
    }
 
    $data->{count} = $count;
    return $data;
+}
+
+sub sleep_or_throw {
+   my ($self, $start, $key) = @_;
+
+   $self->patience and time > $start + $self->patience
+      and throw 'Lock [_1] timed out', [ $key ];
+   usleep( 1_000_000 * $self->nap_time );
+   return 1;
 }
 
 1;
@@ -88,7 +97,7 @@ __END__
 
 =pod
 
-=encoding utf8
+=encoding utf-8
 
 =head1 Name
 
@@ -195,6 +204,10 @@ it to zero makes the lock last indefinitely
 
 =back
 
+=head2 sleep_or_throw
+
+Sleep for a bit or throw a timeout exception
+
 =head2 _get_args
 
 Default arguments for the C<set> method
@@ -245,7 +258,7 @@ Peter Flanigan, C<< <pjfl@cpan.org> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2015 Peter Flanigan. All rights reserved
+Copyright (c) 2016 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

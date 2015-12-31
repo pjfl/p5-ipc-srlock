@@ -39,7 +39,7 @@ else {
    ok 0, 'Expected reset error missing';
 }
 
-$lock->set( k => $PROGRAM_NAME );
+$lock->set( { k => $PROGRAM_NAME } );
 
 is [ map { $_->{key} } @{ $lock->list() } ]->[ 0 ], $PROGRAM_NAME,
    'Set - fcntl';
@@ -53,6 +53,8 @@ my $lockf = io[ 't', 'ipc_srlock.lck' ]; my $shmf = io[ 't', 'ipc_srlock.shm' ];
 ok $lockf->exists && $lockf->is_file, 'Lock file exists - fcntl';
 ok $shmf->exists && $shmf->is_file, 'Shm file exists - fcntl';
 
+is $lock->sleep_or_throw, 1, 'Sleep or throw sleeps';
+
 $lockf->exists and $lockf->unlink; $shmf->exists and $shmf->unlink;
 
 $lockf = io[ 't', 'tlock' ]; $shmf = io[ 't', 'tshm' ];
@@ -61,9 +63,10 @@ $lockf->exists and $lockf->unlink; $shmf->exists and $shmf->unlink;
 
 $lock = IPC::SRLock->new( { debug    => 1,
                             lockfile => catfile( qw( t tlock ) ),
+                            patience => 100,
                             shmfile  => catfile( qw( t tshm ) ),
                             tempdir  => 't',
-                            type     => 'fcntl' } );
+                            type     => '+IPC::SRLock::Fcntl' } );
 
 $lock->set( k => $PROGRAM_NAME, p => 100, t => 100 );
 
@@ -83,6 +86,12 @@ $lock->reset( k => $PROGRAM_NAME );
 is $lock->get_table->{count}, 0, 'Get table has no count - fcntl';
 
 $lockf->exists and $lockf->unlink; $shmf->exists and $shmf->unlink;
+
+eval { $lock->sleep_or_throw( 0, 'test' ) };
+
+like $EVAL_ERROR, qr{ \Qtimed out\E }mx, 'Sleep or throw timeout';
+
+is $lock->sleep_or_throw( time, 'test' ), 1, 'Sleep or throw return true';
 
 SKIP: {
    $is_win32 and skip 'tests: OS unsupported', 5;
@@ -137,6 +146,13 @@ SKIP: {
    is [ map { $_->{key} } @{ $lock->list() } ]->[ 0 ], undef,
       'Reset - memcached';
 }
+
+eval { IPC::SRLock::Constants->Exception_Class( 'wrong' ) };
+
+like $EVAL_ERROR, qr{ \Qnot loaded\E }mx, 'Bad exception class';
+
+is IPC::SRLock::Constants->Exception_Class( 'Unexpected' ), 'Unexpected',
+   'Sets exception class';
 
 done_testing;
 

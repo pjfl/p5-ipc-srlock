@@ -2,7 +2,7 @@ package IPC::SRLock;
 
 use 5.010001;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.26.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.26.%d', q$Rev: 2 $ =~ /\d+/gmx );
 
 use File::DataClass::Types qw( HashRef LoadableClass NonEmptySimpleStr Object );
 use Moo;
@@ -18,7 +18,7 @@ my $_build__implementation = sub {
 my $_build__implementation_class = sub {
    my $self = shift; my $type = $self->type; my $class;
 
-   if (substr $type, 0, 1 eq '+') { $class = substr $type, 1 }
+   if ('+' eq substr $type, 0, 1) { $class = substr $type, 1 }
    else { $class = __PACKAGE__.'::'.(ucfirst $type) }
 
    return $class;
@@ -29,7 +29,7 @@ has 'type' => is => 'ro', isa => NonEmptySimpleStr, default => 'fcntl';
 
 # Private attributes
 has '_implementation'       => is => 'lazy', isa => Object,
-   handles                  => [ qw( get_table list reset set ) ],
+   handles                  => [ qw( get_table list reset set sleep_or_throw )],
    builder                  => $_build__implementation;
 
 has '_implementation_attr'  => is => 'ro',   isa => HashRef,
@@ -62,11 +62,12 @@ __END__
 
 =pod
 
-=encoding utf8
+=encoding utf-8
 
 =begin html
 
 <a href="https://travis-ci.org/pjfl/p5-ipc-srlock"><img src="https://travis-ci.org/pjfl/p5-ipc-srlock.svg?branch=master" alt="Travis CI Badge"></a>
+<a href="https://roxsoft.co.uk/coverage/report/ipc-srlock/latest"><img src="https://roxsoft.co.uk/coverage/badge/ipc-srlock/latest" alt="Coverage Badge"></a>
 <a href="http://badge.fury.io/pl/IPC-SRLock"><img src="https://badge.fury.io/pl/IPC-SRLock.svg" alt="CPAN Badge"></a>
 <a href="http://cpants.cpanauthors.org/dist/IPC-SRLock"><img src="http://cpants.cpanauthors.org/dist/IPC-SRLock.png" alt="Kwalitee Badge"></a>
 
@@ -78,7 +79,7 @@ IPC::SRLock - Set / reset locking semantics to single thread processes
 
 =head1 Version
 
-This documents version v0.26.$Rev: 1 $ of L<IPC::SRLock>
+This documents version v0.26.$Rev: 2 $ of L<IPC::SRLock>
 
 =head1 Synopsis
 
@@ -210,7 +211,7 @@ Peter Flanigan, C<< <pjfl@cpan.org> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2015 Peter Flanigan. All rights reserved
+Copyright (c) 2016 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

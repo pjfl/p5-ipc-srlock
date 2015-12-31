@@ -1,5 +1,7 @@
 Revision history for IPC::SRLock
 
+          - Improved test coverage
+          - Added coverage badge
           - Refactored smoker exceptions to dump file
           - Updated Travis configuration and toolchain
           - Updated prereqs

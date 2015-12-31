@@ -1,5 +1,6 @@
 <div>
     <a href="https://travis-ci.org/pjfl/p5-ipc-srlock"><img src="https://travis-ci.org/pjfl/p5-ipc-srlock.svg?branch=master" alt="Travis CI Badge"></a>
+    <a href="https://roxsoft.co.uk/coverage/report/ipc-srlock/latest"><img src="https://roxsoft.co.uk/coverage/badge/ipc-srlock/latest" alt="Coverage Badge"></a>
     <a href="http://badge.fury.io/pl/IPC-SRLock"><img src="https://badge.fury.io/pl/IPC-SRLock.svg" alt="CPAN Badge"></a>
     <a href="http://cpants.cpanauthors.org/dist/IPC-SRLock"><img src="http://cpants.cpanauthors.org/dist/IPC-SRLock.png" alt="Kwalitee Badge"></a>
 </div>
@@ -10,7 +11,7 @@ IPC::SRLock - Set / reset locking semantics to single thread processes
 
 # Version
 
-This documents version v0.26.$Rev: 1 $ of [IPC::SRLock](https://metacpan.org/pod/IPC::SRLock)
+This documents version v0.26.$Rev: 2 $ of [IPC::SRLock](https://metacpan.org/pod/IPC::SRLock)
 
 # Synopsis
 
@@ -128,7 +129,7 @@ Peter Flanigan, `<pjfl@cpan.org>`
 
 # License and Copyright
 
-Copyright (c) 2015 Peter Flanigan. All rights reserved
+Copyright (c) 2016 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See [perlartistic](https://metacpan.org/pod/perlartistic)

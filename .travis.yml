@@ -10,7 +10,9 @@ branches:
 env:
   global:
     - AUTHOR_TESTING=0
+    - COVERAGE_URI="https://roxsoft.co.uk/coverage/report/%s"
+    - secure: CInWU4eoilgQSBcT6zH2aOHUPY8Ic8QihlJQpfm1rWvPjENvydqhW2FILzxsOtJJi4zxS149Isy5stU2/ELmntOhuaeIN7BKX79k5J1FQAa5tabY4zl2OzzswcUWUb563HL9v1nSCQU6gODFXnkWB59zLTyRnSFHG/KyZm6QVAA7hsgC+mtwRfYJD5l38bNzqF/TzXZDdvo09WPPOqAt/zazgMIMsrBIjuLb9yD2xsFMuo8K+zWXuJdBOgjx/NyVO0UJ9nt/7lDSmAs/DR73wXgC4uNxs6nEt0ICKfcpxppCY2YXQLcTlV7sfOGe8cSaEDjOrna1Kz+taWYOv4SHHL/l8g+lFJx1SgZL8Waz0DSxN0AGjzKJ5Wjxzbikiw6T2nXqU7xYKRhC87qE6Q34+cG8JG1fWk5YOu8ybZ9u3Eu0+cHZAn2irEEQjApm00JA91hbIjI3m9p4rRSfruyItOWePsN4ikNGtC6MacrRiPuKN2uvHS8gDo3JBD4l7w7TEHeF+eeejcT4QxVnyGLjcArxLu2Y/oRHGt+IHOhuebk3mrh9coGFOY4/OY5ujXmSDETB3si6OoCHIeWFCsvJBM3CmCycZQtuPC5OW3qEMoIuVO0yo4josnZWZK7CZZgl7B2G4NpMMy7WIokzdxhENSzeJaIhruEG4KV74sCOZQM=
 before_install:
   - cpanm -n Devel::Cover
-script:
-  perl Build.PL && ./Build && ./Build testcover
+  - cpanm -n Devel::Cover::Report::OwnServer
+script: perl Build.PL && ./Build && cover -test -report ownServer

@@ -6,7 +6,6 @@ use Cache::Memcached;
 use English                qw( -no_match_vars );
 use File::DataClass::Types qw( ArrayRef NonEmptySimpleStr Object );
 use IPC::SRLock::Functions qw( Unspecified hash_from throw );
-use Time::HiRes            qw( usleep );
 use Moo;
 
 extends q(IPC::SRLock::Base);
@@ -26,42 +25,32 @@ has '_memd'    => is => 'lazy', isa => Object, reader => 'memd',
                              namespace => $_[ 0 ]->name,
                              servers   => $_[ 0 ]->servers ) };
 
-# Private methods
-my $_sleep_or_throw = sub {
-   my ($self, $start, $now, $key) = @_;
-
-   $self->patience and $now > $start + $self->patience
-      and throw 'Lock [_1] timed out', [ $key ];
-   usleep( 1_000_000 * $self->nap_time );
-   return;
-};
-
 # Public methods
 sub list {
    my $self = shift; my $list = []; my $start = time;
 
-   while (1) {
-      if ($self->memd->add( $self->lockfile, 1, $self->patience + 30 )) {
-         my $recs = $self->memd->get( $self->shmfile ) || {};
+   do {
+      # uncoverable branch true
+      $self->memd->add( $self->lockfile, 1, $self->patience + 30 ) or next;
 
-         $self->memd->delete( $self->lockfile );
+      my $shm_content = $self->memd->get( $self->shmfile ) // {};
 
-         for my $key (sort keys %{ $recs }) {
-            my @fields = split m{ , }mx, $recs->{ $key };
+      $self->memd->delete( $self->lockfile );
 
-            push @{ $list }, { key     => $key,
-                               pid     => $fields[ 0 ],
-                               stime   => $fields[ 1 ],
-                               timeout => $fields[ 2 ] };
-         }
+      for my $key (sort keys %{ $shm_content }) {
+         my @fields = split m{ , }mx, $shm_content->{ $key };
 
-         return $list;
+         push @{ $list }, { key     => $key,
+                            pid     => $fields[ 0 ],
+                            stime   => $fields[ 1 ],
+                            timeout => $fields[ 2 ] };
       }
 
-      $self->$_sleep_or_throw( $start, time, $self->lockfile );
-   }
+      return $list;
 
-   return;
+   } while ($self->sleep_or_throw( $start, $self->lockfile ));
+
+   return; # uncoverable statement
 }
 
 sub reset {
@@ -69,21 +58,21 @@ sub reset {
 
    my $key = $args->{k} or throw Unspecified, [ 'key' ]; $key = "${key}";
 
-   while (1) {
-      if ($self->memd->add( $self->lockfile, 1, $self->patience + 30 )) {
-         my $recs = $self->memd->get( $self->shmfile ) || {}; my $found = 0;
+   do {
+      # uncoverable branch true
+      $self->memd->add( $self->lockfile, 1, $self->patience + 30 ) or next;
 
-         delete $recs->{ $key } and $found = 1;
-         $found and $self->memd->set( $self->shmfile, $recs );
-         $self->memd->delete( $self->lockfile );
-         $found or throw 'Lock [_1] not set', [ $key ];
-         return 1;
-      }
+      my $shm_content = $self->memd->get( $self->shmfile ) // {};
+      my $found = 0; delete $shm_content->{ $key } and $found = 1;
 
-      $self->$_sleep_or_throw( $start, time, $self->lockfile );
-   }
+      $found and $self->memd->set( $self->shmfile, $shm_content );
+      $self->memd->delete( $self->lockfile );
+      $found and return 1;
+      throw 'Lock [_1] not set', [ $key ];
 
-   return;
+   } while ($self->sleep_or_throw( $start, $self->lockfile ));
+
+   return; # uncoverable statement
 }
 
 sub set {
@@ -91,44 +80,37 @@ sub set {
 
    my $key = $args->{k}; my $pid = $args->{p}; my $timeout = $args->{t};
 
-   while (1) {
-      my $now = time; my ($lock_set, $rec);
+   do {
+      # uncoverable branch true
+      $self->memd->add( $self->lockfile, 1, $self->patience + 30 ) or next;
 
-      if ($self->memd->add( $self->lockfile, 1, $self->patience + 30 )) {
-         my $recs = $self->memd->get( $self->shmfile ) || {};
+      my $shm_content = $self->memd->get( $self->shmfile ) // {};
 
-         if ($rec = $recs->{ $key }) {
-            my @fields = split m{ , }mx, $rec;
+      my $now = time; my $lock;
 
-            if ($fields[ 2 ] and $now > $fields[ 1 ] + $fields[ 2 ]) {
-               $recs->{ $key } = "${pid},${now},${timeout}";
-               $self->memd->set( $self->shmfile, $recs );
+      if ($lock = $shm_content->{ $key }) {
+         my @fields = split m{ , }mx, $lock;
 
-               my $text = $self->_timeout_error
-                  ( $key, $fields[ 0 ], $fields[ 1 ], $fields[ 2 ] );
-
-               $self->log->error( $text ); $lock_set = 1;
-            }
+         if ($fields[ 2 ] and $now > $fields[ 1 ] + $fields[ 2 ]) {
+            $self->log->error( $self->_timeout_error
+               ( $key, $fields[ 0 ], $fields[ 1 ], $fields[ 2 ] ) );
+            $lock = 0;
          }
-         else {
-            $recs->{ $key } = "${pid},${now},${timeout}";
-            $self->memd->set( $self->shmfile, $recs );
-            $lock_set = 1;
-         }
-
-         $self->memd->delete( $self->lockfile );
-
-         if ($lock_set) {
-            $self->log->debug( "Lock ${key} set by ${pid}" );
-            return 1;
-         }
-         elsif ($args->{async}) { return 0 }
       }
 
-      $self->$_sleep_or_throw( $start, $now, $self->lockfile );
-   }
+      unless ($lock) {
+         $shm_content->{ $key } = "${pid},${now},${timeout}";
+         $self->memd->set( $self->shmfile, $shm_content );
+         $self->memd->delete( $self->lockfile );
+         $self->log->debug( "Lock ${key} set by ${pid}" );
+         return 1;
+      }
 
-   return;
+      $self->memd->delete( $self->lockfile ); $args->{async} and return 0;
+
+   } while ($self->sleep_or_throw( $start, $self->lockfile ));
+
+   return; # uncoverable statement
 }
 
 1;
@@ -136,6 +118,8 @@ sub set {
 __END__
 
 =pod
+
+=encoding utf-8
 
 =head1 Name
 
@@ -187,10 +171,6 @@ Delete a lock from the lock table
 
 Set a lock in the lock table
 
-=head2 _sleep_or_throw
-
-Sleep for a bit or throw a timeout exception
-
 =head1 Diagnostics
 
 None
@@ -227,7 +207,7 @@ Peter Flanigan, C<< <pjfl@cpan.org> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2015 Peter Flanigan. All rights reserved
+Copyright (c) 2016 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

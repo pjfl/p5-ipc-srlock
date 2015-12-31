@@ -59,6 +59,17 @@ has '_shmfile_name'  => is => 'ro',   isa => NonEmptySimpleStr,
    init_arg          => 'shmfile';
 
 # Private methods
+my $_expire_lock = sub {
+   my ($self, $content, $key, $lock) = @_;
+
+   $self->log->error
+      ( $self->_timeout_error
+        ( $key, $lock->{spid}, $lock->{stime}, $lock->{timeout} ) );
+
+   delete $content->{ $key };
+   return 0;
+};
+
 my $_read_shmfile = sub {
    my ($self, $async) = @_; my ($file, $content);
 
@@ -111,16 +122,14 @@ sub list {
 }
 
 sub reset {
-   my $self = shift;
-   my $args = hash_from @_;
-   my $key  = $args->{k} or throw Unspecified, [ 'key' ];
-   my ($lock_file, $shm_content) = $self->$_read_shmfile; $key = "${key}";
-   my $found;
+   my $self  = shift;
+   my $args  = hash_from @_;
+   my $key   = $args->{k} or throw Unspecified, [ 'key' ]; $key = "${key}";
+   my ($lock_file, $shm_content) = $self->$_read_shmfile;
+   my $found = delete $shm_content->{ $key };
 
-   $found = exists $shm_content->{ $key } and delete $shm_content->{ $key };
    $found and $self->$_write_shmfile( $lock_file, $shm_content );
-   $lock_file->close;
-   $found or throw 'Lock [_1] not set', [ $key ];
+   $lock_file->close; $found or throw 'Lock [_1] not set', [ $key ];
    return 1;
 }
 
@@ -129,21 +138,17 @@ sub set {
 
    my $key = $args->{k}; my $pid = $args->{p}; my $timeout = $args->{t};
 
-   while (1) {
-      my ($lock_file, $shm_content) = $self->$_read_shmfile( $args->{async} );
-
+   do {
       my $now = time; my $lock;
 
+      my ($lock_file, $shm_content) = $self->$_read_shmfile( $args->{async} );
+
       if ($lock_file->have_lock) {
-         if ($lock = $shm_content->{ $key } and $lock->{timeout}
-             and $now > $lock->{stime} + $lock->{timeout}) {
-            $self->log->error( $self->_timeout_error( $key,
-                                                      $lock->{spid   },
-                                                      $lock->{stime  },
-                                                      $lock->{timeout} ) );
-            delete $shm_content->{ $key };
-            $lock = 0;
-         }
+         exists $shm_content->{ $key }
+            and $lock = $shm_content->{ $key }
+            and $lock->{timeout}
+            and $now > $lock->{stime} + $lock->{timeout}
+            and $lock = $self->$_expire_lock( $shm_content, $key, $lock );
 
          unless ($lock) {
             $shm_content->{ $key }
@@ -156,13 +161,9 @@ sub set {
 
       $lock_file->close; $args->{async} and return 0;
 
-      $self->patience and $now > $start + $self->patience
-         and throw 'Lock [_1] timed out', [ $key ];
+   } while ($self->sleep_or_throw( $start, time, $self->lockfile ));
 
-      usleep( 1_000_000 * $self->nap_time );
-   }
-
-   return; # Not reached
+   return; # uncoverable statement
 }
 
 1;
@@ -170,6 +171,8 @@ sub set {
 __END__
 
 =pod
+
+=encoding utf-8
 
 =head1 Name
 
@@ -282,7 +285,7 @@ Peter Flanigan, C<< <pjfl@cpan.org> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2015 Peter Flanigan. All rights reserved
+Copyright (c) 2016 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

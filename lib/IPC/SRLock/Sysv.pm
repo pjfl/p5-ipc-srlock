@@ -21,7 +21,10 @@ my $_build__share = sub {
                                          '-create' => 1,
                                          '-mode'   => $self->mode,
                                          '-size'   => $self->size ) }
-   catch { throw "${_}: ${OS_ERROR}" };
+   catch {
+      # uncoverable subroutine
+      throw "${_}: ${OS_ERROR}"; # uncoverable statement
+   };
 
    return $share;
 };
@@ -37,33 +40,47 @@ has 'size'     => is => 'ro',   isa => PositiveInt, default => 65_536;
 has '_share'   => is => 'lazy', isa => Object, builder => $_build__share;
 
 # Private functions
-my $_store_share_data = sub {
-   my ($self, $data) = @_;
+my $_expire_lock = sub {
+   my ($self, $data, $key, $lock) = @_;
 
-   try   { $self->_share->store( nfreeze $data ) }
-   catch { throw "${_}: ${OS_ERROR}" };
+   $self->log->error
+      ( $self->_timeout_error
+        ( $key, $lock->{spid}, $lock->{stime}, $lock->{timeout} ) );
 
-   return 1;
+   delete $data->{ $key };
+   return 0;
 };
 
 my $_unlock_share = sub {
-   my $self = shift;
+   my $self = shift; defined $self->_share->unlock and return 1;
 
-   defined $self->_share->unlock or throw 'Failed to unset semaphore';
-
-   return;
+   throw 'Failed to unset semaphore'; # uncoverable statement
 };
 
-my $_fetch_share_data = sub {
+my $_write_shared_mem = sub {
+   my ($self, $data) = @_;
+
+   try   { $self->_share->store( nfreeze $data ) }
+   catch {
+      throw "${_}: ${OS_ERROR}"; # uncoverable statement
+   };
+
+   return $self->$_unlock_share;
+};
+
+my $_read_shared_mem = sub {
    my ($self, $for_update, $async) = @_; my $data;
 
    my $mode = $for_update ? LOCK_EX : LOCK_SH; $async and $mode |= LOCK_NB;
    my $lock = $self->_share->lock( $mode );
 
-   defined $lock or throw 'Failed to set semaphore'; $lock or return;
+   defined $lock or throw 'Failed to set semaphore';
+   $lock or return; # Async operation would have blocked
 
    try   { $data = $self->_share->fetch; $data = $data ? thaw( $data ) : {} }
-   catch { throw "${_}: ${OS_ERROR}" };
+   catch {
+      throw "${_}: ${OS_ERROR}"; # uncoverable statement
+   };
 
    not $for_update and $self->$_unlock_share;
    return $data;
@@ -76,11 +93,11 @@ sub BUILD {
 
 # Public methods
 sub list {
-   my $self = shift; my $data = $self->$_fetch_share_data; my $list = [];
+   my $self = shift; my $data = $self->$_read_shared_mem; my $list = [];
 
    while (my ($key, $info) = each %{ $data }) {
       push @{ $list }, { key     => $key,
-                         pid     => $info->{pid    },
+                         pid     => $info->{spid   },
                          stime   => $info->{stime  },
                          timeout => $info->{timeout} };
    }
@@ -89,15 +106,15 @@ sub list {
 }
 
 sub reset {
-   my $self  = shift;
-   my $args  = hash_from @_;
-   my $key   = $args->{k} or throw Unspecified, [ 'key' ];
-   my $data  = $self->$_fetch_share_data( 1 ); $key = "${key}";
-   my $found = delete $data->{ $key } and $self->$_store_share_data( $data );
+   my $self = shift;
+   my $args = hash_from @_;
+   my $key  = $args->{k} or throw Unspecified, [ 'key' ]; $key = "${key}";
+   my $shm_content = $self->$_read_shared_mem( 1 );
 
-   $self->$_unlock_share;
-   $found or throw 'Lock [_1] not set', args => [ $key ];
-   return 1;
+   not delete $shm_content->{ $key } and $self->$_unlock_share
+      and throw 'Lock [_1] not set', args => [ $key ];
+
+   return $self->$_write_shared_mem( $shm_content );
 }
 
 sub set {
@@ -105,51 +122,32 @@ sub set {
 
    my $key = $args->{k}; my $pid = $args->{p}; my $timeout = $args->{t};
 
-   my $lock_set;
+   do {
+      my $now = time; my $lock;
 
-   until ($lock_set) {
-      my ($lock, $lpid, $ltime, $ltimeout);
-      my $data  = $self->$_fetch_share_data( 1, $args->{async} );
-      my $found = 0; my $now = time; my $timedout = 0;
+      if (my $shm_content = $self->$_read_shared_mem( 1, $args->{async} )) {
+         exists $shm_content->{ $key }
+            and $lock = $shm_content->{ $key }
+            and $lock->{timeout}
+            and $now > $lock->{stime} + $lock->{timeout}
+            and $lock = $self->$_expire_lock( $shm_content, $key, $lock );
 
-      if ($data) {
-         if (exists $data->{ $key } and $lock = $data->{ $key }) {
-            $lpid     = $lock->{pid    };
-            $ltime    = $lock->{stime  };
-            $ltimeout = $lock->{timeout};
-
-            if ($ltimeout and $now > $ltime + $ltimeout) {
-               $data->{ $key } = { pid     => $pid,
-                                   stime   => $now,
-                                   timeout => $timeout };
-               $lock_set = $self->$_store_share_data( $data );
-               $timedout = 1;
-            }
-            else { $found = 1 }
-         }
-         else {
-            $data->{ $key } = { pid     => $pid,
-                                stime   => $now,
-                                timeout => $timeout };
-            $lock_set = $self->$_store_share_data( $data );
+         unless ($lock) {
+            $shm_content->{ $key }
+               = { spid => $pid, stime => $now, timeout => $timeout };
+            $self->$_write_shared_mem( $shm_content );
+            $self->log->debug( "Lock ${key} set by ${pid}" );
+            return 1;
          }
 
          $self->$_unlock_share;
       }
 
-      not $lock_set and $args->{async} and return 0;
+      $args->{async} and return 0;
 
-      $timedout and $self->log->error
-         ( $self->_timeout_error( $key, $lpid, $ltime, $ltimeout ) );
+   } while ($self->sleep_or_throw( $start, $self->lockfile ));
 
-      not $lock_set and $self->patience and $now > $start + $self->patience
-         and throw 'Lock [_1] timed out', args => [ $key ];
-
-      $found and usleep( 1_000_000 * $self->nap_time );
-   }
-
-   $self->log->debug( "Lock ${key} set by ${pid}" );
-   return 1;
+   return; # uncoverable statement
 }
 
 1;
@@ -157,6 +155,8 @@ sub set {
 __END__
 
 =pod
+
+=encoding utf-8
 
 =head1 Name
 
@@ -252,7 +252,7 @@ Peter Flanigan, C<< <pjfl@cpan.org> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2015 Peter Flanigan. All rights reserved
+Copyright (c) 2016 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>
