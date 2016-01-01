@@ -6,7 +6,7 @@ use parent 'Exporter::Tiny';
 
 use IPC::SRLock::Constants qw( EXCEPTION_CLASS );
 
-our @EXPORT_OK = qw( Unspecified hash_from throw );
+our @EXPORT_OK = qw( Unspecified hash_from loop_until throw );
 
 sub Unspecified () {
    return sub { 'Unspecified' };
@@ -16,6 +16,24 @@ sub hash_from  (;@) {
    my (@args) = @_; $args[ 0 ] or return {};
 
    return ref $args[ 0 ] ? $args[ 0 ] : { @args };
+}
+
+sub loop_until ($) {
+   my $f = shift;
+
+   return sub {
+      my $self = shift; my $args = $self->_get_args( @_ ); my $start = time;
+
+      while (1) {
+         my $now = time;
+         my $r   = $f->( $self, $args, $now ); $r and return $r;
+
+         # uncoverable branch false
+         $args->{async} and return 0;
+         # uncoverable statement
+         $self->_sleep_or_timeout( $start, $now, $self->lockfile );
+      }
+   };
 }
 
 sub throw (;@) {
@@ -54,6 +72,10 @@ L<throw|IPC::SRLock::Base/throw> method
 
 Returns a hash reference. Accepts a hash reference or a list of keys and
 values
+
+=head2 loop_until
+
+Loop until the closed over subroutine returns true or a timeout occurs
 
 =head2 throw
 

@@ -40,6 +40,15 @@ sub _get_args {
    return $args;
 }
 
+sub _sleep_or_timeout {
+   my ($self, $start, $now, $key) = @_;
+
+   $self->patience and $now > $start + $self->patience
+      and throw 'Lock [_1] timed out', [ $key ];
+   usleep( 1_000_000 * $self->nap_time );
+   return 1;
+}
+
 sub _timeout_error {
    my ($self, $key, $pid, $when, $after) = @_;
 
@@ -80,15 +89,6 @@ sub get_table {
 
    $data->{count} = $count;
    return $data;
-}
-
-sub sleep_or_throw {
-   my ($self, $start, $key) = @_;
-
-   $self->patience and time > $start + $self->patience
-      and throw 'Lock [_1] timed out', [ $key ];
-   usleep( 1_000_000 * $self->nap_time );
-   return 1;
 }
 
 1;
@@ -204,13 +204,13 @@ it to zero makes the lock last indefinitely
 
 =back
 
-=head2 sleep_or_throw
-
-Sleep for a bit or throw a timeout exception
-
 =head2 _get_args
 
 Default arguments for the C<set> method
+
+=head2 _sleep_or_timeout
+
+Sleep for a bit or throw a timeout exception
 
 =head2 _timeout_error
 

@@ -53,7 +53,7 @@ my $lockf = io[ 't', 'ipc_srlock.lck' ]; my $shmf = io[ 't', 'ipc_srlock.shm' ];
 ok $lockf->exists && $lockf->is_file, 'Lock file exists - fcntl';
 ok $shmf->exists && $shmf->is_file, 'Shm file exists - fcntl';
 
-is $lock->sleep_or_throw, 1, 'Sleep or throw sleeps';
+is $lock->_implementation->_sleep_or_timeout, 1, 'Sleep or timeout sleeps';
 
 $lockf->exists and $lockf->unlink; $shmf->exists and $shmf->unlink;
 
@@ -87,11 +87,12 @@ is $lock->get_table->{count}, 0, 'Get table has no count - fcntl';
 
 $lockf->exists and $lockf->unlink; $shmf->exists and $shmf->unlink;
 
-eval { $lock->sleep_or_throw( 0, 'test' ) };
+eval { $lock->_implementation->_sleep_or_timeout( 0, time, 'test' ) };
 
-like $EVAL_ERROR, qr{ \Qtimed out\E }mx, 'Sleep or throw timeout';
+like $EVAL_ERROR, qr{ \Qtimed out\E }mx, 'Sleep or timeout timed out';
 
-is $lock->sleep_or_throw( time, 'test' ), 1, 'Sleep or throw return true';
+is $lock->_implementation->_sleep_or_timeout( 1, 1, 'test' ), 1,
+   'Sleep or timeout returns true';
 
 SKIP: {
    $is_win32 and skip 'tests: OS unsupported', 5;

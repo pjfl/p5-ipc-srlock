@@ -7,9 +7,8 @@ use File::DataClass::Constants qw( LOCK_BLOCKING LOCK_NONBLOCKING );
 use File::DataClass::Types     qw( Directory NonEmptySimpleStr
                                    OctalNum Path PositiveInt RegexpRef );
 use File::Spec;
-use IPC::SRLock::Functions     qw( Unspecified hash_from throw );
+use IPC::SRLock::Functions     qw( Unspecified hash_from loop_until throw );
 use Storable                   qw( nfreeze thaw );
-use Time::HiRes                qw( usleep );
 use Try::Tiny;
 use Moo;
 
@@ -105,6 +104,31 @@ my $_write_shmfile = sub {
    return;
 };
 
+my $_set = sub {
+   my ($self, $args, $now) = @_; my $key = $args->{k}; my $pid = $args->{p};
+
+   my ($lock_file, $shm_content) = $self->$_read_shmfile( $args->{async} );
+
+   if ($lock_file->have_lock) {
+      my $lock; exists $shm_content->{ $key }
+         and $lock = $shm_content->{ $key }
+         and $lock->{timeout}
+         and $now > $lock->{stime} + $lock->{timeout}
+         and $lock = $self->$_expire_lock( $shm_content, $key, $lock );
+
+      unless ($lock) {
+         $shm_content->{ $key }
+            = { spid => $pid, stime => $now, timeout => $args->{t} };
+         $self->$_write_shmfile( $lock_file, $shm_content );
+         $self->log->debug( "Lock ${key} set by ${pid}" );
+         return 1;
+      }
+   }
+
+   $lock_file->close;
+   return 0;
+};
+
 # Public methods
 sub list {
    my $self = shift; my $list = [];
@@ -134,36 +158,7 @@ sub reset {
 }
 
 sub set {
-   my $self = shift; my $args = $self->_get_args( @_ ); my $start = time;
-
-   my $key = $args->{k}; my $pid = $args->{p}; my $timeout = $args->{t};
-
-   do {
-      my $now = time; my $lock;
-
-      my ($lock_file, $shm_content) = $self->$_read_shmfile( $args->{async} );
-
-      if ($lock_file->have_lock) {
-         exists $shm_content->{ $key }
-            and $lock = $shm_content->{ $key }
-            and $lock->{timeout}
-            and $now > $lock->{stime} + $lock->{timeout}
-            and $lock = $self->$_expire_lock( $shm_content, $key, $lock );
-
-         unless ($lock) {
-            $shm_content->{ $key }
-               = { spid => $pid, stime => $now, timeout => $timeout };
-            $self->$_write_shmfile( $lock_file, $shm_content );
-            $self->log->debug( "Lock ${key} set by ${pid}" );
-            return 1;
-         }
-      }
-
-      $lock_file->close; $args->{async} and return 0;
-
-   } while ($self->sleep_or_throw( $start, time, $self->lockfile ));
-
-   return; # uncoverable statement
+   my ($self, @args) = @_; return loop_until( $_set )->( $self, @args );
 }
 
 1;

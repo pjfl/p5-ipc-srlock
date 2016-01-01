@@ -5,7 +5,7 @@ use namespace::autoclean;
 use Cache::Memcached;
 use English                qw( -no_match_vars );
 use File::DataClass::Types qw( ArrayRef NonEmptySimpleStr Object );
-use IPC::SRLock::Functions qw( Unspecified hash_from throw );
+use IPC::SRLock::Functions qw( Unspecified hash_from loop_until throw );
 use Moo;
 
 extends q(IPC::SRLock::Base);
@@ -25,17 +25,24 @@ has '_memd'    => is => 'lazy', isa => Object, reader => 'memd',
                              namespace => $_[ 0 ]->name,
                              servers   => $_[ 0 ]->servers ) };
 
-# Public methods
-sub list {
-   my $self = shift; my $list = []; my $start = time;
+# Private methods
+my $_expire_lock = sub {
+   my ($self, $data, $key, @fields) = @_;
 
-   do {
-      # uncoverable branch true
-      $self->memd->add( $self->lockfile, 1, $self->patience + 30 ) or next;
+   $self->log->error
+      ( $self->_timeout_error
+        ( $key, $fields[ 0 ], $fields[ 1 ], $fields[ 2 ] ) );
 
+   delete $data->{ $key };
+   return 0;
+};
+
+my $_list = sub {
+   my $self = shift;
+
+   if ($self->memd->add( $self->lockfile, 1, $self->patience + 30 )) {
       my $shm_content = $self->memd->get( $self->shmfile ) // {};
-
-      $self->memd->delete( $self->lockfile );
+      my $list        = []; $self->memd->delete( $self->lockfile );
 
       for my $key (sort keys %{ $shm_content }) {
          my @fields = split m{ , }mx, $shm_content->{ $key };
@@ -47,55 +54,40 @@ sub list {
       }
 
       return $list;
+   }
 
-   } while ($self->sleep_or_throw( $start, $self->lockfile ));
+   return 0;
+};
 
-   return; # uncoverable statement
-}
+my $_reset = sub {
+   my ($self, $args, $now) = @_; my $key = $args->{k};
 
-sub reset {
-   my $self = shift; my $args = hash_from @_; my $start = time;
-
-   my $key = $args->{k} or throw Unspecified, [ 'key' ]; $key = "${key}";
-
-   do {
-      # uncoverable branch true
-      $self->memd->add( $self->lockfile, 1, $self->patience + 30 ) or next;
-
+   if ($self->memd->add( $self->lockfile, 1, $self->patience + 30 )) {
       my $shm_content = $self->memd->get( $self->shmfile ) // {};
       my $found = 0; delete $shm_content->{ $key } and $found = 1;
 
       $found and $self->memd->set( $self->shmfile, $shm_content );
       $self->memd->delete( $self->lockfile );
-      $found and return 1;
-      throw 'Lock [_1] not set', [ $key ];
+      $found or throw 'Lock [_1] not set', [ $key ];
+      return 1;
+   }
 
-   } while ($self->sleep_or_throw( $start, $self->lockfile ));
+   return 0;
+};
 
-   return; # uncoverable statement
-}
-
-sub set {
-   my $self = shift; my $args = $self->_get_args( @_ ); my $start = time;
+my $_set = sub {
+   my ($self, $args, $now) = @_;
 
    my $key = $args->{k}; my $pid = $args->{p}; my $timeout = $args->{t};
 
-   do {
-      # uncoverable branch true
-      $self->memd->add( $self->lockfile, 1, $self->patience + 30 ) or next;
-
-      my $shm_content = $self->memd->get( $self->shmfile ) // {};
-
-      my $now = time; my $lock;
+   if ($self->memd->add( $self->lockfile, 1, $self->patience + 30 )) {
+      my $shm_content = $self->memd->get( $self->shmfile ) // {}; my $lock;
 
       if ($lock = $shm_content->{ $key }) {
          my @fields = split m{ , }mx, $lock;
 
-         if ($fields[ 2 ] and $now > $fields[ 1 ] + $fields[ 2 ]) {
-            $self->log->error( $self->_timeout_error
-               ( $key, $fields[ 0 ], $fields[ 1 ], $fields[ 2 ] ) );
-            $lock = 0;
-         }
+         $fields[ 2 ] and $now > $fields[ 1 ] + $fields[ 2 ]
+            and $lock = $self->$_expire_lock( $shm_content, $key, @fields );
       }
 
       unless ($lock) {
@@ -106,11 +98,23 @@ sub set {
          return 1;
       }
 
-      $self->memd->delete( $self->lockfile ); $args->{async} and return 0;
+      $self->memd->delete( $self->lockfile );
+   }
 
-   } while ($self->sleep_or_throw( $start, $self->lockfile ));
+   return 0;
+};
 
-   return; # uncoverable statement
+# Public methods
+sub list {
+   my $self = shift; return loop_until( $_list )->( $self, { k => 'dummy' } );
+}
+
+sub reset {
+   my ($self, @args) = @_; return loop_until( $_reset )->( $self, @args );
+}
+
+sub set {
+   my ($self, @args) = @_; return loop_until( $_set )->( $self, @args );
 }
 
 1;

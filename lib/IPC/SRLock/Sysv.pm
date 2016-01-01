@@ -5,9 +5,8 @@ use namespace::autoclean;
 use English                qw( -no_match_vars );
 use File::DataClass::Types qw( Object OctalNum PositiveInt );
 use IPC::ShareLite         qw( :lock );
-use IPC::SRLock::Functions qw( Unspecified hash_from throw );
+use IPC::SRLock::Functions qw( Unspecified hash_from loop_until throw );
 use Storable               qw( nfreeze thaw );
-use Time::HiRes            qw( usleep );
 use Try::Tiny;
 use Moo;
 
@@ -39,7 +38,12 @@ has 'size'     => is => 'ro',   isa => PositiveInt, default => 65_536;
 # Private attributes
 has '_share'   => is => 'lazy', isa => Object, builder => $_build__share;
 
-# Private functions
+# Construction
+sub BUILD {
+   my $self = shift; $self->_share; return;
+}
+
+# Private methods
 my $_expire_lock = sub {
    my ($self, $data, $key, $lock) = @_;
 
@@ -86,10 +90,29 @@ my $_read_shared_mem = sub {
    return $data;
 };
 
-# Construction
-sub BUILD {
-   my $self = shift; $self->_share; return;
-}
+my $_set = sub {
+   my ($self, $args, $now) = @_; my $key = $args->{k}; my $pid = $args->{p};
+
+   if (my $shm_content = $self->$_read_shared_mem( 1, $args->{async} )) {
+      my $lock; exists $shm_content->{ $key }
+         and $lock = $shm_content->{ $key }
+         and $lock->{timeout}
+         and $now > $lock->{stime} + $lock->{timeout}
+         and $lock = $self->$_expire_lock( $shm_content, $key, $lock );
+
+      unless ($lock) {
+         $shm_content->{ $key }
+            = { spid => $pid, stime => $now, timeout => $args->{t} };
+         $self->$_write_shared_mem( $shm_content );
+         $self->log->debug( "Lock ${key} set by ${pid}" );
+         return 1;
+      }
+
+      $self->$_unlock_share;
+   }
+
+   return 0;
+};
 
 # Public methods
 sub list {
@@ -118,36 +141,7 @@ sub reset {
 }
 
 sub set {
-   my $self = shift; my $args = $self->_get_args( @_ ); my $start = time;
-
-   my $key = $args->{k}; my $pid = $args->{p}; my $timeout = $args->{t};
-
-   do {
-      my $now = time; my $lock;
-
-      if (my $shm_content = $self->$_read_shared_mem( 1, $args->{async} )) {
-         exists $shm_content->{ $key }
-            and $lock = $shm_content->{ $key }
-            and $lock->{timeout}
-            and $now > $lock->{stime} + $lock->{timeout}
-            and $lock = $self->$_expire_lock( $shm_content, $key, $lock );
-
-         unless ($lock) {
-            $shm_content->{ $key }
-               = { spid => $pid, stime => $now, timeout => $timeout };
-            $self->$_write_shared_mem( $shm_content );
-            $self->log->debug( "Lock ${key} set by ${pid}" );
-            return 1;
-         }
-
-         $self->$_unlock_share;
-      }
-
-      $args->{async} and return 0;
-
-   } while ($self->sleep_or_throw( $start, $self->lockfile ));
-
-   return; # uncoverable statement
+   my ($self, @args) = @_; return loop_until( $_set )->( $self, @args );
 }
 
 1;
