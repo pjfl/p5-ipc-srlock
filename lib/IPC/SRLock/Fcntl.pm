@@ -7,7 +7,7 @@ use File::DataClass::Constants qw( LOCK_BLOCKING LOCK_NONBLOCKING );
 use File::DataClass::Types     qw( Directory NonEmptySimpleStr
                                    OctalNum Path PositiveInt RegexpRef );
 use File::Spec;
-use IPC::SRLock::Functions     qw( Unspecified hash_from loop_until throw );
+use IPC::SRLock::Utils         qw( Unspecified hash_from loop_until throw );
 use Storable                   qw( nfreeze thaw );
 use Try::Tiny;
 use Moo;

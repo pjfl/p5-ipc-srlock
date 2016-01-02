@@ -5,7 +5,7 @@ use namespace::autoclean;
 use Cache::Memcached;
 use English                qw( -no_match_vars );
 use File::DataClass::Types qw( ArrayRef NonEmptySimpleStr Object );
-use IPC::SRLock::Functions qw( Unspecified hash_from loop_until throw );
+use IPC::SRLock::Utils     qw( Unspecified hash_from loop_until throw );
 use Moo;
 
 extends q(IPC::SRLock::Base);

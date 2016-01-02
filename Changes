@@ -1,5 +1,6 @@
 Revision history for IPC::SRLock
 
+          - More idiomatic name for function package
           - Improved test coverage
           - Added coverage badge
           - Refactored smoker exceptions to dump file

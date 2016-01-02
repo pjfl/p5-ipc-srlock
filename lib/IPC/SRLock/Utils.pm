@@ -1,4 +1,4 @@
-package IPC::SRLock::Functions;
+package IPC::SRLock::Utils;
 
 use strict;
 use warnings;
@@ -50,11 +50,11 @@ __END__
 
 =head1 Name
 
-IPC::SRLock::Functions - Common functions used by this distribution
+IPC::SRLock::Utils - Common functions used by this distribution
 
 =head1 Synopsis
 
-   use IPC::SRLock::Functions qw( Unspecified hash_from get_args );
+   use IPC::SRLock::Utils qw( Unspecified hash_from get_args );
 
 =head1 Description
 

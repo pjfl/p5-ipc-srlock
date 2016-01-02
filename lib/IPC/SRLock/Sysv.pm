@@ -5,7 +5,7 @@ use namespace::autoclean;
 use English                qw( -no_match_vars );
 use File::DataClass::Types qw( Object OctalNum PositiveInt );
 use IPC::ShareLite         qw( :lock );
-use IPC::SRLock::Functions qw( Unspecified hash_from loop_until throw );
+use IPC::SRLock::Utils     qw( Unspecified hash_from loop_until throw );
 use Storable               qw( nfreeze thaw );
 use Try::Tiny;
 use Moo;

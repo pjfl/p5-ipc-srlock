@@ -6,7 +6,7 @@ use Date::Format           qw( time2str );
 use English                qw( -no_match_vars );
 use File::DataClass::Types qw( Bool LoadableClass NonEmptySimpleStr
                                Num Object PositiveInt );
-use IPC::SRLock::Functions qw( Unspecified hash_from throw );
+use IPC::SRLock::Utils     qw( Unspecified hash_from throw );
 use Time::Elapsed          qw( elapsed );
 use Time::HiRes            qw( usleep );
 use Moo;
