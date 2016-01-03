@@ -90,6 +90,15 @@ my $_read_shared_mem = sub {
    return $data;
 };
 
+my $_reset = sub {
+   my ($self, $key) = @_; my $shm_content = $self->$_read_shared_mem( 1 );
+
+   not delete $shm_content->{ $key } and $self->$_unlock_share
+      and throw 'Lock [_1] not set', args => [ $key ];
+
+   return $self->$_write_shared_mem( $shm_content );
+};
+
 my $_set = sub {
    my ($self, $args, $now) = @_; my $key = $args->{k}; my $pid = $args->{p};
 
@@ -129,15 +138,7 @@ sub list {
 }
 
 sub reset {
-   my $self = shift;
-   my $args = hash_from @_;
-   my $key  = $args->{k} or throw Unspecified, [ 'key' ]; $key = "${key}";
-   my $shm_content = $self->$_read_shared_mem( 1 );
-
-   not delete $shm_content->{ $key } and $self->$_unlock_share
-      and throw 'Lock [_1] not set', args => [ $key ];
-
-   return $self->$_write_shared_mem( $shm_content );
+   my $self = shift; return $self->$_reset( $self->_get_args( @_ )->{k} );
 }
 
 sub set {

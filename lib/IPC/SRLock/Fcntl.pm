@@ -18,7 +18,9 @@ extends q(IPC::SRLock::Base);
 my $_build__lockfile = sub {
    my $self = shift; my $path = $self->_lockfile_name;
 
+   # uncoverable condition false
    $path ||= $self->tempdir->catfile( $self->name.'.lck' );
+   # uncoverable branch true
    $path  =~ $self->pattern or throw 'Path [_1] cannot untaint', [ $path ];
 
    return $path;
@@ -27,7 +29,9 @@ my $_build__lockfile = sub {
 my $_build__shmfile = sub {
    my $self = shift; my $path = $self->_shmfile_name;
 
+   # uncoverable condition false
    $path ||= $self->tempdir->catfile( $self->name.'.shm' );
+   # uncoverable branch true
    $path  =~ $self->pattern or throw 'Path [_1] cannot untaint', [ $path ];
 
    return $path;
@@ -104,6 +108,16 @@ my $_write_shmfile = sub {
    return;
 };
 
+my $_reset = sub {
+   my ($self, $key) = @_;
+   my ($lock_file, $shm_content) = $self->$_read_shmfile;
+   my $found = delete $shm_content->{ $key };
+
+   $found and $self->$_write_shmfile( $lock_file, $shm_content );
+   $lock_file->close; $found or throw 'Lock [_1] not set', [ $key ];
+   return 1;
+};
+
 my $_set = sub {
    my ($self, $args, $now) = @_; my $key = $args->{k}; my $pid = $args->{p};
 
@@ -146,15 +160,7 @@ sub list {
 }
 
 sub reset {
-   my $self  = shift;
-   my $args  = hash_from @_;
-   my $key   = $args->{k} or throw Unspecified, [ 'key' ]; $key = "${key}";
-   my ($lock_file, $shm_content) = $self->$_read_shmfile;
-   my $found = delete $shm_content->{ $key };
-
-   $found and $self->$_write_shmfile( $lock_file, $shm_content );
-   $lock_file->close; $found or throw 'Lock [_1] not set', [ $key ];
-   return 1;
+   my $self = shift; return $self->$_reset( $self->_get_args( @_ )->{k} );
 }
 
 sub set {
