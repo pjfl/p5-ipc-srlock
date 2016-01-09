@@ -40,39 +40,35 @@ my $_expire_lock = sub {
 my $_list = sub {
    my $self = shift;
 
-   if ($self->memd->add( $self->lockfile, 1, $self->patience + 30 )) {
-      my $shm_content = $self->memd->get( $self->shmfile ) // {};
-      my $list        = []; $self->memd->delete( $self->lockfile );
+   $self->memd->add( $self->lockfile, 1, $self->patience + 30 ) or return 0;
 
-      for my $key (sort keys %{ $shm_content }) {
-         my @fields = split m{ , }mx, $shm_content->{ $key };
+   my $shm_content = $self->memd->get( $self->shmfile ) // {};
+   my $list        = []; $self->memd->delete( $self->lockfile );
 
-         push @{ $list }, { key     => $key,
-                            pid     => $fields[ 0 ],
-                            stime   => $fields[ 1 ],
-                            timeout => $fields[ 2 ] };
-      }
+   for my $key (sort keys %{ $shm_content }) {
+      my @fields = split m{ , }mx, $shm_content->{ $key };
 
-      return $list;
+      push @{ $list }, { key     => $key,
+                         pid     => $fields[ 0 ],
+                         stime   => $fields[ 1 ],
+                         timeout => $fields[ 2 ] };
    }
 
-   return 0;
+   return $list;
 };
 
 my $_reset = sub {
    my ($self, $args, $now) = @_; my $key = $args->{k};
 
-   if ($self->memd->add( $self->lockfile, 1, $self->patience + 30 )) {
-      my $shm_content = $self->memd->get( $self->shmfile ) // {};
-      my $found = 0; delete $shm_content->{ $key } and $found = 1;
+   $self->memd->add( $self->lockfile, 1, $self->patience + 30 ) or return 0;
 
-      $found and $self->memd->set( $self->shmfile, $shm_content );
-      $self->memd->delete( $self->lockfile );
-      $found or throw 'Lock [_1] not set', [ $key ];
-      return 1;
-   }
+   my $shm_content = $self->memd->get( $self->shmfile ) // {};
+   my $found       = delete $shm_content->{ $key } ? 1 : 0;
 
-   return 0;
+   $found and $self->memd->set( $self->shmfile, $shm_content );
+   $self->memd->delete( $self->lockfile );
+   $found or throw 'Lock [_1] not set', [ $key ];
+   return 1;
 };
 
 my $_set = sub {
@@ -80,28 +76,24 @@ my $_set = sub {
 
    my $key = $args->{k}; my $pid = $args->{p}; my $timeout = $args->{t};
 
-   if ($self->memd->add( $self->lockfile, 1, $self->patience + 30 )) {
-      my $shm_content = $self->memd->get( $self->shmfile ) // {}; my $lock;
+   $self->memd->add( $self->lockfile, 1, $self->patience + 30 ) or return 0;
 
-      if ($lock = $shm_content->{ $key }) {
-         my @fields = split m{ , }mx, $lock;
+   my $shm_content = $self->memd->get( $self->shmfile ) // {}; my $lock;
 
-         $fields[ 2 ] and $now > $fields[ 1 ] + $fields[ 2 ]
-            and $lock = $self->$_expire_lock( $shm_content, $key, @fields );
-      }
+   if ($lock = $shm_content->{ $key }) {
+      my @fields = split m{ , }mx, $lock;
 
-      unless ($lock) {
-         $shm_content->{ $key } = "${pid},${now},${timeout}";
-         $self->memd->set( $self->shmfile, $shm_content );
-         $self->memd->delete( $self->lockfile );
-         $self->log->debug( "Lock ${key} set by ${pid}" );
-         return 1;
-      }
-
-      $self->memd->delete( $self->lockfile );
+      $fields[ 2 ] and $now > $fields[ 1 ] + $fields[ 2 ]
+         and $lock = $self->$_expire_lock( $shm_content, $key, @fields );
    }
 
-   return 0;
+   if ($lock) { $self->memd->delete( $self->lockfile ); return 0 }
+
+   $shm_content->{ $key } = "${pid},${now},${timeout}";
+   $self->memd->set( $self->shmfile, $shm_content );
+   $self->memd->delete( $self->lockfile );
+   $self->log->debug( "Lock ${key} set by ${pid}" );
+   return 1;
 };
 
 # Public methods

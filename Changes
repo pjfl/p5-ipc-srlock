@@ -1,5 +1,7 @@
 Revision history for IPC::SRLock
 
+          - Improved program flow
+
 0.27.1    2016-01-03 00:09:50
           - More idiomatic name for function package
           - Improved test coverage

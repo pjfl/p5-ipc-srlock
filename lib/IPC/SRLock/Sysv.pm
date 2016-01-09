@@ -102,25 +102,21 @@ my $_reset = sub {
 my $_set = sub {
    my ($self, $args, $now) = @_; my $key = $args->{k}; my $pid = $args->{p};
 
-   if (my $shm_content = $self->$_read_shared_mem( 1, $args->{async} )) {
-      my $lock; exists $shm_content->{ $key }
-         and $lock = $shm_content->{ $key }
-         and $lock->{timeout}
-         and $now > $lock->{stime} + $lock->{timeout}
-         and $lock = $self->$_expire_lock( $shm_content, $key, $lock );
+   my $shm_content = $self->$_read_shared_mem( 1, $args->{async} ) or return 0;
 
-      unless ($lock) {
-         $shm_content->{ $key }
-            = { spid => $pid, stime => $now, timeout => $args->{t} };
-         $self->$_write_shared_mem( $shm_content );
-         $self->log->debug( "Lock ${key} set by ${pid}" );
-         return 1;
-      }
+   my $lock; exists $shm_content->{ $key }
+      and $lock = $shm_content->{ $key }
+      and $lock->{timeout}
+      and $now > $lock->{stime} + $lock->{timeout}
+      and $lock = $self->$_expire_lock( $shm_content, $key, $lock );
 
-      $self->$_unlock_share;
-   }
+   $lock and $self->$_unlock_share and return 0;
 
-   return 0;
+   $shm_content->{ $key }
+      = { spid => $pid, stime => $now, timeout => $args->{t} };
+   $self->$_write_shared_mem( $shm_content );
+   $self->log->debug( "Lock ${key} set by ${pid}" );
+   return 1;
 };
 
 # Public methods

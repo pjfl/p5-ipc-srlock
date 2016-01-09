@@ -95,27 +95,30 @@ my $_read_shmfile = sub {
    return ($file, $content);
 };
 
+my $_unlock_share = sub {
+   $_[ 0 ]->close; return 0;
+};
+
 my $_write_shmfile = sub {
-   my ($self, $file, $content) = @_; my $wtr;
+   my ($self, $lock_file, $content) = @_; my $wtr;
 
    try   { $wtr = $self->_shmfile->assert_open( 'w', $self->mode ) }
-   catch { $file->close; throw $_ };
+   catch { $_unlock_share->( $lock_file ); throw $_ };
 
    try   { $wtr->print( nfreeze $content ) }
-   catch { $wtr->delete; $file->close; throw $_ };
+   catch { $wtr->delete; $_unlock_share->( $lock_file ); throw $_ };
 
-   $wtr->close; $file->close;
-   return;
+   $wtr->close; $_unlock_share->( $lock_file );
+   return 1;
 };
 
 my $_reset = sub {
-   my ($self, $key) = @_;
-   my ($lock_file, $shm_content) = $self->$_read_shmfile;
-   my $found = delete $shm_content->{ $key };
+   my ($self, $key) = @_; my ($lock_file, $shm_content) = $self->$_read_shmfile;
 
-   $found and $self->$_write_shmfile( $lock_file, $shm_content );
-   $lock_file->close; $found or throw 'Lock [_1] not set', [ $key ];
-   return 1;
+   delete $shm_content->{ $key }
+      and return $self->$_write_shmfile( $lock_file, $shm_content );
+
+   $_unlock_share->( $lock_file ); throw 'Lock [_1] not set', [ $key ];
 };
 
 my $_set = sub {
@@ -123,24 +126,21 @@ my $_set = sub {
 
    my ($lock_file, $shm_content) = $self->$_read_shmfile( $args->{async} );
 
-   if ($lock_file->have_lock) {
-      my $lock; exists $shm_content->{ $key }
-         and $lock = $shm_content->{ $key }
-         and $lock->{timeout}
-         and $now > $lock->{stime} + $lock->{timeout}
-         and $lock = $self->$_expire_lock( $shm_content, $key, $lock );
+   $lock_file->have_lock or return $_unlock_share->( $lock_file );
 
-      unless ($lock) {
-         $shm_content->{ $key }
-            = { spid => $pid, stime => $now, timeout => $args->{t} };
-         $self->$_write_shmfile( $lock_file, $shm_content );
-         $self->log->debug( "Lock ${key} set by ${pid}" );
-         return 1;
-      }
-   }
+   my $lock; exists $shm_content->{ $key }
+      and $lock = $shm_content->{ $key }
+      and $lock->{timeout}
+      and $now > $lock->{stime} + $lock->{timeout}
+      and $lock = $self->$_expire_lock( $shm_content, $key, $lock );
 
-   $lock_file->close;
-   return 0;
+   $lock and return $_unlock_share->( $lock_file );
+
+   $shm_content->{ $key }
+      = { spid => $pid, stime => $now, timeout => $args->{t} };
+   $self->$_write_shmfile( $lock_file, $shm_content );
+   $self->log->debug( "Lock ${key} set by ${pid}" );
+   return 1;
 };
 
 # Public methods
