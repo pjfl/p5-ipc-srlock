@@ -96,7 +96,7 @@ my $_read_shmfile = sub {
 };
 
 my $_unlock_share = sub {
-   $_[ 0 ]->close; return 0;
+   $_[ 0 ]->close; return 1;
 };
 
 my $_write_shmfile = sub {
@@ -126,7 +126,7 @@ my $_set = sub {
 
    my ($lock_file, $shm_content) = $self->$_read_shmfile( $args->{async} );
 
-   $lock_file->have_lock or return $_unlock_share->( $lock_file );
+   not $lock_file->have_lock and $_unlock_share->( $lock_file ) and return 0;
 
    my $lock; exists $shm_content->{ $key }
       and $lock = $shm_content->{ $key }
@@ -134,7 +134,7 @@ my $_set = sub {
       and $now > $lock->{stime} + $lock->{timeout}
       and $lock = $self->$_expire_lock( $shm_content, $key, $lock );
 
-   $lock and return $_unlock_share->( $lock_file );
+   $lock and $_unlock_share->( $lock_file ) and return 0;
 
    $shm_content->{ $key }
       = { spid => $pid, stime => $now, timeout => $args->{t} };
