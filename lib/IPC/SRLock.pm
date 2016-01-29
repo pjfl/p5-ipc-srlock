@@ -2,17 +2,13 @@ package IPC::SRLock;
 
 use 5.010001;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 2 $ =~ /\d+/gmx );
 
 use File::DataClass::Types qw( HashRef LoadableClass NonEmptySimpleStr Object );
 use Moo;
 
 my $_build__implementation = sub {
-   my $self = shift; my $name = lc join '_', split m{ :: }mx, __PACKAGE__, -1;
-
-   my $attr = { name => $name, %{ $self->_implementation_attr }, };
-
-   return $self->_implementation_class->new( $attr );
+   return $_[ 0 ]->_implementation_class->new( $_[ 0 ]->_implementation_attr );
 };
 
 my $_build__implementation_class = sub {
@@ -33,7 +29,7 @@ has '_implementation'       => is => 'lazy', isa => Object,
    builder                  => $_build__implementation;
 
 has '_implementation_attr'  => is => 'ro',   isa => HashRef,
-   default                  => sub { {} };
+   builder                  => sub { {} };
 
 has '_implementation_class' => is => 'lazy', isa => LoadableClass,
    builder                  => $_build__implementation_class;
@@ -42,13 +38,13 @@ has '_implementation_class' => is => 'lazy', isa => LoadableClass,
 around 'BUILDARGS' => sub {
    my ($orig, $self, @args) = @_; my $attr = $orig->( $self, @args );
 
-   my $type = delete $attr->{type};
+   $attr->{name} //= lc join '_', split m{ :: }mx, __PACKAGE__, -1;
 
-   $attr = { _implementation_attr => $attr }; $type or return $attr;
+   my $type = delete $attr->{type}; $attr = { _implementation_attr => $attr };
 
-   if ($type =~ m{ \A ([a-zA-Z0-9\:\+]+) \z }mx) { $attr->{type} = $1 }
-   else { die "Type ${type} tainted" }
-
+   $type and $type !~ m{ \A ([a-zA-Z0-9\:\+]+) \z }mx
+         and die "Type ${type} tainted";
+   $type and $attr->{type} = $1;
    return $attr;
 };
 
@@ -79,7 +75,7 @@ IPC::SRLock - Set / reset locking semantics to single thread processes
 
 =head1 Version
 
-This documents version v0.27.$Rev: 1 $ of L<IPC::SRLock>
+This documents version v0.27.$Rev: 2 $ of L<IPC::SRLock>
 
 =head1 Synopsis
 

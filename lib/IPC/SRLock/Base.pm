@@ -6,7 +6,7 @@ use Date::Format           qw( time2str );
 use English                qw( -no_match_vars );
 use File::DataClass::Types qw( Bool LoadableClass NonEmptySimpleStr
                                Num Object PositiveInt );
-use IPC::SRLock::Utils     qw( Unspecified hash_from throw );
+use IPC::SRLock::Utils     qw( Unspecified hash_from merge_attributes throw );
 use Time::Elapsed          qw( elapsed );
 use Time::HiRes            qw( usleep );
 use Moo;
@@ -28,6 +28,17 @@ has 'time_out'    => is => 'ro',   isa => PositiveInt, default => 300;
 # Private attributes
 has '_null_class' => is => 'lazy', isa => LoadableClass,
    default        => 'Class::Null', init_arg => undef;
+
+# Construction
+around 'BUILDARGS' => sub {
+   my ($orig, $self, @args) = @_; my $attr = $orig->( $self, @args );
+
+   my $builder = $attr->{builder} or return $attr;
+
+   merge_attributes $attr, $builder, [ 'debug', 'log' ];
+
+   return $attr;
+};
 
 # Private methods
 sub _get_args {
@@ -160,7 +171,12 @@ Time in seconds before a lock is deemed to have expired. Defaults to 300
 
 =head1 Subroutines/Methods
 
-=head2 get_table
+=head2 C<BUILDARGS>
+
+Extract L</debug> and L</log> attribute values from the C<builder> object
+if one was supplied
+
+=head2 C<get_table>
 
    my $data = $lock_obj->get_table;
 
@@ -168,23 +184,23 @@ Returns a hash ref that contains the current lock table contents. The
 keys/values in the hash are suitable for passing to
 L<HTML::FormWidgets>
 
-=head2 list
+=head2 C<list>
 
    my $array_ref = $lock_obj->list;
 
 Returns an array of hash refs that represent the current lock table
 
-=head2 reset
+=head2 C<reset>
 
-   $lock_obj->reset( k => 'some_resource_key' );
+   $lock_obj->reset( k => 'some_resource_key', ... );
 
 Resets the lock referenced by the C<k> attribute.
 
-=head2 set
+=head2 C<set>
 
-   $lock_obj->set( k => 'some_resource_key' );
+   $lock_obj->set( k => 'some_resource_key', ... );
 
-Sets the specified lock. Attributes are:
+Sets the specified lock. Attributes are;
 
 =over 3
 

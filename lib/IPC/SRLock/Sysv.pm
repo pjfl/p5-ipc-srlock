@@ -91,10 +91,18 @@ my $_read_shared_mem = sub {
 };
 
 my $_reset = sub {
-   my ($self, $key) = @_; my $shm_content = $self->$_read_shared_mem( 1 );
+   my ($self, $args) = @_; my $key = $args->{k}; my $pid = $args->{p};
+
+   my $shm_content = $self->$_read_shared_mem( 1 );
+
+   my $lock; exists $shm_content->{ $key }
+      and $lock = $shm_content->{ $key }
+      and $lock->{spid} != $pid
+      and $self->$_unlock_share
+      and throw 'Lock [_1] set by another process', [ $key ];
 
    not delete $shm_content->{ $key } and $self->$_unlock_share
-      and throw 'Lock [_1] not set', args => [ $key ];
+      and throw 'Lock [_1] not set', [ $key ];
 
    return $self->$_write_shared_mem( $shm_content );
 };
@@ -134,7 +142,7 @@ sub list {
 }
 
 sub reset {
-   my $self = shift; return $self->$_reset( $self->_get_args( @_ )->{k} );
+   my $self = shift; return $self->$_reset( $self->_get_args( @_ ) );
 }
 
 sub set {

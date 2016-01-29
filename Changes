@@ -1,5 +1,8 @@
 Revision history for IPC::SRLock
 
+          - Reset throws if pids do not match
+            Adjusted Async::IPC::Semaphore to pass pid to child
+          - Enhanced constructor to accept builder argument
           - Improved program flow
 
 0.27.1    2016-01-03 00:09:50

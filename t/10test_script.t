@@ -81,7 +81,11 @@ like $lock->_implementation->_timeout_error( 0, 0, 0, 0 ),
 
 is $lock->set( k => $PROGRAM_NAME, async => 1 ), 0, 'Async lock - fcntl';
 
-$lock->reset( k => $PROGRAM_NAME );
+eval { $lock->reset( k => $PROGRAM_NAME ) };
+
+like $EVAL_ERROR, qr{ \Qanother process\E }mx, 'Reset only our locks - fcntl';
+
+$lock->reset( k => $PROGRAM_NAME, p => 100 );
 
 is $lock->get_table->{count}, 0, 'Get table has no count - fcntl';
 
@@ -126,7 +130,11 @@ SKIP: {
 
    is $lock->set( k => $PROGRAM_NAME, async => 1 ), 0, 'Async lock - sysv';
 
-   $lock->reset( k => $PROGRAM_NAME );
+   eval { $lock->reset( k => $PROGRAM_NAME ) };
+
+   like $EVAL_ERROR, qr{ \Qanother process\E }mx, 'Reset only our locks - sysv';
+
+   $lock->reset( k => $PROGRAM_NAME, p => 100 );
 
    is $lock->get_table->{count}, 0, 'Get table has no count - sysv';
 
@@ -154,6 +162,19 @@ like $EVAL_ERROR, qr{ \Qnot loaded\E }mx, 'Bad exception class';
 
 is IPC::SRLock::Constants->Exception_Class( 'Unexpected' ), 'Unexpected',
    'Sets exception class';
+
+use IPC::SRLock::Utils qw( merge_attributes );
+
+my $dest = { xd => q(), xu => undef };
+my $src  = {  x => 'y', xd => 'z', xu => undef };
+
+merge_attributes $dest, $src;
+merge_attributes $dest, $src, [ 'x', 'xd', 'xu' ];
+merge_attributes $dest, $lock, [ 'type', 'foo' ];
+
+is $dest->{x}, 'y', 'Merge attributes - normal';
+is $dest->{xd}, '', 'Merge attributes - defined';
+is $dest->{xu}, undef, 'Merge attributes - undefined';
 
 done_testing;
 

@@ -7,7 +7,8 @@ use File::DataClass::Constants qw( LOCK_BLOCKING LOCK_NONBLOCKING );
 use File::DataClass::Types     qw( Directory NonEmptySimpleStr
                                    OctalNum Path PositiveInt RegexpRef );
 use File::Spec;
-use IPC::SRLock::Utils         qw( Unspecified hash_from loop_until throw );
+use IPC::SRLock::Utils         qw( Unspecified hash_from loop_until
+                                   merge_attributes throw );
 use Storable                   qw( nfreeze thaw );
 use Try::Tiny;
 use Moo;
@@ -61,6 +62,18 @@ has '_shmfile'       => is => 'lazy', isa => Path, coerce => 1,
 has '_shmfile_name'  => is => 'ro',   isa => NonEmptySimpleStr,
    init_arg          => 'shmfile';
 
+# Construction
+around 'BUILDARGS' => sub {
+   my ($orig, $self, @args) = @_; my $attr = $orig->( $self, @args );
+
+   my $builder = $attr->{builder} or return $attr;
+   my $config  = $builder->can( 'config' ) ? $builder->config : {};
+
+   merge_attributes $attr, $config, [ 'tempdir' ];
+
+   return $attr;
+};
+
 # Private methods
 my $_expire_lock = sub {
    my ($self, $content, $key, $lock) = @_;
@@ -113,12 +126,20 @@ my $_write_shmfile = sub {
 };
 
 my $_reset = sub {
-   my ($self, $key) = @_; my ($lock_file, $shm_content) = $self->$_read_shmfile;
+   my ($self, $args) = @_; my $key = $args->{k}; my $pid = $args->{p};
 
-   delete $shm_content->{ $key }
-      and return $self->$_write_shmfile( $lock_file, $shm_content );
+   my ($lock_file, $shm_content) = $self->$_read_shmfile;
 
-   $_unlock_share->( $lock_file ); throw 'Lock [_1] not set', [ $key ];
+   my $lock; exists $shm_content->{ $key }
+      and $lock = $shm_content->{ $key }
+      and $lock->{spid} != $pid
+      and $_unlock_share->( $lock_file )
+      and throw 'Lock [_1] set by another process', [ $key ];
+
+   not delete $shm_content->{ $key } and $_unlock_share->( $lock_file )
+      and throw 'Lock [_1] not set', [ $key ];
+
+   return $self->$_write_shmfile( $lock_file, $shm_content );
 };
 
 my $_set = sub {
@@ -160,7 +181,7 @@ sub list {
 }
 
 sub reset {
-   my $self = shift; return $self->$_reset( $self->_get_args( @_ )->{k} );
+   my $self = shift; return $self->$_reset( $self->_get_args( @_ ) );
 }
 
 sub set {
@@ -227,6 +248,11 @@ The umask to set when creating the lock table file. Defaults to 0
 =back
 
 =head1 Subroutines/Methods
+
+=head2 C<BUILDARGS>
+
+Extract the L</tempdir> attribute value from the C<config> object
+if one was supplied
 
 =head2 list
 

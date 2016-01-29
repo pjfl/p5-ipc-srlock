@@ -5,8 +5,9 @@ use warnings;
 use parent 'Exporter::Tiny';
 
 use IPC::SRLock::Constants qw( EXCEPTION_CLASS );
+use Scalar::Util           qw( blessed );
 
-our @EXPORT_OK = qw( Unspecified hash_from loop_until throw );
+our @EXPORT_OK = qw( Unspecified hash_from loop_until merge_attributes throw );
 
 sub Unspecified () {
    return sub { 'Unspecified' };
@@ -34,6 +35,19 @@ sub loop_until ($) {
          $self->_sleep_or_timeout( $start, $now, $self->lockfile );
       }
    };
+}
+
+sub merge_attributes ($$;$) {
+   my ($dest, $src, $keys) = @_; my $class = blessed $src;
+
+   for (grep { not exists $dest->{ $_ } or not defined $dest->{ $_ } }
+            @{ $keys // [] }) {
+      my $v = $class ? ($src->can( $_ ) ? $src->$_() : undef) : $src->{ $_ };
+
+      defined $v and $dest->{ $_ } = $v;
+   }
+
+   return $dest;
 }
 
 sub throw (;@) {
@@ -76,6 +90,15 @@ values
 =head2 loop_until
 
 Loop until the closed over subroutine returns true or a timeout occurs
+
+=head2 merge_attributes
+
+   $dest = merge_attributes $dest, $src, $attr_list_ref;
+
+Merges attribute hashes. The C<$dest> hash is updated and
+returned. The C<$dest> hash values take precedence over the C<$src>
+hash values. The C<$src> hash may be an object in which case its
+accessor methods are called
 
 =head2 throw
 

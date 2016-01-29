@@ -37,13 +37,17 @@ my $_expire_lock = sub {
    return 0;
 };
 
+my $_unlock_share = sub {
+   my $self = shift; $self->memd->delete( $self->lockfile ); return 1;
+};
+
 my $_list = sub {
    my $self = shift;
 
    $self->memd->add( $self->lockfile, 1, $self->patience + 30 ) or return 0;
 
    my $shm_content = $self->memd->get( $self->shmfile ) // {};
-   my $list        = []; $self->memd->delete( $self->lockfile );
+   my $list        = []; $self->$_unlock_share;
 
    for my $key (sort keys %{ $shm_content }) {
       my @fields = split m{ , }mx, $shm_content->{ $key };
@@ -58,16 +62,22 @@ my $_list = sub {
 };
 
 my $_reset = sub {
-   my ($self, $args, $now) = @_; my $key = $args->{k};
+   my ($self, $args, $now) = @_; my $key = $args->{k}; my $pid = $args->{p};
 
    $self->memd->add( $self->lockfile, 1, $self->patience + 30 ) or return 0;
 
    my $shm_content = $self->memd->get( $self->shmfile ) // {};
-   my $found       = delete $shm_content->{ $key } ? 1 : 0;
 
-   $found and $self->memd->set( $self->shmfile, $shm_content );
-   $self->memd->delete( $self->lockfile );
-   $found or throw 'Lock [_1] not set', [ $key ];
+   my $lock; exists $shm_content->{ $key }
+      and $lock = $shm_content->{ $key }
+      and (split m{ , }mx, $lock)[ 0 ] != $pid
+      and $self->$_unlock_share
+      and throw 'Lock [_1] set by another process', [ $key ];
+
+   not delete $shm_content->{ $key } and $self->$_unlock_share
+      and throw 'Lock [_1] not set', [ $key ];
+
+   $self->memd->set( $self->shmfile, $shm_content ); $self->$_unlock_share;
    return 1;
 };
 
@@ -87,11 +97,10 @@ my $_set = sub {
          and $lock = $self->$_expire_lock( $shm_content, $key, @fields );
    }
 
-   if ($lock) { $self->memd->delete( $self->lockfile ); return 0 }
+   $lock and $self->$_unlock_share and return 0;
 
    $shm_content->{ $key } = "${pid},${now},${timeout}";
-   $self->memd->set( $self->shmfile, $shm_content );
-   $self->memd->delete( $self->lockfile );
+   $self->memd->set( $self->shmfile, $shm_content ); $self->$_unlock_share;
    $self->log->debug( "Lock ${key} set by ${pid}" );
    return 1;
 };
