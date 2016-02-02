@@ -1,5 +1,6 @@
 Revision history for IPC::SRLock
 
+          - Constructor accepts builder config lock_attributes
           - Full coverage achieved
           - Reset throws if pids do not match
             Adjusted Async::IPC::Semaphore to pass pid to child
