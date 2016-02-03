@@ -2,7 +2,7 @@ package IPC::SRLock;
 
 use 5.010001;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 4 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.28.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use File::DataClass::Types qw( HashRef LoadableClass NonEmptySimpleStr Object );
 use IPC::SRLock::Utils     qw( merge_attributes );
@@ -38,14 +38,14 @@ has '_implementation_class' => is => 'lazy', isa => LoadableClass,
 around 'BUILDARGS' => sub {
    my ($orig, $self, @args) = @_; my $attr = $orig->( $self, @args );
 
-   $attr->{name} //= lc join '_', split m{ :: }mx, __PACKAGE__, -1;
-
    my $builder = $attr->{builder};
    my $conf    = $builder && $builder->can( 'config' ) ? $builder->config : 0;
 
    $conf and $conf->can( 'lock_attributes' )
          and merge_attributes $attr, $conf->lock_attributes,
                            [ keys %{ $conf->lock_attributes } ];
+
+   $attr->{name} //= lc join '_', split m{ :: }mx, __PACKAGE__, -1;
 
    my $type = delete $attr->{type}; $attr = { _implementation_attr => $attr };
 
@@ -83,7 +83,7 @@ IPC::SRLock - Set / reset locking semantics to single thread processes
 
 =head1 Version
 
-This documents version v0.27.$Rev: 4 $ of L<IPC::SRLock>
+This documents version v0.28.$Rev: 1 $ of L<IPC::SRLock>
 
 =head1 Synopsis
 
