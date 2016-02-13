@@ -15,3 +15,4 @@ t/05kwalitee.t
 t/07podspelling.t
 t/10test_script.t
 t/boilerplate.pm
+t/exceptions.dd
