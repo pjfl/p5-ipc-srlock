@@ -1,0 +1,5 @@
+do { my $x = {
+       'cvrsnica-freebsd-101.herceg.de' => '23ecac40-d03c-11e5-9846-d09bfbd2507e'
+     };
+  $x;
+ }

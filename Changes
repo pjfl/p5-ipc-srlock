@@ -1,5 +1,7 @@
 Revision history for IPC::SRLock
 
+          - Added broken smoker to exception list
+
 0.28.1    2016-02-03 02:42:14
           - Constructor accepts builder config lock_attributes
           - Full coverage achieved
