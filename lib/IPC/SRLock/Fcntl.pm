@@ -16,7 +16,7 @@ use Moo;
 extends q(IPC::SRLock::Base);
 
 # Attribute constructors
-my $_build__lockfile = sub {
+my $_build_lockfile = sub {
    my $self = shift; my $path = $self->_lockfile_name;
 
    # uncoverable condition false
@@ -39,6 +39,9 @@ my $_build__shmfile = sub {
 };
 
 # Public attributes
+has 'lockfile' => is => 'lazy', isa => Path, coerce => 1,
+   builder     => $_build_lockfile;
+
 has 'mode'    => is => 'ro', isa => OctalNum, coerce => 1, default => '0666';
 
 has 'pattern' => is => 'ro', isa => RegexpRef,
@@ -50,9 +53,6 @@ has 'tempdir' => is => 'ro', isa => Directory, coerce => 1,
 has 'umask'   => is => 'ro', isa => PositiveInt, default => 0;
 
 # Private attributes
-has '_lockfile'      => is => 'lazy', isa => Path, coerce => 1,
-   builder           => $_build__lockfile;
-
 has '_lockfile_name' => is => 'ro',   isa => NonEmptySimpleStr,
    init_arg          => 'lockfile';
 
@@ -94,7 +94,7 @@ my $_read_shmfile = sub {
    my $shmfile   = $self->_shmfile;
 
    try {
-      $file = $self->_lockfile->lock( $mode )->assert_open( 'w', $self->mode );
+      $file = $self->lockfile->lock( $mode )->assert_open( 'w', $self->mode );
    }
    catch { umask $old_umask; throw $_ };
 
