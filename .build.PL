@@ -25,7 +25,7 @@ my $osname   = lc $^O; ($osname eq 'mswin32' or $osname eq 'cygwin')
 # Not interested in reports below min perl ver
 $] < $perl_ver and $stop->( "Minimum required Perl version is ${perl_ver}" );
 
-Module::Build->new(
+Module::Build->subclass( code => do { local $/; <DATA> } )->new(
    'module_name' => $name,
    'notes'       => { min_perl_version => $perl_ver, testing => $testing->() },
    %{ $prereqs },
@@ -33,3 +33,13 @@ Module::Build->new(
 )->create_build_script;
 
 exit 0;
+
+__DATA__
+
+sub _added_to_INC { # CVE-2016-1238
+  my $self = shift; my %seen;
+
+  for ($self->_default_INC) { $seen{ $_ }++ }
+
+  return grep { not $seen{ $_ }++ } $self->base_dir, @INC;
+}

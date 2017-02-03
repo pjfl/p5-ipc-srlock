@@ -11,7 +11,7 @@ IPC::SRLock - Set / reset locking semantics to single thread processes
 
 # Version
 
-This documents version v0.30.$Rev: 1 $ of [IPC::SRLock](https://metacpan.org/pod/IPC::SRLock)
+This documents version v0.30.$Rev: 2 $ of [IPC::SRLock](https://metacpan.org/pod/IPC::SRLock)
 
 # Synopsis
 
@@ -129,7 +129,7 @@ Peter Flanigan, `<pjfl@cpan.org>`
 
 # License and Copyright
 
-Copyright (c) 2016 Peter Flanigan. All rights reserved
+Copyright (c) 2017 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See [perlartistic](https://metacpan.org/pod/perlartistic)
