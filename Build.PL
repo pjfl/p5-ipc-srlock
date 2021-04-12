@@ -27,6 +27,7 @@ my $prereqs  = {
     'Time::Elapsed' => '0.31',
     'Try::Tiny' => '0.22',
     'Type::Tiny' => '1.000005',
+    'Unexpected' => 'v1.0.0',
     'namespace::autoclean' => '0.26',
     'perl' => '5.010001'
   },

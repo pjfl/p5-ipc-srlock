@@ -2,62 +2,79 @@ package IPC::SRLock;
 
 use 5.010001;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.31.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.31.%d', q$Rev: 2 $ =~ /\d+/gmx );
 
-use File::DataClass::Types qw( HashRef LoadableClass NonEmptySimpleStr Object );
 use IPC::SRLock::Utils     qw( merge_attributes );
+use File::DataClass::Types qw( HashRef LoadableClass NonEmptySimpleStr Object );
 use Moo;
-
-my $_build__implementation = sub {
-   return $_[ 0 ]->_implementation_class->new( $_[ 0 ]->_implementation_attr );
-};
-
-my $_build__implementation_class = sub {
-   my $self = shift; my $type = $self->type; my $class;
-
-   if ('+' eq substr $type, 0, 1) { $class = substr $type, 1 }
-   else { $class = __PACKAGE__.'::'.(ucfirst $type) }
-
-   return $class;
-};
 
 # Public attributes
 has 'type' => is => 'ro', isa => NonEmptySimpleStr, default => 'fcntl';
 
 # Private attributes
-has '_implementation'       => is => 'lazy', isa => Object,
-   handles                  => [ qw( get_table list reset set ) ],
-   builder                  => $_build__implementation;
+has '_implementation' =>
+   is      => 'lazy',
+   isa     => Object,
+   builder => '_build__implementation',
+   handles => [ qw( get_table list reset set ) ];
 
-has '_implementation_attr'  => is => 'ro',   isa => HashRef, required => 1;
+has '_implementation_attr' => is => 'ro', isa => HashRef, required => 1;
 
-has '_implementation_class' => is => 'lazy', isa => LoadableClass,
-   builder                  => $_build__implementation_class;
+has '_implementation_class' =>
+   is      => 'lazy',
+   isa     => LoadableClass,
+   builder => '_build__implementation_class';
 
 # Construction
 around 'BUILDARGS' => sub {
-   my ($orig, $self, @args) = @_; my $attr = $orig->( $self, @args );
+   my ($orig, $self, @args) = @_;
 
+   my $attr    = $orig->($self, @args);
    my $builder = $attr->{builder};
-   my $conf    = $builder && $builder->can( 'config' ) ? $builder->config : 0;
+   my $conf    = $builder && $builder->can('config') ? $builder->config : 0;
 
-   $conf and $conf->can( 'lock_attributes' )
-         and merge_attributes $attr, $conf->lock_attributes,
-                           [ keys %{ $conf->lock_attributes } ];
+   if ($conf && $conf->can('lock_attributes')) {
+      merge_attributes $attr, $conf->lock_attributes,
+         [ keys %{$conf->lock_attributes} ];
+   }
 
    $attr->{name} //= lc join '_', split m{ :: }mx, __PACKAGE__, -1;
 
-   my $type = delete $attr->{type}; $attr = { _implementation_attr => $attr };
+   my $type = delete $attr->{type};
 
-   $type and $type !~ m{ \A ([a-zA-Z0-9\:\+]+) \z }mx
-         and die "Type ${type} tainted";
-   $type and $attr->{type} = $1;
+   $attr = { _implementation_attr => $attr };
+
+   if ($type) {
+      die "Type ${type} tainted" if $type !~ m{ \A ([a-zA-Z0-9\:\+]+) \z }mx;
+
+      $attr->{type} = $1;
+   }
 
    return $attr;
 };
 
 sub BUILD {
-   my $self = shift; $self->_implementation; return;
+   my $self = shift;
+
+   $self->_implementation;
+   return;
+}
+
+sub _build__implementation {
+   my $self = shift;
+
+   return $self->_implementation_class->new($self->_implementation_attr);
+}
+
+sub _build__implementation_class {
+   my $self = shift;
+   my $type = $self->type;
+   my $class;
+
+   if ('+' eq substr $type, 0, 1) { $class = substr $type, 1 }
+   else { $class = __PACKAGE__.'::'.(ucfirst $type) }
+
+   return $class;
 }
 
 1;
@@ -83,7 +100,7 @@ IPC::SRLock - Set / reset locking semantics to single thread processes
 
 =head1 Version
 
-This documents version v0.31.$Rev: 1 $ of L<IPC::SRLock>
+This documents version v0.31.$Rev: 2 $ of L<IPC::SRLock>
 
 =head1 Synopsis
 
@@ -187,11 +204,9 @@ the lock record at the debug level
 
 =over 3
 
-=item L<File::DataClass>
+=item L<File::DataClass::Types>
 
 =item L<Moo>
-
-=item L<Type::Tiny>
 
 =back
 
@@ -215,7 +230,7 @@ Peter Flanigan, C<< <pjfl@cpan.org> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2017 Peter Flanigan. All rights reserved
+Copyright (c) 2021 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

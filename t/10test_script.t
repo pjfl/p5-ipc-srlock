@@ -2,9 +2,9 @@ use t::boilerplate;
 
 use Test::More;
 use English qw( -no_match_vars );
-use File::DataClass::Exception;
 use File::DataClass::IO;
 use File::Spec::Functions qw( catfile );
+use Unexpected;
 
 use_ok 'IPC::SRLock';
 
@@ -22,7 +22,7 @@ isa_ok $lock, 'IPC::SRLock';
 
 eval { $lock->set() };
 
-if ($e = File::DataClass::Exception->caught()) {
+if ($e = Unexpected->caught()) {
    like "${e}", qr{ \Qnot specified\E }mx, 'Error no key';
 }
 else {

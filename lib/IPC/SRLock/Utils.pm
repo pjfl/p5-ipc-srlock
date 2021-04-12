@@ -7,44 +7,48 @@ use parent 'Exporter::Tiny';
 use IPC::SRLock::Constants qw( EXCEPTION_CLASS );
 use Scalar::Util           qw( blessed );
 
-our @EXPORT_OK = qw( Unspecified hash_from loop_until merge_attributes throw );
-
-sub Unspecified () {
-   return sub { 'Unspecified' };
-}
+our @EXPORT_OK = qw( hash_from loop_until merge_attributes throw );
 
 sub hash_from  (;@) {
-   my (@args) = @_; $args[ 0 ] or return {};
+   my (@args) = @_;
 
-   return ref $args[ 0 ] ? $args[ 0 ] : { @args };
+   return {} unless $args[0];
+
+   return ref $args[0] ? $args[0] : { @args };
 }
 
 sub loop_until ($) {
    my $f = shift;
 
    return sub {
-      my $self = shift; my $args = $self->_get_args( @_ ); my $start = time;
+      my $self  = shift;
+      my $args  = $self->_get_args(@_);
+      my $start = time;
 
       while (1) {
          my $now = time;
-         my $r   = $f->( $self, $args, $now ); $r and return $r;
+         my $r   = $f->($self, $args, $now);
+
+         return $r if $r;
 
          # uncoverable branch false
-         $args->{async} and return 0;
+         return 0 if $args->{async};
          # uncoverable statement
-         $self->_sleep_or_timeout( $start, $now, $self->lockfile );
+         $self->_sleep_or_timeout($start, $now, $self->lockfile);
       }
    };
 }
 
 sub merge_attributes ($$;$) {
-   my ($dest, $src, $keys) = @_; my $class = blessed $src;
+   my ($dest, $src, $keys) = @_;
 
-   for (grep { not exists $dest->{ $_ } or not defined $dest->{ $_ } }
+   my $class = blessed $src;
+
+   for (grep { not exists $dest->{$_} or not defined $dest->{$_} }
             @{ $keys // [] }) {
-      my $v = $class ? ($src->can( $_ ) ? $src->$_() : undef) : $src->{ $_ };
+      my $v = $class ? ($src->can($_) ? $src->$_() : undef) : $src->{$_};
 
-      defined $v and $dest->{ $_ } = $v;
+      $dest->{$_} = $v if defined $v;
    }
 
    return $dest;
@@ -102,7 +106,7 @@ accessor methods are called
 
 =head2 throw
 
-Expose the C<throw> method in L<File::DataClass::Exception>
+Expose the C<throw> method in L<Unexpected>
 
 =head1 Configuration and Environment
 
@@ -140,7 +144,7 @@ Peter Flanigan, C<< <pjfl@cpan.org> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2017 Peter Flanigan. All rights reserved
+Copyright (c) 2021 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

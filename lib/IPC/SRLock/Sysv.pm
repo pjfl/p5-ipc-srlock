@@ -2,31 +2,17 @@ package IPC::SRLock::Sysv;
 
 use namespace::autoclean;
 
+use IPC::SRLock::Constants qw( EXCEPTION_CLASS );
+use IPC::SRLock::Utils     qw( hash_from loop_until throw );
 use English                qw( -no_match_vars );
 use File::DataClass::Types qw( Object OctalNum PositiveInt );
 use IPC::ShareLite         qw( :lock );
-use IPC::SRLock::Utils     qw( Unspecified hash_from loop_until throw );
 use Storable               qw( nfreeze thaw );
 use Try::Tiny;
+use Unexpected             qw( Unspecified );
 use Moo;
 
 extends q(IPC::SRLock::Base);
-
-# Attribute constructors
-my $_build__share = sub {
-   my $self = shift; my $share;
-
-   try   { $share = IPC::ShareLite->new( '-key'    => $self->lockfile,
-                                         '-create' => 1,
-                                         '-mode'   => $self->mode,
-                                         '-size'   => $self->size ) }
-   catch {
-      # uncoverable subroutine
-      throw "${_}: ${OS_ERROR}"; # uncoverable statement
-   };
-
-   return $share;
-};
 
 # Public attributes
 has 'lockfile' => is => 'ro',   isa => PositiveInt, default => 12_244_237;
@@ -36,117 +22,183 @@ has 'mode'     => is => 'ro',   isa => OctalNum, coerce => 1, default => '0666';
 has 'size'     => is => 'ro',   isa => PositiveInt, default => 65_536;
 
 # Private attributes
-has '_share'   => is => 'lazy', isa => Object, builder => $_build__share;
+has '_share'   => is => 'lazy', isa => Object, builder => '_build__share';
 
 # Construction
 sub BUILD {
-   my $self = shift; $self->_share; return;
+   my $self = shift;
+
+   $self->_share;
+   return;
 }
-
-# Private methods
-my $_expire_lock = sub {
-   my ($self, $data, $key, $lock) = @_;
-
-   $self->log->error
-      ( $self->_timeout_error
-        ( $key, $lock->{spid}, $lock->{stime}, $lock->{timeout} ) );
-
-   delete $data->{ $key };
-   return 0;
-};
-
-my $_unlock_share = sub {
-   my $self = shift; defined $self->_share->unlock and return 1;
-
-   throw 'Failed to unset semaphore'; # uncoverable statement
-};
-
-my $_write_shared_mem = sub {
-   my ($self, $data) = @_;
-
-   try   { $self->_share->store( nfreeze $data ) }
-   catch {
-      throw "${_}: ${OS_ERROR}"; # uncoverable statement
-   };
-
-   return $self->$_unlock_share;
-};
-
-my $_read_shared_mem = sub {
-   my ($self, $for_update, $async) = @_; my $data;
-
-   my $mode = $for_update ? LOCK_EX : LOCK_SH; $async and $mode |= LOCK_NB;
-   my $lock = $self->_share->lock( $mode );
-
-   defined $lock or throw 'Failed to set semaphore';
-   $lock or return; # Async operation would have blocked
-
-   try   { $data = $self->_share->fetch; $data = $data ? thaw( $data ) : {} }
-   catch {
-      throw "${_}: ${OS_ERROR}"; # uncoverable statement
-   };
-
-   not $for_update and $self->$_unlock_share;
-   return $data;
-};
-
-my $_reset = sub {
-   my ($self, $args) = @_; my $key = $args->{k}; my $pid = $args->{p};
-
-   my $shm_content = $self->$_read_shared_mem( 1 );
-
-   my $lock; exists $shm_content->{ $key }
-      and $lock = $shm_content->{ $key }
-      and $lock->{spid} != $pid
-      and $self->$_unlock_share
-      and throw 'Lock [_1] set by another process', [ $key ];
-
-   not delete $shm_content->{ $key } and $self->$_unlock_share
-      and throw 'Lock [_1] not set', [ $key ];
-
-   return $self->$_write_shared_mem( $shm_content );
-};
-
-my $_set = sub {
-   my ($self, $args, $now) = @_; my $key = $args->{k}; my $pid = $args->{p};
-
-   my $shm_content = $self->$_read_shared_mem( 1, $args->{async} ) or return 0;
-
-   my $lock; exists $shm_content->{ $key }
-      and $lock = $shm_content->{ $key }
-      and $lock->{timeout}
-      and $now > $lock->{stime} + $lock->{timeout}
-      and $lock = $self->$_expire_lock( $shm_content, $key, $lock );
-
-   $lock and $self->$_unlock_share and return 0;
-
-   $shm_content->{ $key }
-      = { spid => $pid, stime => $now, timeout => $args->{t} };
-   $self->$_write_shared_mem( $shm_content );
-   $self->log->debug( "Lock ${key} set by ${pid}" );
-   return 1;
-};
 
 # Public methods
 sub list {
-   my $self = shift; my $data = $self->$_read_shared_mem; my $list = [];
+   my $self = shift;
+   my $data = $self->_read_shared_mem;
+   my $list = [];
 
-   while (my ($key, $info) = each %{ $data }) {
-      push @{ $list }, { key     => $key,
-                         pid     => $info->{spid   },
-                         stime   => $info->{stime  },
-                         timeout => $info->{timeout} };
+   while (my ($key, $info) = each %{$data}) {
+      push @{ $list }, {
+         key     => $key,
+         pid     => $info->{spid   },
+         stime   => $info->{stime  },
+         timeout => $info->{timeout},
+      };
    }
 
    return $list;
 }
 
 sub reset {
-   my $self = shift; return $self->$_reset( $self->_get_args( @_ ) );
+   my ($self, @args) = @_;
+
+   return $self->_reset($self->_get_args(@args));
 }
 
 sub set {
-   my ($self, @args) = @_; return loop_until( $_set )->( $self, @args );
+   my ($self, @args) = @_;
+
+   return loop_until(\&_set)->($self, @args);
+}
+
+# Attribute constructors
+sub _build__share {
+   my $self = shift;
+   my $share;
+
+   try {
+      $share = IPC::ShareLite->new(
+         '-key'    => $self->lockfile,
+         '-create' => 1,
+         '-mode'   => $self->mode,
+         '-size'   => $self->size,
+      );
+   }
+   catch {
+      # uncoverable subroutine
+      throw "${_}: ${OS_ERROR}"; # uncoverable statement
+   };
+
+   return $share;
+}
+
+# Private methods
+sub _expire_lock {
+   my ($self, $data, $key, $lock) = @_;
+
+   $self->log->error(
+      $self->_timeout_error(
+         $key, $lock->{spid}, $lock->{stime}, $lock->{timeout}
+      )
+   );
+
+   delete $data->{$key};
+   return 0;
+}
+
+sub _unlock_share {
+   my $self = shift;
+
+   return 1 if defined $self->_share->unlock;
+
+   throw 'Failed to unset semaphore'; # uncoverable statement
+}
+
+sub _write_shared_mem {
+   my ($self, $data) = @_;
+
+   try   { $self->_share->store(nfreeze $data) }
+   catch {
+      throw "${_}: ${OS_ERROR}"; # uncoverable statement
+   };
+
+   return $self->_unlock_share;
+}
+
+sub _read_shared_mem {
+   my ($self, $for_update, $async) = @_;
+
+   my $mode = $for_update ? LOCK_EX : LOCK_SH;
+
+   $mode |= LOCK_NB if $async;
+
+   my $lock = $self->_share->lock($mode);
+
+   throw 'Failed to set semaphore' unless defined $lock;
+
+   return unless $lock; # Async operation would have blocked
+
+   my $data;
+
+   try   {
+      $data = $self->_share->fetch;
+      $data = $data ? thaw($data) : {};
+   }
+   catch {
+      throw "${_}: ${OS_ERROR}"; # uncoverable statement
+   };
+
+   $self->_unlock_share unless $for_update;
+
+   return $data;
+}
+
+sub _reset {
+   my ($self, $args) = @_;
+
+   my $key = $args->{k};
+   my $pid = $args->{p};
+
+   my $shm_content = $self->_read_shared_mem(1);
+
+   my $lock;
+
+   if (exists $shm_content->{$key}) {
+      $lock = $shm_content->{$key};
+
+      if ($lock->{spid} != $pid) {
+         $self->_unlock_share;
+         throw 'Lock [_1] set by another process', [$key];
+      }
+   }
+
+   unless (delete $shm_content->{ $key }) {
+      $self->_unlock_share;
+      throw 'Lock [_1] not set', [$key];
+   }
+
+   return $self->_write_shared_mem($shm_content);
+}
+
+sub _set {
+   my ($self, $args, $now) = @_;
+
+   my $key = $args->{k};
+   my $pid = $args->{p};
+
+   my $shm_content = $self->_read_shared_mem(1, $args->{async}) or return 0;
+
+   my $lock;
+
+   if (exists $shm_content->{$key}) {
+      $lock = $shm_content->{$key};
+
+      if ($lock->{timeout} and $now > $lock->{stime} + $lock->{timeout}) {
+         $lock = $self->_expire_lock($shm_content, $key, $lock);
+      }
+   }
+
+   if ($lock) {
+      $self->_unlock_share;
+      return 0;
+   }
+
+   $shm_content->{$key}
+      = { spid => $pid, stime => $now, timeout => $args->{t} };
+   $self->_write_shared_mem($shm_content);
+   $self->log->debug("Lock ${key} set by ${pid}");
+   return 1;
 }
 
 1;
@@ -219,7 +271,7 @@ None
 
 =over 3
 
-=item L<File::DataClass>
+=item L<File::DataClass::Types>
 
 =item L<IPC::ShareLite>
 
@@ -251,7 +303,7 @@ Peter Flanigan, C<< <pjfl@cpan.org> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2017 Peter Flanigan. All rights reserved
+Copyright (c) 2021 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

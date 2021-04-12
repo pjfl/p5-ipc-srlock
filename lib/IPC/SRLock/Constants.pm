@@ -6,20 +6,26 @@ use parent 'Exporter::Tiny';
 
 use File::DataClass::Exception;
 
-our @EXPORT_OK = qw( EXCEPTION_CLASS );
+our @EXPORT_OK = qw( EXCEPTION_CLASS LOCK_BLOCKING LOCK_NONBLOCKING );
 
-my $_exception_class = 'File::DataClass::Exception';
-
-sub EXCEPTION_CLASS () { __PACKAGE__->Exception_Class }
+my $exception_class = 'File::DataClass::Exception';
 
 sub Exception_Class {
-   my ($self, $class) = @_; defined $class or return $_exception_class;
+   my ($self, $class) = @_;
 
-   $class->can( 'throw' )
-       or die "Class '${class}' is not loaded or has no 'throw' method";
+   return $exception_class unless defined $class;
 
-   return $_exception_class = $class;
+   die "Class '${class}' is not loaded or has no 'throw' method"
+      unless $class->can('throw');
+
+   return $exception_class = $class;
 }
+
+sub EXCEPTION_CLASS  () { __PACKAGE__->Exception_Class }
+
+sub LOCK_BLOCKING    () { 1 }
+
+sub LOCK_NONBLOCKING () { 2 }
 
 1;
 
@@ -56,6 +62,14 @@ L</EXCEPTION_CLASS> function
 
 The class to use when throwing exceptions
 
+=head2 C<LOCK_BLOCKING>
+
+Integer constant used to indicate a blocking lock call
+
+=head2 C<LOCK_NONBLOCKING>
+
+Integer constant used to indicate a non-blocking lock call
+
 =head1 Diagnostics
 
 None
@@ -65,6 +79,8 @@ None
 =over 3
 
 =item L<Exporter>
+
+=item L<File::DataClass::Exception>
 
 =back
 
@@ -88,7 +104,7 @@ Peter Flanigan, C<< <pjfl@cpan.org> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2017 Peter Flanigan. All rights reserved
+Copyright (c) 2021 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

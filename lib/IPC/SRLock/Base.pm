@@ -2,13 +2,15 @@ package IPC::SRLock::Base;
 
 use namespace::autoclean;
 
+use IPC::SRLock::Constants qw( EXCEPTION_CLASS );
+use IPC::SRLock::Utils     qw( hash_from merge_attributes throw );
 use Date::Format           qw( time2str );
 use English                qw( -no_match_vars );
 use File::DataClass::Types qw( Bool LoadableClass NonEmptySimpleStr
                                Num Object PositiveInt );
-use IPC::SRLock::Utils     qw( Unspecified hash_from merge_attributes throw );
 use Time::Elapsed          qw( elapsed );
 use Time::HiRes            qw( usleep );
+use Unexpected::Functions  qw( Unspecified );
 use Moo;
 
 # Public attributes
@@ -26,25 +28,73 @@ has 'patience'    => is => 'ro',   isa => PositiveInt, default => 0;
 has 'time_out'    => is => 'ro',   isa => PositiveInt, default => 300;
 
 # Private attributes
-has '_null_class' => is => 'lazy', isa => LoadableClass,
-   default        => 'Class::Null', init_arg => undef;
+has '_null_class' =>
+   is       => 'lazy',
+   isa      => LoadableClass,
+   default  => 'Class::Null',
+   init_arg => undef;
 
 # Construction
 around 'BUILDARGS' => sub {
-   my ($orig, $self, @args) = @_; my $attr = $orig->( $self, @args );
+   my ($orig, $self, @args) = @_;
+
+   my $attr = $orig->($self, @args);
 
    my $builder = $attr->{builder} or return $attr;
 
-   merge_attributes $attr, $builder, [ 'debug', 'log' ];
+   merge_attributes $attr, $builder, ['debug', 'log'];
 
    return $attr;
 };
 
+# Public methods
+sub get_table {
+   my $self  = shift;
+   my $count = 0;
+   my $data  = {
+      align    => {
+         id    => 'left',
+         pid   => 'right',
+         stime => 'right',
+         tleft => 'right'},
+      count    => $count,
+      fields   => [ qw( id pid stime tleft ) ],
+      hclass   => { id => 'most' },
+      labels   => {
+         id    => 'Key',
+         pid   => 'PID',
+         stime => 'Lock Time',
+         tleft => 'Time Left',
+      },
+      values   => [],
+   };
+
+   for my $lock (@{$self->list}) {
+      my $fields = {};
+
+      $fields->{id}    = $lock->{key};
+      $fields->{pid}   = $lock->{pid};
+      $fields->{stime} = time2str('%Y-%m-%d %H:%M:%S', $lock->{stime});
+
+      my $tleft = $lock->{stime} + $lock->{timeout} - time;
+
+      # uncoverable branch false
+      $fields->{tleft} = $tleft > 0 ? elapsed($tleft) : 'Expired';
+      push @{$data->{values}}, $fields; $count++;
+   }
+
+   $data->{count} = $count;
+   return $data;
+}
+
 # Private methods
 sub _get_args {
-   my $self = shift; my $args = hash_from @_;
+   my $self = shift;
+   my $args = hash_from @_;
 
-   $args->{k}  or throw Unspecified, [ 'key' ]; $args->{k} .= q();
+   throw Unspecified, ['key'] unless $args->{k};
+
+   $args->{k} .= q();
    $args->{p} //= $PID; # uncoverable condition false
    $args->{t} //= $self->time_out; # uncoverable condition false
 
@@ -54,9 +104,10 @@ sub _get_args {
 sub _sleep_or_timeout {
    my ($self, $start, $now, $key) = @_;
 
-   $self->patience and $now > $start + $self->patience
-      and throw 'Lock [_1] timed out', [ $key ];
-   usleep( 1_000_000 * $self->nap_time );
+   throw 'Lock [_1] timed out', [$key]
+      if $self->patience and $now > $start + $self->patience;
+
+   usleep(1_000_000 * $self->nap_time);
    return 1;
 }
 
@@ -64,42 +115,7 @@ sub _timeout_error {
    my ($self, $key, $pid, $when, $after) = @_;
 
    return "Timed out ${key} set by ${pid} on "
-        . time2str( '%Y-%m-%d at %H:%M', $when )." after ${after} seconds\n";
-}
-
-# Public methods
-sub get_table {
-   my $self  = shift;
-   my $count = 0;
-   my $data  = { align  => { id    => 'left',
-                             pid   => 'right',
-                             stime => 'right',
-                             tleft => 'right'},
-                 count  => $count,
-                 fields => [ qw( id pid stime tleft ) ],
-                 hclass => { id    => 'most' },
-                 labels => { id    => 'Key',
-                             pid   => 'PID',
-                             stime => 'Lock Time',
-                             tleft => 'Time Left' },
-                 values => [] };
-
-   for my $lock (@{ $self->list }) {
-      my $fields = {};
-
-      $fields->{id   } = $lock->{key};
-      $fields->{pid  } = $lock->{pid};
-      $fields->{stime} = time2str( '%Y-%m-%d %H:%M:%S', $lock->{stime} );
-
-      my $tleft = $lock->{stime} + $lock->{timeout} - time;
-
-      # uncoverable branch false
-      $fields->{tleft} = $tleft > 0 ? elapsed( $tleft ) : 'Expired';
-      push @{ $data->{values} }, $fields; $count++;
-   }
-
-   $data->{count} = $count;
-   return $data;
+      . time2str('%Y-%m-%d at %H:%M', $when) . " after ${after} seconds\n";
 }
 
 1;
@@ -246,7 +262,7 @@ None
 
 =item L<Date::Format>
 
-=item L<File::DataClass>
+=item L<File::DataClass::Types>
 
 =item L<Moo>
 
@@ -274,7 +290,7 @@ Peter Flanigan, C<< <pjfl@cpan.org> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2017 Peter Flanigan. All rights reserved
+Copyright (c) 2021 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

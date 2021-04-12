@@ -15,11 +15,12 @@ sub reset {
 }
 
 sub set {
-   my $self = shift; my $args = $self->_get_args( @_ );
+   my $self = shift;
+   my $args = $self->_get_args(@_);
+   my $key  = $args->{k};
+   my $pid  = $args->{p};
 
-   my $key = $args->{k}; my $pid = $args->{p};
-
-   $self->log->debug( "Lock ${key} set by ${pid}" );
+   $self->log->debug("Lock ${key} set by ${pid}");
    return 1;
 }
 
@@ -99,7 +100,7 @@ Peter Flanigan, C<< <pjfl@cpan.org> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2017 Peter Flanigan. All rights reserved
+Copyright (c) 2021 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>
