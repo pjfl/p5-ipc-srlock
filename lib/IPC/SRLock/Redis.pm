@@ -1,38 +1,43 @@
-package IPC::SRLock::Memcached;
+package IPC::SRLock::Redis;
 
 use namespace::autoclean;
 
-use IPC::SRLock::Constants qw( EXCEPTION_CLASS );
 use IPC::SRLock::Utils     qw( hash_from loop_until throw );
-use Cache::Memcached;
-use English                qw( -no_match_vars );
 use File::DataClass::Types qw( ArrayRef NonEmptySimpleStr Object );
-use Unexpected::Functions  qw( Unspecified );
+use Redis;
 use Moo;
 
 extends q(IPC::SRLock::Base);
 
 # Public attributes
-has 'lockfile' => is => 'ro', isa => NonEmptySimpleStr, default => '_lockfile';
+has 'lockfile' =>
+   is      => 'lazy',
+   isa     => NonEmptySimpleStr,
+   default => sub { shift->name . '_lockfile' };
 
-has 'servers'  => is => 'ro', isa => ArrayRef,
-   default     => sub { [ 'localhost:11211' ] };
+has 'servers' =>
+   is      => 'ro',
+   isa     => ArrayRef,
+   default => sub { [ 'localhost:6379' ] };
 
-has 'shmfile'  => is => 'ro', isa => NonEmptySimpleStr, default => '_shmfile';
+has 'shmfile' =>
+   is      => 'lazy',
+   isa     => NonEmptySimpleStr,
+   default => sub { shift->name . '_shmfile' };
 
 # Private attributes
-has '_memd' =>
+has '_redis' =>
    is      => 'lazy',
    isa     => Object,
-   reader  => 'memd',
+   reader  => 'redis',
    builder => sub {
       my $self = shift;
 
-      return Cache::Memcached->new(
-         debug     => $self->debug,
-         namespace => $self->name,
-         servers   => $self->servers
-      )
+      return Redis->new(
+         debug  => $self->debug,
+         name   => $self->name,
+         server => $self->servers->[0],
+      );
    };
 
 # Public methods
@@ -56,32 +61,26 @@ sub set {
 
 # Private methods
 sub _expire_lock {
-   my ($self, $data, $key, @fields) = @_;
+   my ($self, $key, @fields) = @_;
 
    $self->log->error(
       $self->_timeout_error($key, $fields[0], $fields[1], $fields[2])
    );
 
-   delete $data->{$key};
+   $self->redis->hdel($self->shmfile, $key);
    return 0;
-}
-
-sub _unlock_share {
-   my $self = shift;
-
-   $self->memd->delete($self->lockfile);
-   return 1;
 }
 
 sub _list {
    my $self = shift;
 
-   return 0 unless $self->memd->add($self->lockfile, 1, $self->patience + 30);
+   return 0 unless $self->_lock_share;
 
-   my $shm_content = $self->memd->get($self->shmfile) // {};
-   my $list        = [];
+   my $shm_content = hash_from $self->redis->hgetall($self->shmfile);
 
    $self->_unlock_share;
+
+   my $list = [];
 
    for my $key (sort keys %{$shm_content}) {
       my @fields = split m{ , }mx, $shm_content->{$key};
@@ -97,36 +96,39 @@ sub _list {
    return $list;
 }
 
+sub _lock_share {
+   my $self = shift;
+
+   $self->redis->set($self->lockfile, 1, 'EX', $self->patience, 'NX');
+   return 1;
+}
+
 sub _reset {
    my ($self, $args, $now) = @_;
 
    my $key = $args->{k};
    my $pid = $args->{p};
 
-   return 0 unless $self->memd->add($self->lockfile, 1, $self->patience + 30);
+   return 0 unless $self->_lock_share;
 
-   my $shm_content = $self->memd->get($self->shmfile) // {};
+   my $lock = $self->redis->hget($self->shmfile, $key);
 
-   my $lock;
-
-   if (exists $shm_content->{$key}) {
-      $lock = $shm_content->{$key};
-
-      if ((split m{ , }mx, $lock)[ 0 ] != $pid) {
+   if ($lock) {
+      if ((split m{ , }mx, $lock)[0] != $pid) {
          $self->_unlock_share;
          throw 'Lock [_1] set by another process', [$key];
       }
    }
 
-   unless (delete $shm_content->{$key}) {
+   unless ($lock) {
       $self->_unlock_share;
       throw 'Lock [_1] not set', [$key];
    }
 
-   $self->memd->set($self->shmfile, $shm_content);
+   $self->redis->hdel($self->shmfile, $key);
    $self->_unlock_share;
    return 1;
-};
+}
 
 sub _set {
    my ($self, $args, $now) = @_;
@@ -135,15 +137,14 @@ sub _set {
    my $pid     = $args->{p};
    my $timeout = $args->{t};
 
-   return 0 unless $self->memd->add($self->lockfile, 1, $self->patience + 30);
+   return 0 unless $self->_lock_share;
 
-   my $shm_content = $self->memd->get($self->shmfile) // {};
-   my $lock;
+   my $lock = $self->redis->hget($self->shmfile, $key);
 
-   if ($lock = $shm_content->{$key}) {
+   if ($lock) {
       my @fields = split m{ , }mx, $lock;
 
-      $lock = $self->_expire_lock($shm_content, $key, @fields)
+      $lock = $self->_expire_lock($key, @fields)
          if $fields[2] and $now > $fields[1] + $fields[2];
    }
 
@@ -152,10 +153,16 @@ sub _set {
       return 0;
    }
 
-   $shm_content->{$key} = "${pid},${now},${timeout}";
-   $self->memd->set($self->shmfile, $shm_content);
+   $self->redis->hset($self->shmfile, $key, "${pid},${now},${timeout}");
    $self->_unlock_share;
    $self->log->debug("Lock ${key} set by ${pid}");
+   return 1;
+}
+
+sub _unlock_share {
+   my $self = shift;
+
+   $self->redis->del($self->lockfile);
    return 1;
 }
 
@@ -169,71 +176,32 @@ __END__
 
 =head1 Name
 
-IPC::SRLock::Memcached - Set / reset locks using libmemcache
+IPC::SRLock::Redis - Implements the factory lock class using a Redis server
 
 =head1 Synopsis
 
-   use IPC::SRLock;
-
-   my $config = { type => q(memcached) };
-
-   my $lock_obj = IPC::SRLock->new( $config );
+   use IPC::SRLock::Redis;
+   # Brief but working code examples
 
 =head1 Description
 
-Uses L<Cache::Memcached> to implement a distributed lock manager
-
 =head1 Configuration and Environment
 
-This class defines accessors for these attributes:
+Defines the following attributes;
 
 =over 3
-
-=item C<lockfile>
-
-Name of the key to the lock file record. Defaults to C<_lockfile>
-
-=item C<servers>
-
-An array ref of servers to connect to. Defaults to C<localhost:11211>
-
-=item C<shmfile>
-
-Name of the key to the lock table record. Defaults to C<_shmfile>
 
 =back
 
 =head1 Subroutines/Methods
 
-=head2 list
-
-List the contents of the lock table
-
-=head2 reset
-
-Delete a lock from the lock table
-
-=head2 set
-
-Set a lock in the lock table
-
 =head1 Diagnostics
-
-None
 
 =head1 Dependencies
 
 =over 3
 
-=item L<Cache::Memcached>
-
-=item L<File::DataClass::Types>
-
-=item L<IPC::SRLock::Base>
-
-=item L<Moo>
-
-=item L<Time::HiRes>
+=item L<Class::Usul>
 
 =back
 
@@ -243,13 +211,17 @@ There are no known incompatibilities in this module
 
 =head1 Bugs and Limitations
 
-There are no known bugs in this module.
-Please report problems to the address below.
+There are no known bugs in this module. Please report problems to
+http://rt.cpan.org/NoAuth/Bugs.html?Dist=IPC-SRLock.
 Patches are welcome
+
+=head1 Acknowledgements
+
+Larry Wall - For the Perl programming language
 
 =head1 Author
 
-Peter Flanigan, C<< <pjfl@cpan.org> >>
+Peter Flanigan, C<< <lazarus@roxsoft.co.uk> >>
 
 =head1 License and Copyright
 
@@ -268,3 +240,4 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE
 # mode: perl
 # tab-width: 3
 # End:
+# vim: expandtab shiftwidth=3:

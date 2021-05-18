@@ -156,6 +156,21 @@ SKIP: {
       'Reset - memcached';
 }
 
+SKIP: {
+   ($ENV{AUTHOR_TESTING} and $ENV{HAVE_REDIS})
+      or skip 'author tests: Needs a Redis server', 2;
+   $lock = IPC::SRLock->new( { patience => 10, type => 'redis' } );
+   $lock->set( k => $PROGRAM_NAME );
+
+   is [ map { $_->{key} } @{ $lock->list() } ]->[ 0 ], $PROGRAM_NAME,
+      'Set - redis';
+
+   $lock->reset( k => $PROGRAM_NAME );
+
+   is [ map { $_->{key} } @{ $lock->list() } ]->[ 0 ], undef,
+      'Reset - redis';
+}
+
 eval { IPC::SRLock::Constants->Exception_Class( 'wrong' ) };
 
 like $EVAL_ERROR, qr{ \Qnot loaded\E }mx, 'Bad exception class';

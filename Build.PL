@@ -15,7 +15,8 @@ my $prereqs  = {
     'version' => '0.88'
   },
   'recommends' => {
-    'Cache::Memcached' => '1.30'
+    'Cache::Memcached' => '1.30',
+    'Redis' => '1.998'
   },
   'requires' => {
     'Class::Null' => '2.110730',

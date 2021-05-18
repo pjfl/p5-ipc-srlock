@@ -11,7 +11,7 @@ IPC::SRLock - Set / reset locking semantics to single thread processes
 
 # Version
 
-This documents version v0.31.$Rev: 2 $ of [IPC::SRLock](https://metacpan.org/pod/IPC::SRLock)
+This documents version v0.31.$Rev: 2 $ of [IPC::SRLock](https://metacpan.org/pod/IPC%3A%3ASRLock)
 
 # Synopsis
 
@@ -33,9 +33,9 @@ Provides set/reset locking methods which will force a critical region
 of code to run single threaded
 
 Implements a factory pattern, three implementations are provided. The
-LCD option [IPC::SRLock::Fcntl](https://metacpan.org/pod/IPC::SRLock::Fcntl) which works on non Unixen,
-[IPC::SRLock::Sysv](https://metacpan.org/pod/IPC::SRLock::Sysv) which uses System V IPC, and
-[IPC::SRLock::Memcached](https://metacpan.org/pod/IPC::SRLock::Memcached) which uses `libmemcache` to implement a
+LCD option [IPC::SRLock::Fcntl](https://metacpan.org/pod/IPC%3A%3ASRLock%3A%3AFcntl) which works on non Unixen,
+[IPC::SRLock::Sysv](https://metacpan.org/pod/IPC%3A%3ASRLock%3A%3ASysv) which uses System V IPC, and
+[IPC::SRLock::Memcached](https://metacpan.org/pod/IPC%3A%3ASRLock%3A%3AMemcached) which uses `libmemcache` to implement a
 distributed lock manager
 
 # Configuration and Environment
@@ -64,7 +64,7 @@ evaluation of the concrete subclass
 
 Returns a hash ref that contains the current lock table contents. The
 keys/values in the hash are suitable for passing to
-[HTML::FormWidgets](https://metacpan.org/pod/HTML::FormWidgets)
+[HTML::FormWidgets](https://metacpan.org/pod/HTML%3A%3AFormWidgets)
 
 ## list
 
@@ -105,7 +105,7 @@ the lock record at the debug level
 
 # Dependencies
 
-- [File::DataClass::Types](https://metacpan.org/pod/File::DataClass::Types)
+- [File::DataClass::Types](https://metacpan.org/pod/File%3A%3ADataClass%3A%3ATypes)
 - [Moo](https://metacpan.org/pod/Moo)
 
 # Incompatibilities
