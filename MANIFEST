@@ -6,7 +6,6 @@ lib/IPC/SRLock/Base.pm
 lib/IPC/SRLock/Constants.pm
 lib/IPC/SRLock/Fake.pm
 lib/IPC/SRLock/Fcntl.pm
-lib/IPC/SRLock/Memcached.pm
 lib/IPC/SRLock/Redis.pm
 lib/IPC/SRLock/Sysv.pm
 lib/IPC/SRLock/Utils.pm

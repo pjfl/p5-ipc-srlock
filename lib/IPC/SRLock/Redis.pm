@@ -1,9 +1,9 @@
 package IPC::SRLock::Redis;
 
-use namespace::autoclean;
-
 use IPC::SRLock::Utils     qw( hash_from loop_until throw );
-use File::DataClass::Types qw( ArrayRef NonEmptySimpleStr Object );
+use File::DataClass::Types qw( HashRef NonEmptySimpleStr );
+use List::Util             qw( shuffle );
+use Type::Utils            qw( class_type );
 use Redis;
 use Moo;
 
@@ -15,10 +15,10 @@ has 'lockfile' =>
    isa     => NonEmptySimpleStr,
    default => sub { shift->name . '_lockfile' };
 
-has 'servers' =>
-   is      => 'ro',
-   isa     => ArrayRef,
-   default => sub { [ 'localhost:6379' ] };
+has 'redis' =>
+   is      => 'lazy',
+   isa     => HashRef,
+   default => sub { { server => 'localhost:6379' } };
 
 has 'shmfile' =>
    is      => 'lazy',
@@ -28,19 +28,50 @@ has 'shmfile' =>
 # Private attributes
 has '_redis' =>
    is      => 'lazy',
-   isa     => Object,
-   reader  => 'redis',
-   builder => sub {
-      my $self = shift;
+   isa     => class_type('Redis'),
+   default => sub {
+      my $self   = shift;
+      my $params = $self->redis;
 
-      return Redis->new(
-         debug  => $self->debug,
-         name   => $self->name,
-         server => $self->servers->[0],
-      );
+      throw 'No Redis config' unless scalar keys %{$params};
+
+      throw 'No recognisable Redis config' unless exists $params->{sentinel}
+         || exists $params->{server} || exists $params->{socket};
+
+      if (exists $params->{sentinel}) {
+         my @sentinels = split m{ , \s* }mx, delete $params->{sentinel};
+
+         @sentinels = shuffle @sentinels if $params->{ordering} eq 'random';
+
+         $params->{sentinels} = \@sentinels;
+         delete $params->{ordering};
+      }
+
+      $params->{on_connect} = sub {
+         my $redis      = shift;
+         my $start_time = time;
+
+         while (!$redis->ping) {
+            sleep 1; return 0 if time - $start_time > 3600;
+         }
+
+         return 1;
+      };
+
+      $params->{debug} = $self->debug;
+      $params->{name} = $self->name;
+
+      return Redis->new(%{$params});
    };
 
 # Public methods
+sub DEMOLISH {
+    my ($self, $in_global_destruction) = @_;
+
+    $self->_redis->quit unless $in_global_destruction;
+    return;
+}
+
 sub list {
    my $self = shift;
 
@@ -67,7 +98,7 @@ sub _expire_lock {
       $self->_timeout_error($key, $fields[0], $fields[1], $fields[2])
    );
 
-   $self->redis->hdel($self->shmfile, $key);
+   $self->_redis->hdel($self->shmfile, $key);
    return 0;
 }
 
@@ -76,7 +107,7 @@ sub _list {
 
    return 0 unless $self->_lock_share;
 
-   my $shm_content = hash_from $self->redis->hgetall($self->shmfile);
+   my $shm_content = hash_from $self->_redis->hgetall($self->shmfile);
 
    $self->_unlock_share;
 
@@ -99,7 +130,7 @@ sub _list {
 sub _lock_share {
    my $self = shift;
 
-   $self->redis->set($self->lockfile, 1, 'EX', $self->patience, 'NX');
+   $self->_redis->set($self->lockfile, 1, 'EX', $self->patience, 'NX');
    return 1;
 }
 
@@ -111,7 +142,7 @@ sub _reset {
 
    return 0 unless $self->_lock_share;
 
-   my $lock = $self->redis->hget($self->shmfile, $key);
+   my $lock = $self->_redis->hget($self->shmfile, $key);
 
    if ($lock) {
       if ((split m{ , }mx, $lock)[0] != $pid) {
@@ -125,7 +156,7 @@ sub _reset {
       throw 'Lock [_1] not set', [$key];
    }
 
-   $self->redis->hdel($self->shmfile, $key);
+   $self->_redis->hdel($self->shmfile, $key);
    $self->_unlock_share;
    return 1;
 }
@@ -139,7 +170,7 @@ sub _set {
 
    return 0 unless $self->_lock_share;
 
-   my $lock = $self->redis->hget($self->shmfile, $key);
+   my $lock = $self->_redis->hget($self->shmfile, $key);
 
    if ($lock) {
       my @fields = split m{ , }mx, $lock;
@@ -153,7 +184,7 @@ sub _set {
       return 0;
    }
 
-   $self->redis->hset($self->shmfile, $key, "${pid},${now},${timeout}");
+   $self->_redis->hset($self->shmfile, $key, "${pid},${now},${timeout}");
    $self->_unlock_share;
    $self->log->debug("Lock ${key} set by ${pid}");
    return 1;
@@ -162,9 +193,11 @@ sub _set {
 sub _unlock_share {
    my $self = shift;
 
-   $self->redis->del($self->lockfile);
+   $self->_redis->del($self->lockfile);
    return 1;
 }
+
+use namespace::autoclean;
 
 1;
 
@@ -195,13 +228,31 @@ Defines the following attributes;
 
 =head1 Subroutines/Methods
 
+Defines the following public methods;
+
+=over 3
+
+=item C<DEMOLISH>
+
+Quits the L<Redis> session when this instance goes out of scope
+
+=cut
+
+=item C<list>
+
+=item C<reset>
+
+=item C<set>
+
+=back
+
 =head1 Diagnostics
 
 =head1 Dependencies
 
 =over 3
 
-=item L<Class::Usul>
+=item L<Redis>
 
 =back
 

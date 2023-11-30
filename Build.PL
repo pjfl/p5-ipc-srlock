@@ -15,17 +15,16 @@ my $prereqs  = {
     'version' => '0.88'
   },
   'recommends' => {
-    'Cache::Memcached' => '1.30',
-    'Redis' => '1.998'
+    'Redis' => '2.000'
   },
   'requires' => {
     'Class::Null' => '2.110730',
-    'Date::Format' => '2.24',
     'Exporter::Tiny' => '0.042',
     'File::DataClass' => 'v0.66.0',
     'IPC::ShareLite' => '0.17',
     'Moo' => '2.000001',
     'Time::Elapsed' => '0.31',
+    'TimeDate' => '1.21',
     'Try::Tiny' => '0.22',
     'Type::Tiny' => '1.000005',
     'Unexpected' => 'v1.0.0',
