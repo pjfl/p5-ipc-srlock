@@ -1,7 +1,7 @@
 package IPC::SRLock::Redis;
 
-use IPC::SRLock::Utils     qw( hash_from loop_until throw );
 use File::DataClass::Types qw( HashRef NonEmptySimpleStr );
+use IPC::SRLock::Utils     qw( hash_from loop_until throw );
 use List::Util             qw( shuffle );
 use Type::Utils            qw( class_type );
 use Redis;
@@ -15,8 +15,10 @@ has 'lockfile' =>
    isa     => NonEmptySimpleStr,
    default => sub { shift->name . '_lockfile' };
 
+has '+patience' => default => 10;
+
 has 'redis' =>
-   is      => 'lazy',
+   is      => 'ro',
    isa     => HashRef,
    default => sub { { server => 'localhost:6379' } };
 

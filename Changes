@@ -1,5 +1,6 @@
 Revision history for IPC::SRLock
 
+          - Redis subclass sets default patience
           - Uses Redis instead of MemCached
           - Refactored coding style
 
