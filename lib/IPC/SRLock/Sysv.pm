@@ -14,6 +14,8 @@ use Moo;
 
 extends q(IPC::SRLock::Base);
 
+has '+leader' => default => 'SRLock-Sysv';
+
 # Public attributes
 has 'lockfile' => is => 'ro',   isa => PositiveInt, default => 12_244_237;
 
@@ -87,12 +89,11 @@ sub _build__share {
 sub _expire_lock {
    my ($self, $data, $key, $lock) = @_;
 
-   $self->log->error(
-      $self->_timeout_error(
-         $key, $lock->{spid}, $lock->{stime}, $lock->{timeout}
-      )
+   my $error = $self->_timeout_error(
+      $key, $lock->{spid}, $lock->{stime}, $lock->{timeout}
    );
 
+   $self->log->error($error, $self);
    delete $data->{$key};
    return 0;
 }
@@ -197,7 +198,7 @@ sub _set {
    $shm_content->{$key}
       = { spid => $pid, stime => $now, timeout => $args->{t} };
    $self->_write_shared_mem($shm_content);
-   $self->log->debug("Lock ${key} set by ${pid}");
+   $self->log->debug("Lock ${key} set by ${pid}", $self);
    return 1;
 }
 

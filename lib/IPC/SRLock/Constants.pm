@@ -6,7 +6,9 @@ use parent 'Exporter::Tiny';
 
 use File::DataClass::Exception;
 
-our @EXPORT_OK = qw( EXCEPTION_CLASS LOCK_BLOCKING LOCK_NONBLOCKING );
+our @EXPORT_OK = qw(
+   EXCEPTION_CLASS FALSE LOCK_BLOCKING LOCK_NONBLOCKING TRUE
+);
 
 my $exception_class = 'File::DataClass::Exception';
 
@@ -21,11 +23,15 @@ sub Exception_Class {
    return $exception_class = $class;
 }
 
-sub EXCEPTION_CLASS  () { __PACKAGE__->Exception_Class }
+sub EXCEPTION_CLASS () { __PACKAGE__->Exception_Class }
 
-sub LOCK_BLOCKING    () { 1 }
+sub FALSE () { 0 }
+
+sub LOCK_BLOCKING () { 1 }
 
 sub LOCK_NONBLOCKING () { 2 }
+
+sub TRUE () { 1 }
 
 1;
 

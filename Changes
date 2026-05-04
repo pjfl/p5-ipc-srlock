@@ -1,5 +1,7 @@
 Revision history for IPC::SRLock
 
+          - Make leader an object attribute
+          - Added leader to debug log messages
           - Stop propagating debug to Redis client
           - Redis subclass sets default patience
           - Uses Redis instead of MemCached

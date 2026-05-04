@@ -9,6 +9,8 @@ use Moo;
 
 extends q(IPC::SRLock::Base);
 
+has '+leader' => default => 'SRLock-Redis';
+
 # Public attributes
 has 'lockfile' =>
    is      => 'lazy',
@@ -95,10 +97,9 @@ sub set {
 sub _expire_lock {
    my ($self, $key, @fields) = @_;
 
-   $self->log->error(
-      $self->_timeout_error($key, $fields[0], $fields[1], $fields[2])
-   );
+   my $error = $self->_timeout_error($key, $fields[0], $fields[1], $fields[2]);
 
+   $self->log->error($error, $self);
    $self->_redis->hdel($self->shmfile, $key);
    return 0;
 }
@@ -187,7 +188,7 @@ sub _set {
 
    $self->_redis->hset($self->shmfile, $key, "${pid},${now},${timeout}");
    $self->_unlock_share;
-   $self->log->debug("Lock ${key} set by ${pid}");
+   $self->log->debug("Lock ${key} set by ${pid}", $self);
    return 1;
 }
 

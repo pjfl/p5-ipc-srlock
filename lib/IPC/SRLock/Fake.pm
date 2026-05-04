@@ -1,10 +1,10 @@
 package IPC::SRLock::Fake;
 
-use namespace::autoclean;
-
 use Moo;
 
 extends q(IPC::SRLock::Base);
+
+has '+leader' => default => 'SRLock-Fake';
 
 sub list {
    return [];
@@ -20,9 +20,11 @@ sub set {
    my $key  = $args->{k};
    my $pid  = $args->{p};
 
-   $self->log->debug("Lock ${key} set by ${pid}");
+   $self->log->debug("Lock ${key} set by ${pid}", $self);
    return 1;
 }
+
+use namespace::autoclean;
 
 1;
 

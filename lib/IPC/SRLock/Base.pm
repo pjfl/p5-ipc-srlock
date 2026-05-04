@@ -1,31 +1,36 @@
 package IPC::SRLock::Base;
 
-use namespace::autoclean;
-
-use IPC::SRLock::Constants qw( EXCEPTION_CLASS );
+use IPC::SRLock::Constants qw( EXCEPTION_CLASS FALSE TRUE );
+use File::DataClass::Types qw( Bool LoadableClass NonEmptySimpleStr
+                               Num Object PositiveInt );
 use IPC::SRLock::Utils     qw( hash_from merge_attributes throw );
 use Date::Format           qw( time2str );
 use English                qw( -no_match_vars );
-use File::DataClass::Types qw( Bool LoadableClass NonEmptySimpleStr
-                               Num Object PositiveInt );
 use Time::Elapsed          qw( elapsed );
 use Time::HiRes            qw( usleep );
 use Unexpected::Functions  qw( Unspecified );
 use Moo;
 
 # Public attributes
-has 'debug'       => is => 'ro',   isa => Bool, default => 0;
+has 'debug' => is => 'ro', isa => Bool, default => FALSE;
 
-has 'log'         => is => 'lazy', isa => Object,
-   builder        => sub { $_[ 0 ]->_null_class->new };
+has 'leader' =>
+   is      => 'ro',
+   isa     => NonEmptySimpleStr,
+   default => 'SRLock';
 
-has 'name'        => is => 'ro',   isa => NonEmptySimpleStr, required => 1;
+has 'log' =>
+   is      => 'lazy',
+   isa     => Object,
+   default => sub { shift->_null_class->new };
 
-has 'nap_time'    => is => 'ro',   isa => Num, default => 0.1;
+has 'name' => is => 'ro', isa => NonEmptySimpleStr, required => TRUE;
 
-has 'patience'    => is => 'ro',   isa => PositiveInt, default => 0;
+has 'nap_time' => is => 'ro', isa => Num, default => 0.1;
 
-has 'time_out'    => is => 'ro',   isa => PositiveInt, default => 300;
+has 'patience' => is => 'ro', isa => PositiveInt, default => 0;
+
+has 'time_out' => is => 'ro', isa => PositiveInt, default => 300;
 
 # Private attributes
 has '_null_class' =>
@@ -117,6 +122,8 @@ sub _timeout_error {
    return "Timed out ${key} set by ${pid} on "
       . time2str('%Y-%m-%d at %H:%M', $when) . " after ${after} seconds\n";
 }
+
+use namespace::autoclean;
 
 1;
 

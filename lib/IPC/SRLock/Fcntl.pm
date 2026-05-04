@@ -1,19 +1,19 @@
 package IPC::SRLock::Fcntl;
 
-use namespace::autoclean;
-
 use IPC::SRLock::Constants qw( EXCEPTION_CLASS LOCK_BLOCKING LOCK_NONBLOCKING );
-use IPC::SRLock::Utils     qw( hash_from loop_until merge_attributes throw );
-use English                qw( -no_match_vars );
 use File::DataClass::Types qw( Directory NonEmptySimpleStr
                                OctalNum Path PositiveInt RegexpRef );
-use File::Spec;
+use IPC::SRLock::Utils     qw( hash_from loop_until merge_attributes throw );
+use English                qw( -no_match_vars );
 use Storable               qw( nfreeze thaw );
-use Try::Tiny;
 use Unexpected::Functions  qw( Unspecified );
+use File::Spec;
+use Try::Tiny;
 use Moo;
 
 extends q(IPC::SRLock::Base);
+
+has '+leader' => default => 'SRLock-Fcntl';
 
 # Public attributes
 has 'lockfile' => is => 'lazy', isa => Path, coerce => 1,
@@ -22,7 +22,7 @@ has 'lockfile' => is => 'lazy', isa => Path, coerce => 1,
 has 'mode'    => is => 'ro', isa => OctalNum, coerce => 1, default => '0666';
 
 has 'pattern' => is => 'ro', isa => RegexpRef,
-   default    => sub { qr{ \A ([ ~:+./\-\\\w]+) \z }msx };
+   default    => sub { qr{ \A ([ ~:+./\-\\\w]+) \z }msx }; #/emacs
 
 has 'tempdir' => is => 'ro', isa => Directory, coerce => 1,
    default    => sub { File::Spec->tmpdir };
@@ -114,12 +114,11 @@ sub _build__shmfile {
 sub _expire_lock {
    my ($self, $content, $key, $lock) = @_;
 
-   $self->log->error(
-      $self->_timeout_error(
-        $key, $lock->{spid}, $lock->{stime}, $lock->{timeout}
-      )
+   my $error = $self->_timeout_error(
+      $key, $lock->{spid}, $lock->{stime}, $lock->{timeout}
    );
 
+   $self->log->error($error, $self);
    delete $content->{$key};
    return 0;
 }
@@ -237,9 +236,11 @@ sub _set {
    $shm_content->{$key}
       = { spid => $pid, stime => $now, timeout => $args->{t} };
    $self->_write_shmfile($lock_file, $shm_content);
-   $self->log->debug("Lock ${key} set by ${pid}");
+   $self->log->debug("Lock ${key} set by ${pid}", $self);
    return 1;
 }
+
+use namespace::autoclean;
 
 1;
 
