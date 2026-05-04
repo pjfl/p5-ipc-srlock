@@ -60,7 +60,6 @@ has '_redis' =>
          return 1;
       };
 
-      $params->{debug} = $self->debug;
       $params->{name} = $self->name;
 
       return Redis->new(%{$params});
